@@ -18,7 +18,6 @@
   },
   "homepage": "https://github.com/Mol0D337/test#readme",
   "dependencies": {
-    "@alch/alchemy-web3": "^1.4.7",
     "web3": "^1.8.1"
   }
 }
