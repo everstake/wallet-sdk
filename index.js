@@ -42,7 +42,7 @@ async function isTransactionLoading(hash) {
   }
 }
 
-// main func
+// transact func
 async function approve(publicKey, privateKey, amount) {
   try {
     const result = contract_buy.methods.getTotalStake(publicKey).call();
@@ -137,7 +137,7 @@ async function getReward(publicKey) {
     return err;
   }
 }
-async function getTotalStake(publicKey) {
+async function getTotalDelegate(publicKey) {
   try {
     const result = await contract_buy.methods.getTotalStake(publicKey).call();
     return result[0] !== 0 ? result[0]/baseNum : 0;
@@ -163,6 +163,6 @@ export {
   reward,
   restake,
   getReward,
-  getTotalStake,
+  getTotalDelegate,
   getUnbond,
 };
