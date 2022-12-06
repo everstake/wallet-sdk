@@ -1,22 +1,30 @@
 {
-  "name": "test-54435",
+  "name": "@everstake/wallet-sdk-polygon",
   "version": "1.0.0",
-  "description": "test",
+  "description": "Wallet SDK Polygon for Javascript",
   "main": "index.js",
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "keywords": [
+    "everstake",
+    "polygon",
+    "blockchain",
+    "wallet sdk",
+    "wallet sdk polygon",
+    "SDK"
+  ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Mol0D337/test.git"
+    "url": "git+https://github.com/everstake/wallet-sdk-polygon.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/Mol0D337/test/issues"
+    "url": "https://github.com/everstake/wallet-sdk-polygon/issues"
   },
-  "homepage": "https://github.com/Mol0D337/test#readme",
+  "homepage": "https://github.com/everstake/wallet-sdk-polygon#readme",
   "dependencies": {
     "web3": "^1.8.1"
   }
