@@ -10,15 +10,16 @@ const web3 = new Web3('https://eth-mainnet.g.alchemy.com/v2/CD4GB_vgfjM5Ia2Xqk67
 const contract_approve = new web3.eth.Contract(ABI_CONTRACT_APPROVE, ADDRESS_CONTRACT_APPROVE);
 const contract_buy = new web3.eth.Contract(ABI_CONTRACT_BUY, ADDRESS_CONTRACT_BUY);
 
-const baseNum = 1000000000000000000;
 const baseGas = 500000;
 
 // help func
 async function sendTransaction(tx, privateKey) {
   try {
-    return await web3.eth.accounts.signTransaction(tx, privateKey).then((signedTx) => {
-      web3.eth.sendSignedTransaction(signedTx.rawTransaction);
+    let result = null;
+    await web3.eth.accounts.signTransaction(tx, privateKey).then(async (signedTx) => {
+      result = await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
     });
+    return result
   } catch (err) {
     return err;
   }
@@ -44,45 +45,56 @@ async function isTransactionLoading(hash) {
 
 // transact func
 async function approve(publicKey, privateKey, amount) {
-  try {
-    const result = contract_buy.methods.getTotalStake(publicKey).call();
-    if (result[0] !== 0) {
-      return 'approve';
-    } else {
-      const gasEstimate = await contract_approve.methods.approve(publicKey, (amount * baseNum).toString()).estimateGas();
+  if (+amount >= 1) {
+    try {
+      const result = contract_buy.methods.getTotalStake(publicKey).call();
+      if (+result[0] !== 0) {
+        return 'approve';
+      } else {
+        const amountWei = await web3.utils.toWei(amount.toString(), 'ether');
+        const gasEstimate = await contract_approve.methods.approve(publicKey, amountWei).estimateGas();
 
-      // Create the transaction
-      const tx = {
-        'from': publicKey,
-        'to': ADDRESS_CONTRACT_APPROVE,
-        'nonce': await getTransactionCount(publicKey),
-        'gas': gasEstimate,
-        'data': contract_approve.methods.approve(publicKey, (amount * baseNum).toString()).encodeABI()
-      };
+        // Create the transaction
+        const tx = {
+          'from': publicKey,
+          'to': ADDRESS_CONTRACT_APPROVE,
+          'nonce': await getTransactionCount(publicKey),
+          'gas': gasEstimate,
+          'data': contract_approve.methods.approve(publicKey, amountWei).encodeABI()
+        };
 
-      // Sign the transaction
-      await sendTransaction(tx, privateKey);
+        // Sign the transaction
+        return await sendTransaction(tx, privateKey);
+      }
+    } catch (err) {
+      return err;
     }
-  } catch (err) {
-    return err;
+  } else {
+    console.error('ERROR: Min Amount 1.')
   }
 }
 async function delegate(publicKey, privateKey, amount) {
-  const nonce = await web3.eth.getTransactionCount(publicKey, 'latest');
+  if (+amount >= 1) {
+    const amountWei = await web3.utils.toWei(amount.toString(), 'ether');
+    const nonce = await web3.eth.getTransactionCount(publicKey, 'latest');
 
-  // Create the transaction
-  const tx = {
-    'from': publicKey,
-    'to': ADDRESS_CONTRACT_BUY,
-    'nonce': nonce,
-    'gas': baseGas,
-    'data': contract_buy.methods.buyVoucher((amount * baseNum).toString(), 2456).encodeABI()
-  };
+    // Create the transaction
+    const tx = {
+      'from': publicKey,
+      'to': ADDRESS_CONTRACT_BUY,
+      'nonce': nonce,
+      'gas': baseGas,
+      'data': contract_buy.methods.buyVoucher(amountWei, 2456).encodeABI()
+    };
 
-  // Sign the transaction
-  await sendTransaction(tx, privateKey);
+    // Sign the transaction
+    return await sendTransaction(tx, privateKey);
+  } else {
+    console.error('ERROR: Min Amount 1.')
+  }
 }
 async function unstake(publicKey, privateKey, amount) {
+  const amountWei = await web3.utils.toWei(amount.toString(), 'ether');
   const nonce = await web3.eth.getTransactionCount(publicKey, 'latest');
 
   // Create the transaction
@@ -91,11 +103,11 @@ async function unstake(publicKey, privateKey, amount) {
     'to': ADDRESS_CONTRACT_BUY,
     'nonce': nonce,
     'gas': baseGas,
-    'data': contract_buy.methods.sellVoucher_new((amount * baseNum).toString(), (amount * baseNum).toString()).encodeABI()
+    'data': contract_buy.methods.sellVoucher_new(amountWei, amountWei).encodeABI()
   };
 
   // Sign the transaction
-  await sendTransaction(tx, privateKey);
+  return await sendTransaction(tx, privateKey);
 }
 async function reward(publicKey, privateKey) {
   const nonce = await web3.eth.getTransactionCount(publicKey, 'latest');
@@ -110,7 +122,7 @@ async function reward(publicKey, privateKey) {
   };
 
   // Sign the transaction
-  await sendTransaction(tx, privateKey);
+  return await sendTransaction(tx, privateKey);
 }
 async function restake(publicKey, privateKey) {
   const nonce = await web3.eth.getTransactionCount(publicKey, 'latest');
@@ -125,14 +137,14 @@ async function restake(publicKey, privateKey) {
   };
 
   // Sign the transaction
-  await sendTransaction(tx, privateKey);
+  return await sendTransaction(tx, privateKey);
 }
 
 // get func
 async function getReward(publicKey) {
   try {
     const result = await contract_buy.methods.getLiquidRewards(publicKey).call()
-    return result !== 0 ? result/baseNum : 0;
+    return web3.utils.fromWei(result, 'ether');
   } catch (err) {
     return err;
   }
@@ -140,7 +152,7 @@ async function getReward(publicKey) {
 async function getTotalDelegate(publicKey) {
   try {
     const result = await contract_buy.methods.getTotalStake(publicKey).call();
-    return result[0] !== 0 ? result[0]/baseNum : 0;
+    return web3.utils.fromWei(result[0], 'ether');
   } catch (err) {
     return err;
   }
@@ -149,7 +161,7 @@ async function getUnbond(publicKey) {
   try {
     const unbondNonces = await contract_buy.methods.unbondNonces(publicKey).call();
     const result = await contract_buy.methods.unbonds_new(publicKey, unbondNonces).call();
-    return result[0] !== 0 ? result[0]/baseNum : 0;
+    return web3.utils.fromWei(result[0], 'ether');
   } catch (err) {
     return err;
   }
