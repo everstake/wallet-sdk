@@ -8,13 +8,10 @@ npm install @everstake/wallet-sdk-polygon
 
 ### Setup Wallet SDK Polygon
 
+After installing the app, you can then import and use the SDK:
+
 ```ts
-// Import SDK
-import * as polygon from '@everstake/wallet-sdk-polygon';
-// https url api ethereum mainnet.
-const apiUrl = process.env.API_URL_ETH_MAINNET; // https://eth-mainnet/CD4GB...mrMj5
-// Setup SDK
-await polygon.setup(apiUrl);
+import * as polygon from 'everstake-wallet-sdk';
 ```
 
 ## Wallet SDK Polygon Setup
