@@ -6,11 +6,22 @@
 npm install @everstake/wallet-sdk-polygon
 ```
 
-After installing the app, you can then import and use the SDK:
+### Setup Wallet SDK Polygon
 
 ```ts
+// Import SDK
 import * as polygon from '@everstake/wallet-sdk-polygon';
+// https url api ethereum mainnet.
+const apiUrl = process.env.API_URL_ETH_MAINNET; // https://eth-mainnet/CD4GB...mrMj5
+// Setup SDK
+await polygon.setup(apiUrl);
 ```
+
+## Wallet SDK Polygon Setup
+
+The `setup` namespace contains methods used for setup SDK. The unique methods to the `setup` namespace are:
+
+- `setup(apiUrl)`: This function setup your eth-mainnet node url.
 
 ## Wallet SDK Polygon Getting Info
 
@@ -45,10 +56,26 @@ The `loading` namespace contains methods used for getting info about loading tra
 
 Below are examples of usage.
 
+### Setup Function
+
+```ts
+// Import SDK
+import * as polygon from '@everstake/wallet-sdk-polygon';
+// https url api ethereum mainnet.
+const apiUrl = process.env.API_URL_ETH_MAINNET; // https://eth-mainnet/CD4GB...mrMj5
+// Setup SDK
+await polygon.setup(apiUrl);
+```
+
 ### Getting Info
 
 ```ts
+// Import SDK
 import * as polygon from '@everstake/wallet-sdk-polygon';
+// https url api ethereum mainnet.
+const apiUrl = process.env.API_URL_ETH_MAINNET; // https://eth-mainnet/CD4GB...mrMj5
+// Setup SDK
+await polygon.setup(apiUrl);
 
 // User wallet address.
 const publicKey = '0x4D3F0BF20Dd5DA8C6800c5cA17d721131E366651';
@@ -69,7 +96,12 @@ console.log(getUnbond); // 2.2000000000000000 (MATIC)
 ### Delegate Polygon
 
 ```ts
+// Import SDK
 import * as polygon from '@everstake/wallet-sdk-polygon';
+// https url api ethereum mainnet.
+const apiUrl = process.env.API_URL_ETH_MAINNET; // https://eth-mainnet/CD4GB...mrMj5
+// Setup SDK
+await polygon.setup(apiUrl);
 
 // User wallet address.
 const publicKey = '0x7CB380672D37E6Cc2e1dE28616076Cf3CCbdb82C';
@@ -94,7 +126,12 @@ console.log(loading); // returns true or false until the transaction status is e
 ### Other Transaction
 
 ```ts
+// Import SDK
 import * as polygon from '@everstake/wallet-sdk-polygon';
+// https url api ethereum mainnet.
+const apiUrl = process.env.API_URL_ETH_MAINNET; // https://eth-mainnet/CD4GB...mrMj5
+// Setup SDK
+await polygon.setup(apiUrl);
 
 // User wallet address.
 const publicKey = '0x7CB380672D37E6Cc2e1dE28616076Cf3CCbdb82C';
@@ -119,7 +156,12 @@ console.log(restake); // return transaction info.
 ### Loading Transaction
 
 ```ts
+// Import SDK
 import * as polygon from '@everstake/wallet-sdk-polygon';
+// https url api ethereum mainnet.
+const apiUrl = process.env.API_URL_ETH_MAINNET; // https://eth-mainnet/CD4GB...mrMj5
+// Setup SDK
+await polygon.setup(apiUrl);
 
 // Hash transaction
 const hash = '0x6a65103f50d40eb94b04fba1161e0dd44962f070bdcfc4c75b105ca37b2b08b2';
