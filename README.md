@@ -18,7 +18,16 @@ import * as polygon from 'everstake-wallet-sdk';
 
 The `setup` namespace contains methods used for setup SDK. The unique methods to the `setup` namespace are:
 
-- `setup(apiUrl)`: This function setup your eth-mainnet node url.
+- `setup(apiUrl)`: This function setup your eth-mainnet api url.
+
+## You Can Take ETH Mainnet Api
+
+- [Infura](https://infura.io/)
+- [Alchemy](https://www.alchemy.com/)
+- [Zmok](https://zmok.io/)
+- [Rivet Cloud](https://rivet.cloud/)
+- [ChainStack](https://chainstack.com/)
+- or any other option
 
 ## Wallet SDK Polygon Getting Info
 
