@@ -1,6 +1,6 @@
 {
   "name": "@everstake/wallet-sdk-polygon",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Wallet SDK Polygon for Javascript",
   "main": "index.js",
   "type": "module",
