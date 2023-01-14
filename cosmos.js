@@ -12,7 +12,7 @@ let address = null;
 let client = null;
 
 // auth
-async function auth(mnemonic) {
+export const auth = async (mnemonic) => {
     try {
         const wallet = await DirectSecp256k1HdWallet.fromMnemonic(mnemonic);
 
@@ -26,7 +26,7 @@ async function auth(mnemonic) {
 }
 
 // send transition
-async function transition(mnemonic, amount, typeUrl, value, gas = '200000') {
+export const transition = async (mnemonic, amount, typeUrl, value, gas = '200000') => {
     await auth(mnemonic);
 
     const fee = {
@@ -74,33 +74,33 @@ async function transition(mnemonic, amount, typeUrl, value, gas = '200000') {
 }
 
 // func stake
-async function delegate(mnemonic, amount) {
+export const delegate = async (mnemonic, amount) => {
     if (+amount >= minAmount) {
         return await transition(mnemonic, amount, 'MsgDelegate', {validatorAddress: VALIDATOR_ADDRESS});
     } else {
         throw new Error(`ERROR: Min Amount ${minAmount}`);
     }
 }
-async function redelegate(mnemonic, amount, validatorSrcAddress) {
+export const redelegate = async (mnemonic, amount, validatorSrcAddress) => {
     if (+amount >= minAmount) {
         return await transition(mnemonic, amount, 'MsgBeginRedelegate', {validatorSrcAddress: validatorSrcAddress, validatorDstAddress: VALIDATOR_ADDRESS}, '300000');
     } else {
         throw new Error(`ERROR: Min Amount ${minAmount}`);
     }
 }
-async function undelegate(mnemonic, amount) {
+export const undelegate = async (mnemonic, amount) => {
     if (+amount >= minAmount) {
         return await transition(mnemonic, amount, 'MsgUndelegate', {validatorAddress: VALIDATOR_ADDRESS});
     } else {
         throw new Error(`ERROR: Min Amount ${minAmount}`);
     }
 }
-async function withdrawRewards(mnemonic) {
+export const withdrawRewards = async (mnemonic) => {
     return await transition(mnemonic, false, 'MsgWithdrawDelegationReward', {validatorAddress: VALIDATOR_ADDRESS});
 }
 
 // info
-async function getDelegations(address) {
+export const getDelegations = async (address) => {
     try {
         const delegatorArray = [];
         const delegator = await axios.get(`${API_URL}/staking/delegators/${address}/delegations`);
@@ -115,11 +115,3 @@ async function getDelegations(address) {
         throw new Error(error);
     }
 }
-
-export {
-    delegate,
-    redelegate,
-    undelegate,
-    withdrawRewards,
-    getDelegations,
-};
