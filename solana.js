@@ -12,25 +12,23 @@ const {
 const bs58 = require('bs58');
 const bip39 = require('bip39');
 
-const minAmount = 0.0023;
+const minAmount = 0.01;
 const VALIDATOR_ADDRESS = '9QU2QSxhb24FUX3Tu2FpczXjpK3VYrvRudywSZaM29mF';
 
 let connection = null;
 let wallet = null;
 
 // connect
-async function connect(secretKey = null) {
+async function connect(privetKey = null) {
     try {
         connection = new Connection(clusterApiUrl("mainnet-beta"), "confirmed");
-        // connection = new Connection(clusterApiUrl("devnet"), "confirmed");
-
-        if (secretKey) {
-            if (bip39.validateMnemonic(secretKey)) {
-                wallet = Keypair.fromSeed(bip39.mnemonicToSeedSync(secretKey).slice(0, 32));
-            } else if (typeof secretKey === 'object') {
-                wallet = Keypair.fromSecretKey(Uint8Array.from(secretKey));
+        if (privetKey) {
+            if (bip39.validateMnemonic(privetKey)) {
+                wallet = Keypair.fromSeed(bip39.mnemonicToSeedSync(privetKey).slice(0, 32));
+            } else if (typeof privetKey === 'object') {
+                wallet = Keypair.fromSecretKey(Uint8Array.from(privetKey));
             } else {
-                wallet = Keypair.fromSecretKey(bs58.decode(secretKey));
+                wallet = Keypair.fromSecretKey(bs58.decode(privetKey));
             }
         }
     } catch (error) {
@@ -38,10 +36,10 @@ async function connect(secretKey = null) {
     }
 }
 
-async function delegate(secretKey, amount) {
+async function delegate(privetKey, amount) {
     if (+amount >= minAmount) {
         try {
-            await connect(secretKey);
+            await connect(privetKey);
 
             const stakeAccount = Keypair.generate();
 
@@ -65,18 +63,20 @@ async function delegate(secretKey, amount) {
                 votePubkey: selectedValidatorPubkey,
             });
 
-            return await sendAndConfirmTransaction(connection, delegateTx, [wallet]);
+            const delegateTxHash = await sendAndConfirmTransaction(connection, delegateTx, [wallet]);
+
+            return { hash: delegateTxHash };
         } catch (error) {
             throw new Error(error);
         }
     } else {
-        throw new Error(`ERROR: Min Amount ${minAmount}`);
+        throw new Error(`Min Amount ${minAmount}`);
     }
 }
 
-async function deactivate(secretKey, stakeAccountPublicKey) {
+async function deactivate(privetKey, stakeAccountPublicKey) {
     try {
-        await connect(secretKey);
+        await connect(privetKey);
 
         const stakeAccount = new PublicKey(stakeAccountPublicKey);
 
@@ -85,19 +85,21 @@ async function deactivate(secretKey, stakeAccountPublicKey) {
             authorizedPubkey: wallet.publicKey,
         });
 
-        return await sendAndConfirmTransaction(
+        const deactivateTxHash = await sendAndConfirmTransaction(
             connection,
             deactivateTx,
             [wallet],
         );
+
+        return { hash: deactivateTxHash };
     } catch (error) {
         throw new Error(error);
     }
 }
 
-async function withdraw(secretKey, stakeAccountPublicKey, stakeBalance) {
+async function withdraw(privetKey, stakeAccountPublicKey, stakeBalance) {
     try {
-        await connect(secretKey);
+        await connect(privetKey);
 
         const stakeAccount = new PublicKey(stakeAccountPublicKey);
 
@@ -108,7 +110,9 @@ async function withdraw(secretKey, stakeAccountPublicKey, stakeBalance) {
             lamports: stakeBalance,
         });
 
-        return await sendAndConfirmTransaction(connection, withdrawTx, [wallet]);
+        const withdrawTxHash = await sendAndConfirmTransaction(connection, withdrawTx, [wallet]);
+
+        return { hash: withdrawTxHash };
     } catch (error) {
         throw new Error(error);
     }
@@ -126,9 +130,9 @@ async function getDelegations(address) {
         });
 
         if (accounts.length) {
-            return JSON.stringify(accounts);
+            return { accounts: accounts };
         } else {
-            return null;
+            return { accounts: [] };
         }
     } catch (error) {
         throw new Error(error);

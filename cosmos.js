@@ -5,15 +5,15 @@ const RPC_URL = 'https://rpc-cosmoshub-ia.cosmosia.notional.ventures';
 const API_URL = 'https://api-cosmoshub-ia.cosmosia.notional.ventures';
 const VALIDATOR_ADDRESS = 'cosmosvaloper1tflk30mq5vgqjdly92kkhhq3raev2hnz6eete3';
 const BASE_NUM = 1000000;
-const minAmount = 0.001;
+const minAmount = 0.01;
 
 let address = null;
 let client = null;
 
 // auth
-async function auth(mnemonic) {
+async function auth(privetKey) {
     try {
-        const wallet = await DirectSecp256k1HdWallet.fromMnemonic(mnemonic);
+        const wallet = await DirectSecp256k1HdWallet.fromMnemonic(privetKey);
 
         const [account] = await wallet.getAccounts();
         address = account.address;
@@ -25,8 +25,8 @@ async function auth(mnemonic) {
 }
 
 // send transition
-async function transition(mnemonic, amount, typeUrl, value, gas = '200000') {
-    await auth(mnemonic);
+async function transition(privetKey, amount, typeUrl, value, gas = '200000') {
+    await auth(privetKey);
 
     const fee = {
         amount: [{
@@ -63,9 +63,9 @@ async function transition(mnemonic, amount, typeUrl, value, gas = '200000') {
             address, [msg], fee, ''
         );
         if (result.code !== undefined && result.code !== 0) {
-            return (result.log || result.rawLog);
+            return { error: (result.log || result.rawLog) };
         } else {
-            return result.transactionHash;
+            return { hash: result.transactionHash };
         }
     } catch (error) {
         throw new Error(error);
@@ -73,29 +73,29 @@ async function transition(mnemonic, amount, typeUrl, value, gas = '200000') {
 }
 
 // func stake
-async function delegate(mnemonic, amount) {
+async function delegate(privetKey, amount) {
     if (+amount >= minAmount) {
-        return await transition(mnemonic, amount, 'MsgDelegate', {validatorAddress: VALIDATOR_ADDRESS});
+        return await transition(privetKey, amount, 'MsgDelegate', {validatorAddress: VALIDATOR_ADDRESS});
     } else {
-        throw new Error(`ERROR: Min Amount ${minAmount}`);
+        throw new Error(`Min Amount ${minAmount}`);
     }
 }
-async function redelegate(mnemonic, amount, validatorSrcAddress) {
+async function redelegate(privetKey, amount, validatorSrcAddress) {
     if (+amount >= minAmount) {
-        return await transition(mnemonic, amount, 'MsgBeginRedelegate', {validatorSrcAddress: validatorSrcAddress, validatorDstAddress: VALIDATOR_ADDRESS}, '300000');
+        return await transition(privetKey, amount, 'MsgBeginRedelegate', {validatorSrcAddress: validatorSrcAddress, validatorDstAddress: VALIDATOR_ADDRESS}, '300000');
     } else {
-        throw new Error(`ERROR: Min Amount ${minAmount}`);
+        throw new Error(`Min Amount ${minAmount}`);
     }
 }
-async function undelegate(mnemonic, amount) {
+async function undelegate(privetKey, amount) {
     if (+amount >= minAmount) {
-        return await transition(mnemonic, amount, 'MsgUndelegate', {validatorAddress: VALIDATOR_ADDRESS});
+        return await transition(privetKey, amount, 'MsgUndelegate', {validatorAddress: VALIDATOR_ADDRESS});
     } else {
-        throw new Error(`ERROR: Min Amount ${minAmount}`);
+        throw new Error(`Min Amount ${minAmount}`);
     }
 }
-async function withdrawRewards(mnemonic) {
-    return await transition(mnemonic, false, 'MsgWithdrawDelegationReward', {validatorAddress: VALIDATOR_ADDRESS});
+async function withdrawRewards(privetKey) {
+    return await transition(privetKey, false, 'MsgWithdrawDelegationReward', {validatorAddress: VALIDATOR_ADDRESS});
 }
 
 // info

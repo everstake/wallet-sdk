@@ -15,9 +15,13 @@ let contract_buy = null;
 
 // setup
 async function setup(apiUrl) {
-    web3 = new Web3(apiUrl);
-    contract_approve = new web3.eth.Contract(ABI_CONTRACT_APPROVE, ADDRESS_CONTRACT_APPROVE);
-    contract_buy = new web3.eth.Contract(ABI_CONTRACT_BUY, ADDRESS_CONTRACT_BUY);
+    try {
+        web3 = new Web3(apiUrl);
+        contract_approve = new web3.eth.Contract(ABI_CONTRACT_APPROVE, ADDRESS_CONTRACT_APPROVE);
+        contract_buy = new web3.eth.Contract(ABI_CONTRACT_BUY, ADDRESS_CONTRACT_BUY);
+    } catch (error) {
+        throw new Error(error);
+    }
 }
 
 // help func
@@ -28,8 +32,8 @@ async function sendTransaction(tx, privateKey) {
             result = await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
         });
         return result
-    } catch (err) {
-        return err;
+    } catch (error) {
+        throw new Error(error);
     }
 }
 async function getTransactionCount(publicKey) {
@@ -46,8 +50,8 @@ async function isTransactionLoading(hash) {
             await isTransactionLoading(hash);
             return true;
         }
-    } catch (err) {
-        return err;
+    } catch (error) {
+        throw new Error(error);
     }
 }
 
@@ -78,7 +82,7 @@ async function approve(publicKey, privateKey, amount) {
             return err;
         }
     } else {
-        throw new Error(`ERROR: Min Amount ${minAmount}`);
+        throw new Error(`Min Amount ${minAmount}`);
     }
 }
 async function delegate(publicKey, privateKey, amount) {
@@ -98,7 +102,7 @@ async function delegate(publicKey, privateKey, amount) {
         // Sign the transaction
         return await sendTransaction(tx, privateKey);
     } else {
-        throw new Error(`ERROR: Min Amount ${minAmount}`);
+        throw new Error(`Min Amount ${minAmount}`);
     }
 }
 async function undelegate(publicKey, privateKey, amount) {
@@ -153,16 +157,16 @@ async function getReward(publicKey) {
     try {
         const result = await contract_buy.methods.getLiquidRewards(publicKey).call()
         return web3.utils.fromWei(result, 'ether');
-    } catch (err) {
-        return err;
+    } catch (error) {
+        throw new Error(error);
     }
 }
 async function getTotalDelegate(publicKey) {
     try {
         const result = await contract_buy.methods.getTotalStake(publicKey).call();
         return web3.utils.fromWei(result[0], 'ether');
-    } catch (err) {
-        return err;
+    } catch (error) {
+        throw new Error(error);
     }
 }
 async function getUnbond(publicKey) {
@@ -170,8 +174,8 @@ async function getUnbond(publicKey) {
         const unbondNonces = await contract_buy.methods.unbondNonces(publicKey).call();
         const result = await contract_buy.methods.unbonds_new(publicKey, unbondNonces).call();
         return web3.utils.fromWei(result[0], 'ether');
-    } catch (err) {
-        return err;
+    } catch (error) {
+        throw new Error(error);
     }
 }
 
