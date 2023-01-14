@@ -1,6 +1,16 @@
-import { Authorized, clusterApiUrl, Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, sendAndConfirmTransaction, StakeProgram} from "@solana/web3.js";
-import bs58 from 'bs58';
-import bip39 from 'bip39';
+const {
+    Authorized,
+    clusterApiUrl,
+    Connection,
+    Keypair,
+    LAMPORTS_PER_SOL,
+    PublicKey,
+    sendAndConfirmTransaction,
+    StakeProgram
+} = require('@solana/web3.js');
+
+const bs58 = require('bs58');
+const bip39 = require('bip39');
 
 const minAmount = 0.0023;
 const VALIDATOR_ADDRESS = '9QU2QSxhb24FUX3Tu2FpczXjpK3VYrvRudywSZaM29mF';
@@ -125,7 +135,7 @@ async function getDelegations(address) {
     }
 }
 
-export {
+module.exports = {
     delegate,
     deactivate,
     withdraw,

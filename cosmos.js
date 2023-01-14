@@ -1,12 +1,11 @@
-import axios from "axios";
-import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
-import { SigningStargateClient } from "@cosmjs/stargate";
+const { DirectSecp256k1HdWallet } = require("@cosmjs/proto-signing");
+const { SigningStargateClient } = require("@cosmjs/stargate");
 
 const RPC_URL = 'https://rpc-cosmoshub-ia.cosmosia.notional.ventures';
 const API_URL = 'https://api-cosmoshub-ia.cosmosia.notional.ventures';
 const VALIDATOR_ADDRESS = 'cosmosvaloper1tflk30mq5vgqjdly92kkhhq3raev2hnz6eete3';
 const BASE_NUM = 1000000;
-const minAmount = 1;
+const minAmount = 0.001;
 
 let address = null;
 let client = null;
@@ -103,11 +102,13 @@ async function withdrawRewards(mnemonic) {
 async function getDelegations(address) {
     try {
         const delegatorArray = [];
-        const delegator = await axios.get(`${API_URL}/staking/delegators/${address}/delegations`);
-        const validator = await axios.get(`${API_URL}/staking/delegators/${address}/validators`);
-        for (let i = 0; i < validator.data.result.length; i++) {
+
+        const delegator = await fetch(`${API_URL}/staking/delegators/${address}/delegations`).then(response => response.json());
+        const validator = await fetch(`${API_URL}/staking/delegators/${address}/validators`).then(response => response.json());
+
+        for (let i = 0; i < validator.result.length; i++) {
             delegatorArray.push({
-                ...delegator.data.result[i], ...validator.data.result[i]
+                ...delegator.result[i], ...validator.result[i]
             })
         };
         return delegatorArray;
@@ -116,7 +117,7 @@ async function getDelegations(address) {
     }
 }
 
-export {
+module.exports = {
     delegate,
     redelegate,
     undelegate,

@@ -1,5 +1,10 @@
-import * as Polygon from './polygon.js';
-import * as Cosmos from './cosmos.js';
-import * as Solana from './solana.js';
+const Polygon = require('./polygon');
+const Cosmos = require('./cosmos');
+const Solana = require('./solana');
 
-export { Polygon, Cosmos, Solana };
+module.exports = {
+    Polygon,
+    Cosmos,
+    Solana,
+};
+
