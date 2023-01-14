@@ -1,6 +1,6 @@
 {
   "name": "@everstake/wallet-sdk",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Everstake Wallet SDK for Javascript",
   "main": "index.js",
   "type": "module",
