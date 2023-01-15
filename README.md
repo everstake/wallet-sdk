@@ -214,4 +214,3 @@ transactionInfoExample = {
 
 If you have any questions, issues, or feedback, please file an issue
 on [GitHub](https://github.com/everstake/wallet-sdk-polygon/issues).
-# sdk
