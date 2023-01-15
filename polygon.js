@@ -31,7 +31,7 @@ async function sendTransaction(tx, privateKey) {
         await web3.eth.accounts.signTransaction(tx, privateKey).then(async (signedTx) => {
             result = await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
         });
-        return result
+        return { result: result }
     } catch (error) {
         throw new Error(error);
     }
