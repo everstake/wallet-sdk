@@ -65,7 +65,7 @@ async function transition(privetKey, amount, typeUrl, value, gas = '200000') {
         if (result.code !== undefined && result.code !== 0) {
             return { error: (result.log || result.rawLog) };
         } else {
-            return { hash: result.transactionHash };
+            return { result: result.transactionHash };
         }
     } catch (error) {
         throw new Error(error);
@@ -111,7 +111,7 @@ async function getDelegations(address) {
                 ...delegator.result[i], ...validator.result[i]
             })
         };
-        return delegatorArray;
+        return { result: delegatorArray };
     } catch (error) {
         throw new Error(error);
     }

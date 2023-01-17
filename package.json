@@ -1,6 +1,6 @@
 {
   "name": "@everstake/wallet-sdk",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "Everstake Wallet SDK for Javascript",
   "main": "index.js",
   "publishConfig": {
@@ -19,14 +19,14 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/everstake/wallet-sdk-polygon.git"
+    "url": "git+https://github.com/everstake/wallet-sdk.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/everstake/wallet-sdk-polygon/issues"
+    "url": "https://github.com/everstake/wallet-sdk/issues"
   },
-  "homepage": "https://github.com/everstake/wallet-sdk-polygon#readme",
+  "homepage": "https://github.com/everstake/wallet-sdk#readme",
   "dependencies": {
     "@cosmjs/stargate": "^0.29.5",
     "@solana/web3.js": "^1.30.2",

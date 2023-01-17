@@ -65,7 +65,7 @@ async function delegate(privetKey, amount) {
 
             const delegateTxHash = await sendAndConfirmTransaction(connection, delegateTx, [wallet]);
 
-            return { hash: delegateTxHash };
+            return { result: delegateTxHash };
         } catch (error) {
             throw new Error(error);
         }
@@ -91,7 +91,7 @@ async function deactivate(privetKey, stakeAccountPublicKey) {
             [wallet],
         );
 
-        return { hash: deactivateTxHash };
+        return { result: deactivateTxHash };
     } catch (error) {
         throw new Error(error);
     }
@@ -112,7 +112,7 @@ async function withdraw(privetKey, stakeAccountPublicKey, stakeBalance) {
 
         const withdrawTxHash = await sendAndConfirmTransaction(connection, withdrawTx, [wallet]);
 
-        return { hash: withdrawTxHash };
+        return { result: withdrawTxHash };
     } catch (error) {
         throw new Error(error);
     }
@@ -122,18 +122,16 @@ async function getDelegations(address) {
     try {
         await connect();
 
-        const accounts = await connection.getParsedProgramAccounts(new PublicKey("Stake11111111111111111111111111111111111111"), {
+        let accounts = [];
+
+        accounts = await connection.getParsedProgramAccounts(new PublicKey("Stake11111111111111111111111111111111111111"), {
             filters: [
                 {dataSize: 200},
                 {memcmp: {offset: 44, bytes: address}},
             ],
         });
 
-        if (accounts.length) {
-            return { accounts: accounts };
-        } else {
-            return { accounts: [] };
-        }
+        return { result: accounts };
     } catch (error) {
         throw new Error(error);
     }

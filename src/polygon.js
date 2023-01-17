@@ -45,10 +45,10 @@ async function isTransactionLoading(hash) {
     try {
         const result = await web3.eth.getTransactionReceipt(hash);
         if (result && result.status) {
-            return false;
+            return { result: false };
         } else {
             await isTransactionLoading(hash);
-            return true;
+            return { result: true };
         }
     } catch (error) {
         throw new Error(error);
