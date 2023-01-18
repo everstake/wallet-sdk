@@ -1,6 +1,6 @@
-const Polygon = require('./src/polygon');
-const Cosmos = require('./src/cosmos');
-const Solana = require('./src/solana');
+const Polygon = require('./polygon');
+const Cosmos = require('./cosmos');
+const Solana = require('./solana');
 
 module.exports = {
     Polygon,
