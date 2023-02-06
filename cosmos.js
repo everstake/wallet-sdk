@@ -25,7 +25,7 @@ async function auth(privetKey) {
 }
 
 // send transition
-async function transition(privetKey, amount, typeUrl, value, gas = '200000') {
+async function transition(privetKey, amount, typeUrl, value, memo, gas = '250000') {
     await auth(privetKey);
 
     const fee = {
@@ -60,7 +60,7 @@ async function transition(privetKey, amount, typeUrl, value, gas = '200000') {
             value: msgData,
         };
         const result = await client.signAndBroadcast(
-            address, [msg], fee, ''
+            address, [msg], fee, memo
         );
         if (result.code !== undefined && result.code !== 0) {
             return { error: (result.log || result.rawLog) };
@@ -75,27 +75,52 @@ async function transition(privetKey, amount, typeUrl, value, gas = '200000') {
 // func stake
 async function delegate(privetKey, amount) {
     if (+amount >= minAmount) {
-        return await transition(privetKey, amount, 'MsgDelegate', {validatorAddress: VALIDATOR_ADDRESS});
+        return await transition(
+            privetKey,
+            amount,
+            'MsgDelegate',
+            {validatorAddress: VALIDATOR_ADDRESS},
+            'Staked with Wallet SDK by Everstake'
+        );
     } else {
         throw new Error(`Min Amount ${minAmount}`);
     }
 }
 async function redelegate(privetKey, amount, validatorSrcAddress) {
     if (+amount >= minAmount) {
-        return await transition(privetKey, amount, 'MsgBeginRedelegate', {validatorSrcAddress: validatorSrcAddress, validatorDstAddress: VALIDATOR_ADDRESS}, '300000');
+        return await transition(
+            privetKey,
+            amount,
+            'MsgBeginRedelegate',
+            {validatorSrcAddress: validatorSrcAddress, validatorDstAddress: VALIDATOR_ADDRESS},
+            'Redelegated with Wallet SDK by Everstake',
+            '300000',
+    );
     } else {
         throw new Error(`Min Amount ${minAmount}`);
     }
 }
 async function undelegate(privetKey, amount) {
     if (+amount >= minAmount) {
-        return await transition(privetKey, amount, 'MsgUndelegate', {validatorAddress: VALIDATOR_ADDRESS});
+        return await transition(
+            privetKey,
+            amount,
+            'MsgUndelegate',
+            {validatorAddress: VALIDATOR_ADDRESS},
+            'Undelegated with Wallet SDK by Everstake',
+        );
     } else {
         throw new Error(`Min Amount ${minAmount}`);
     }
 }
 async function withdrawRewards(privetKey) {
-    return await transition(privetKey, false, 'MsgWithdrawDelegationReward', {validatorAddress: VALIDATOR_ADDRESS});
+    return await transition(
+        privetKey,
+        false,
+        'MsgWithdrawDelegationReward',
+        {validatorAddress: VALIDATOR_ADDRESS},
+        'Withdraw Rewards with Wallet SDK by Everstake',
+    );
 }
 
 // info
