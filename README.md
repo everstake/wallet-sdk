@@ -1,4 +1,4 @@
-# Evrstake Wallet SDK
+# Everstake Wallet SDK
 
 ## Getting Started
 You can use two different options to implement staking for Everstake validator.
