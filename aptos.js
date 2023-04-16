@@ -14,7 +14,7 @@ const baseNum = 100000000;
 
 async function createAccount() {
     try {
-        return new aptos.AptosAccount().toPrivateKeyObject();
+        return { result: new aptos.AptosAccount().toPrivateKeyObject() };
     } catch (error) {
         throw new Error(error);
     }
@@ -23,7 +23,7 @@ async function createAccount() {
 async function importAccount(importPrivateKey) {
     try {
         const Uint8Array = aptos.HexString.ensure(importPrivateKey).toUint8Array();
-        return new aptos.AptosAccount(Uint8Array).toPrivateKeyObject();
+        return { result: new aptos.AptosAccount(Uint8Array).toPrivateKeyObject() };
     } catch (error) {
         throw new Error(error);
     }
@@ -34,7 +34,7 @@ async function getBalanceByAddress(address) {
         const resources = await client.getAccountResources(address);
         const accountResource = resources.find((r) => r.type === aptosCoin);
 
-        return (accountResource.data.coin.value / baseNum);
+        return { result: (accountResource.data.coin.value / baseNum) };
     } catch (error) {
         throw new Error(error);
     }
@@ -56,7 +56,7 @@ async function sendTransfer(privateKey, recipientAddress, amount) {
         const transactionRes = await client.submitTransaction(signedTxn);
         await client.waitForTransaction(transactionRes.hash);
 
-        return transactionRes.hash;
+        return { result: transactionRes.hash };
     } catch (error) {
         throw new Error(error);
     }
@@ -81,7 +81,7 @@ async function stake(privateKey, amount) {
         const transactionRes = await client.submitTransaction(signedTxn);
         await client.waitForTransaction(transactionRes.hash);
 
-        return transactionRes.hash;
+        return { result: transactionRes.hash };
     } catch (error) {
         throw new Error(error);
     }
@@ -105,7 +105,7 @@ async function reactivateStake(privateKey, amount) {
         const transactionRes = await client.submitTransaction(signedTxn);
         await client.waitForTransaction(transactionRes.hash);
 
-        return transactionRes.hash;
+        return { result: transactionRes.hash };
     } catch (error) {
         throw new Error(error);
     }

@@ -48,8 +48,6 @@ async function pendingBalanceOf(address) {
     }
 }
 
-pendingBalanceOf('0x7CB380672D37E6Cc2e1dE28616076Cf3CCbdb82C').then(r => console.log(r))
-
 // Pool fee in bips (1/10000)
 async function getPoolFee() {
     try {

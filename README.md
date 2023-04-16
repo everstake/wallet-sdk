@@ -29,7 +29,7 @@ $ yarn add @everstake/wallet-sdk
 
 ### Step. 2: Import Wallet SDK
 
-After installing the app, you can import module of needed blockchain (Solana, Cosmos, Polygon are available) and use the SDK:
+After installing the app, you can import module of needed blockchain (Ethereum, Aptos, Solana, Cosmos, Polygon are available) and use the SDK:
 
 #### Import ES6
 
