@@ -14,7 +14,7 @@ const aptosCoin = "0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>";
 
 // 100000000 = 1 APT
 const baseNum = 100000000;
-const minAmount = 1000000000;
+const minAmount = 10;
 
 async function createAccount() {
     try {
