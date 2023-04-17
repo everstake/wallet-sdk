@@ -1,6 +1,6 @@
 {
   "name": "@everstake/wallet-sdk",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "Everstake Wallet SDK for Javascript",
   "main": "index.js",
   "publishConfig": {
@@ -36,7 +36,6 @@
     "axios": "^1.3.5",
     "bip39": "^3.1.0",
     "bs58": "^5.0.0",
-    "node-fetch": "^2.6.9",
     "web3": "^1.9.0"
   }
 }

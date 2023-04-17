@@ -1,5 +1,3 @@
-// const fetch = require("node-fetch");
-
 const API_URL = 'http://localhost:3500';
 
 const ERROR_TEXT = 'Please create or use correct token'
