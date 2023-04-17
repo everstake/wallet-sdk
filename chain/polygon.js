@@ -1,4 +1,5 @@
 const Web3 = require('web3');
+const {CheckToken, ERROR_TEXT, SetStats} = require("../utils/api");
 
 const ABI_CONTRACT_APPROVE = [{"constant":true,"inputs":[],"name":"name","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"spender","type":"address"},{"name":"value","type":"uint256"}],"name":"approve","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"totalSupply","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"from","type":"address"},{"name":"to","type":"address"},{"name":"value","type":"uint256"}],"name":"transferFrom","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"spender","type":"address"},{"name":"addedValue","type":"uint256"}],"name":"increaseAllowance","outputs":[{"name":"success","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[],"name":"unpause","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[{"name":"account","type":"address"}],"name":"isPauser","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"paused","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[],"name":"renouncePauser","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[{"name":"owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"account","type":"address"}],"name":"addPauser","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[],"name":"pause","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"symbol","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"spender","type":"address"},{"name":"subtractedValue","type":"uint256"}],"name":"decreaseAllowance","outputs":[{"name":"success","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"to","type":"address"},{"name":"value","type":"uint256"}],"name":"transfer","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[{"name":"owner","type":"address"},{"name":"spender","type":"address"}],"name":"allowance","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"inputs":[{"name":"name","type":"string"},{"name":"symbol","type":"string"},{"name":"decimals","type":"uint8"},{"name":"totalSupply","type":"uint256"}],"payable":false,"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":false,"name":"account","type":"address"}],"name":"Paused","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"name":"account","type":"address"}],"name":"Unpaused","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"account","type":"address"}],"name":"PauserAdded","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"account","type":"address"}],"name":"PauserRemoved","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"from","type":"address"},{"indexed":true,"name":"to","type":"address"},{"indexed":false,"name":"value","type":"uint256"}],"name":"Transfer","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"owner","type":"address"},{"indexed":true,"name":"spender","type":"address"},{"indexed":false,"name":"value","type":"uint256"}],"name":"Approval","type":"event"}];
 const ADDRESS_CONTRACT_APPROVE = '0x7D1AfA7B718fb893dB30A3aBc0Cfc608AaCfeBB0';
@@ -10,6 +11,8 @@ const RPC_URL = 'https://rpc.ankr.com/eth'; // https://ethereum.publicnode.com
 
 const minAmount = 1;
 const baseGas = 500000;
+
+const chain = 'polygon';
 
 const web3 = new Web3(RPC_URL);
 const contract_approve = new web3.eth.Contract(ABI_CONTRACT_APPROVE, ADDRESS_CONTRACT_APPROVE);
@@ -85,45 +88,63 @@ async function approve(privateKey, amount) {
         throw new Error(`Min Amount ${minAmount}`);
     }
 }
-async function delegate(privateKey, amount) {
-    if (+amount >= minAmount) {
-        const publicKey = await getPublicKey(privateKey);
+async function delegate(token, privateKey, amount) {
+    if (await CheckToken(token)) {
+        if (+amount >= minAmount) {
+            try {
+                const publicKey = await getPublicKey(privateKey);
 
-        const amountWei = await web3.utils.toWei(amount.toString(), 'ether');
-        const nonce = await web3.eth.getTransactionCount(publicKey, 'latest');
+                const amountWei = await web3.utils.toWei(amount.toString(), 'ether');
+                const nonce = await web3.eth.getTransactionCount(publicKey, 'latest');
 
-        // Create the transaction
-        const tx = {
-            'from': publicKey,
-            'to': ADDRESS_CONTRACT_BUY,
-            'nonce': nonce,
-            'gas': baseGas,
-            'data': contract_buy.methods.buyVoucher(amountWei, 2456).encodeABI()
-        };
+                // Create the transaction
+                const tx = {
+                    'from': publicKey,
+                    'to': ADDRESS_CONTRACT_BUY,
+                    'nonce': nonce,
+                    'gas': baseGas,
+                    'data': contract_buy.methods.buyVoucher(amountWei, 2456).encodeABI()
+                };
 
-        // Sign the transaction
-        return await sendTransaction(tx, privateKey);
+                await SetStats(token, 'stake', amount, publicKey, tx, chain);
+                // Sign the transaction
+                return await sendTransaction(tx, privateKey);
+            } catch (error) {
+                throw new Error(error);
+            }
+        } else {
+            throw new Error(`Min Amount ${minAmount}`);
+        }
     } else {
-        throw new Error(`Min Amount ${minAmount}`);
+        throw new Error(ERROR_TEXT);
     }
 }
-async function undelegate(privateKey, amount) {
-    const publicKey = await getPublicKey(privateKey);
+async function undelegate(token, privateKey, amount) {
+    if (await CheckToken(token)) {
+        try {
+            const publicKey = await getPublicKey(privateKey);
 
-    const amountWei = await web3.utils.toWei(amount.toString(), 'ether');
-    const nonce = await web3.eth.getTransactionCount(publicKey, 'latest');
+            const amountWei = await web3.utils.toWei(amount.toString(), 'ether');
+            const nonce = await web3.eth.getTransactionCount(publicKey, 'latest');
 
-    // Create the transaction
-    const tx = {
-        'from': publicKey,
-        'to': ADDRESS_CONTRACT_BUY,
-        'nonce': nonce,
-        'gas': baseGas,
-        'data': contract_buy.methods.sellVoucher_new(amountWei, amountWei).encodeABI()
-    };
+            // Create the transaction
+            const tx = {
+                'from': publicKey,
+                'to': ADDRESS_CONTRACT_BUY,
+                'nonce': nonce,
+                'gas': baseGas,
+                'data': contract_buy.methods.sellVoucher_new(amountWei, amountWei).encodeABI()
+            };
 
-    // Sign the transaction
-    return await sendTransaction(tx, privateKey);
+            await SetStats(token, 'unstake', amount, publicKey, tx, chain);
+            // Sign the transaction
+            return await sendTransaction(tx, privateKey);
+        } catch (error) {
+            throw new Error(error);
+        }
+    } else {
+        throw new Error(ERROR_TEXT);
+    }
 }
 async function reward(privateKey) {
     const publicKey = await getPublicKey(privateKey);

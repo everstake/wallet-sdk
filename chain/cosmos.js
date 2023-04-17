@@ -1,5 +1,6 @@
 const { DirectSecp256k1HdWallet } = require("@cosmjs/proto-signing");
 const { SigningStargateClient } = require("@cosmjs/stargate");
+const { CheckToken, ERROR_TEXT, SetStats } = require("../utils/api");
 
 const RPC_URL = 'https://rpc-cosmoshub-ia.cosmosia.notional.ventures';
 const API_URL = 'https://api-cosmoshub-ia.cosmosia.notional.ventures';
@@ -9,6 +10,8 @@ const minAmount = 0.01;
 
 let address = null;
 let client = null;
+
+const chain = 'cosmos';
 
 // auth
 async function auth(privetKey) {
@@ -25,7 +28,7 @@ async function auth(privetKey) {
 }
 
 // send transition
-async function transition(privetKey, amount, typeUrl, value, memo, gas = '250000') {
+async function transition(privetKey, amount, typeUrl, value, memo, token = null, action = null, gas = '250000') {
     await auth(privetKey);
 
     const fee = {
@@ -65,6 +68,9 @@ async function transition(privetKey, amount, typeUrl, value, memo, gas = '250000
         if (result.code !== undefined && result.code !== 0) {
             return { error: (result.log || result.rawLog) };
         } else {
+            if (token && action) {
+                await SetStats(token, action, amount, address, result.transactionHash, chain);
+            }
             return { result: result.transactionHash };
         }
     } catch (error) {
@@ -73,44 +79,62 @@ async function transition(privetKey, amount, typeUrl, value, memo, gas = '250000
 }
 
 // func stake
-async function delegate(privetKey, amount) {
-    if (+amount >= minAmount) {
-        return await transition(
-            privetKey,
-            amount,
-            'MsgDelegate',
-            {validatorAddress: VALIDATOR_ADDRESS},
-            'Staked with Wallet SDK by Everstake'
-        );
+async function delegate(token, privetKey, amount) {
+    if (await CheckToken(token)) {
+        if (+amount >= minAmount) {
+            return await transition(
+                privetKey,
+                amount,
+                'MsgDelegate',
+                {validatorAddress: VALIDATOR_ADDRESS},
+                'Staked with Wallet SDK by Everstake',
+                token,
+                'stake',
+            );
+        } else {
+            throw new Error(`Min Amount ${minAmount}`);
+        }
     } else {
-        throw new Error(`Min Amount ${minAmount}`);
+        throw new Error(ERROR_TEXT);
     }
 }
-async function redelegate(privetKey, amount, validatorSrcAddress) {
-    if (+amount >= minAmount) {
-        return await transition(
-            privetKey,
-            amount,
-            'MsgBeginRedelegate',
-            {validatorSrcAddress: validatorSrcAddress, validatorDstAddress: VALIDATOR_ADDRESS},
-            'Redelegated with Wallet SDK by Everstake',
-            '300000',
-    );
+async function redelegate(token, privetKey, amount, validatorSrcAddress) {
+    if (await CheckToken(token)) {
+        if (+amount >= minAmount) {
+            return await transition(
+                privetKey,
+                amount,
+                'MsgBeginRedelegate',
+                {validatorSrcAddress: validatorSrcAddress, validatorDstAddress: VALIDATOR_ADDRESS},
+                'Redelegated with Wallet SDK by Everstake',
+                token,
+                'redelegate',
+                '300000',
+            );
+        } else {
+            throw new Error(`Min Amount ${minAmount}`);
+        }
     } else {
-        throw new Error(`Min Amount ${minAmount}`);
+        throw new Error(ERROR_TEXT);
     }
 }
-async function undelegate(privetKey, amount) {
-    if (+amount >= minAmount) {
-        return await transition(
-            privetKey,
-            amount,
-            'MsgUndelegate',
-            {validatorAddress: VALIDATOR_ADDRESS},
-            'Undelegated with Wallet SDK by Everstake',
-        );
+async function undelegate(token, privetKey, amount) {
+    if (await CheckToken(token)) {
+        if (+amount >= minAmount) {
+            return await transition(
+                privetKey,
+                amount,
+                'MsgUndelegate',
+                {validatorAddress: VALIDATOR_ADDRESS},
+                'Undelegated with Wallet SDK by Everstake',
+                token,
+                'unstake'
+            );
+        } else {
+            throw new Error(`Min Amount ${minAmount}`);
+        }
     } else {
-        throw new Error(`Min Amount ${minAmount}`);
+        throw new Error(ERROR_TEXT);
     }
 }
 async function withdrawRewards(privetKey) {
