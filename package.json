@@ -1,6 +1,6 @@
 {
   "name": "@everstake/wallet-sdk",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Everstake Wallet SDK for Javascript",
   "main": "index.js",
   "publishConfig": {
@@ -30,13 +30,13 @@
   },
   "homepage": "https://github.com/everstake/wallet-sdk#readme",
   "dependencies": {
-    "@cosmjs/stargate": "^0.29.5",
-    "@solana/web3.js": "^1.30.2",
+    "@cosmjs/stargate": "^0.30.1",
+    "@solana/web3.js": "^1.75.0",
     "aptos": "^1.8.4",
-    "axios": "^1.1.2",
-    "bip39": "^3.0.4",
+    "axios": "^1.3.5",
+    "bip39": "^3.1.0",
     "bs58": "^5.0.0",
     "node-fetch": "^2.6.9",
-    "web3": "^1.8.1"
+    "web3": "^1.9.0"
   }
 }
