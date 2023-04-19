@@ -37,9 +37,9 @@ After installing the app, you can import module of needed blockchain (Ethereum, 
 // import module
 import { Solana } from '@everstake/wallet-sdk';
 // or you can also use
-import * as Solana from '@everstake/wallet-sdk/chain/solana';
+import * as Solana from '@everstake/wallet-sdk/solana';
 // import needed function
-import { getDelegations } from '@everstake/wallet-sdk/chain/solana';
+import { getDelegations } from '@everstake/wallet-sdk/solana';
 ```
 
 #### Import ES5
@@ -48,7 +48,7 @@ import { getDelegations } from '@everstake/wallet-sdk/chain/solana';
 // import module
 const { Solana } = require("@everstake/wallet-sdk");
 // or you can also use
-const { getDelegations } = require("@everstake/wallet-sdk/chain/solana");
+const { getDelegations } = require("@everstake/wallet-sdk/solana");
 ```
 
 

@@ -21,7 +21,6 @@ async function SetStats(token, action, amount, address, hash, chain) {
                 action: action,
                 amount: +amount,
                 address: address,
-                hash: hash,
                 chain: chain
             }),
             headers: {'Content-Type': 'application/json'}

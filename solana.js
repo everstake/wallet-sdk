@@ -11,7 +11,7 @@ const {
 
 const bs58 = require('bs58');
 const bip39 = require('bip39');
-const { CheckToken, ERROR_TEXT, SetStats } = require("../utils/api");
+const { CheckToken, ERROR_TEXT, SetStats } = require("./utils/api");
 
 const chain = 'solana';
 const minAmount = 0.01;

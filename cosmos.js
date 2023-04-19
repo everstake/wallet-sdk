@@ -1,6 +1,6 @@
 const { DirectSecp256k1HdWallet } = require("@cosmjs/proto-signing");
 const { SigningStargateClient } = require("@cosmjs/stargate");
-const { CheckToken, ERROR_TEXT, SetStats } = require("../utils/api");
+const { CheckToken, ERROR_TEXT, SetStats } = require("./utils/api");
 
 const RPC_URL = 'https://rpc-cosmoshub-ia.cosmosia.notional.ventures';
 const API_URL = 'https://api-cosmoshub-ia.cosmosia.notional.ventures';

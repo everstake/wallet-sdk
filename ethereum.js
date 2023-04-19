@@ -47,7 +47,6 @@ async function pendingBalanceOf(address) {
         throw new Error(error);
     }
 }
-
 // Pool fee in bips (1/10000)
 async function getPoolFee() {
     try {
@@ -70,6 +69,7 @@ async function commonBalanceOf(address) {
 
 // Returns (bool) Claim user staking rewards
 async function claim() {
+    // TODO: if reward = 0 // send
     try {
         const result = await contract_accounting.methods.claim().call();
         return { result: result };
@@ -77,10 +77,10 @@ async function claim() {
         throw new Error(error);
     }
 }
-
 // Claim all autocompound user rewards and restake it into pool
 async function autocompound() {
     try {
+        // TODO: send
         const result = await contract_accounting.methods.autocompound().call();
         return { result: result };
     } catch (error) {
@@ -113,6 +113,7 @@ async function withdrawRequestQueueParams() {
 // Return user withdraw request info. Actual requested amount and amount ready for claim
 async function withdrawRequest(address) {
     try {
+        // 1 - req; 2 - ready
         const result = await contract_accounting.methods.withdrawRequest(address).call();
         // TODO: uint256 Object
         return { result: result };
@@ -124,6 +125,7 @@ async function withdrawRequest(address) {
 // Claim funds requested by withdraw
 async function claimWithdrawRequest() {
     try {
+        // TODO: send; if = 0
         const result = await contract_accounting.methods.claimWithdrawRequest().call();
         return { result: result };
     } catch (error) {
@@ -159,6 +161,8 @@ async function sendTransaction(tx, privateKey) {
         throw new Error(error);
     }
 }
+
+// unstakePending('27c8b162ce3f386f1b0cecec81aad57d363baa15ce14ac5a46471074ee9e5a4d', '1', 1).then(r => console.log(r));
 
 // Stake funds into pool.
 async function stake(privateKey, source, isAutocompound, amount) {
@@ -197,7 +201,7 @@ async function unstake(privateKey, value, isAutocompound) {
             // Create the transaction
             const tx = {
                 'from': publicKey,
-                'value': amountWei,
+                'value': 0,
                 'to': ADDRESS_CONTRACT_POOL,
                 'gas': baseGas,
                 'data': contract_poll.methods.unstake(amountWei, isAutocompound).encodeABI()
@@ -214,8 +218,8 @@ async function unstake(privateKey, value, isAutocompound) {
 }
 
 // Unstake pending amount from Common, Autocompound or Total(both accounts)
-// TODO: test
 async function unstakePending(privateKey, userAccount, amount) {
+    // TODO: userAccount = 0;1;2: > amout
     if (+amount >= minAmount) {
         try {
             const publicKey = await getPublicKey(privateKey);
@@ -224,10 +228,10 @@ async function unstakePending(privateKey, userAccount, amount) {
             // Create the transaction
             const tx = {
                 'from': publicKey,
-                'value': amountWei,
+                'value': 0,
                 'to': ADDRESS_CONTRACT_POOL,
                 'gas': baseGas,
-                'data': contract_poll.methods.unstakePending(userAccount, amount).encodeABI()
+                'data': contract_poll.methods.unstakePending(userAccount, amountWei).encodeABI()
             };
 
             // Sign the transaction
@@ -241,7 +245,7 @@ async function unstakePending(privateKey, userAccount, amount) {
 }
 
 // Return total pending balance. Common + autocompound
-async function pendingBalanceOfPool(address) {
+async function pendingBalanceOfAccount(address) {
     try {
         const result = await contract_poll.methods.pendingBalanceOf(address).call();
         return { result: web3.utils.fromWei(result, 'ether') };
@@ -271,7 +275,6 @@ async function getPendingValidatorCount() {
 }
 
 // By index return pending validator pubkey. List of pending validators is dinamic so ordering unstable
-// TODO: fix
 async function getPendingValidator(index) {
     try {
         const result = await contract_poll.methods.getPendingValidator(index).call();
@@ -321,7 +324,7 @@ module.exports = {
     stake,
     unstake,
     unstakePending,
-    pendingBalanceOfPool,
+    pendingBalanceOfAccount,
     unstakeBalanceOf,
     getPendingValidatorCount,
     getPendingValidator,
