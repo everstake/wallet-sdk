@@ -211,9 +211,12 @@ async function unstake(token, address, amount) {
     }
 }
 
-async function generateAndSign(Method, token, address, amount, privateKey) {
+async function generateAndSign(Method, token, privateKey, amount) {
     try {
-        const txnRequest = await Method(token, address, amount);
+        const Uint8Array = aptos.HexString.ensure(privateKey).toUint8Array();
+        const UserAccount = new aptos.AptosAccount(Uint8Array);
+
+        const txnRequest = await Method(token, UserAccount.address(), amount);
         return await signTransaction(privateKey, txnRequest);
     } catch (error) {
         throw new Error(error);
