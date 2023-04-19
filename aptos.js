@@ -211,6 +211,15 @@ async function unstake(token, address, amount) {
     }
 }
 
+async function generateAndSign(Method, token, address, amount, privateKey) {
+    try {
+        const txnRequest = await Method(token, address, amount);
+        return await signTransaction(privateKey, txnRequest);
+    } catch (error) {
+        throw new Error(error);
+    }
+}
+
 async function createClient(NODE_URL) {
     try {
         return new aptos.AptosClient(NODE_URL);
@@ -234,6 +243,7 @@ module.exports = {
     createClient,
     signTransaction,
     getMinAmountForStake,
+    generateAndSign,
 
     // const
     NODE_URL,
