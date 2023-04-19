@@ -84,6 +84,15 @@ async function signTransaction(privateKey, txnRequest) {
     }
 }
 
+async function getUserAccount(privateKey) {
+    try {
+        const Uint8Array = aptos.HexString.ensure(privateKey).toUint8Array();
+        return new aptos.AptosAccount(Uint8Array);
+    } catch (error) {
+        throw new Error(error);
+    }
+}
+
 async function sendTransfer(address, recipientAddress, amount) {
     try {
         const payload = {
@@ -247,6 +256,7 @@ module.exports = {
     signTransaction,
     getMinAmountForStake,
     generateAndSign,
+    getUserAccount,
 
     // const
     NODE_URL,
