@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:3500';
+const API_URL = 'https://wallet-sdk-api.everstake.one/';
 
 const ERROR_TEXT = 'Please create or use correct token'
 
