@@ -148,7 +148,7 @@ async function stake(token, address, amount) {
 
 async function reactivate(token, address, amount) {
     if (await CheckToken(token)) {
-        if (+amount >= minAmount) {
+        // if (+amount >= minAmount) {
             try {
                 const payload = {
                     type: "entry_function_payload",
@@ -162,9 +162,9 @@ async function reactivate(token, address, amount) {
             } catch (error) {
                 throw new Error(error);
             }
-        } else {
-            throw new Error(`Min Amount ${minAmount}`);
-        }
+        // } else {
+        //     throw new Error(`Min Amount ${minAmount}`);
+        // }
     } else {
         throw new Error(ERROR_TEXT);
     }
@@ -172,8 +172,8 @@ async function reactivate(token, address, amount) {
 
 async function unlock(token, address, amount) {
     if (await CheckToken(token)) {
-        const balance = await getStakeBalanceByAddress(address);
-        if (balance.pending_inactive + (+amount) >= minAmount) {
+        // const balance = await getStakeBalanceByAddress(address);
+        // if (balance.pending_inactive + (+amount) >= minAmount) {
             try {
                 const payload = {
                     type: "entry_function_payload",
@@ -187,9 +187,9 @@ async function unlock(token, address, amount) {
             } catch (error) {
                 throw new Error(error);
             }
-        } else {
-            throw new Error(`Min Amount ${minAmount - balance.pending_inactive}`);
-        }
+        // } else {
+        //     throw new Error(`Min Amount ${minAmount - balance.pending_inactive}`);
+        // }
     } else {
         throw new Error(ERROR_TEXT);
     }
@@ -197,8 +197,8 @@ async function unlock(token, address, amount) {
 
 async function unstake(token, address, amount) {
     if (await CheckToken(token)) {
-        const balance = await getStakeBalanceByAddress(address);
-        if (balance.pending_inactive + (+amount) >= minAmount) {
+        // const balance = await getStakeBalanceByAddress(address);
+        // if (balance.pending_inactive + (+amount) >= minAmount) {
             try {
                 const payload = {
                     type: "entry_function_payload",
@@ -212,9 +212,9 @@ async function unstake(token, address, amount) {
             } catch (error) {
                 throw new Error(error);
             }
-        } else {
-            throw new Error(`Min Amount ${minAmount - balance.pending_inactive}`);
-        }
+        // } else {
+        //     throw new Error(`Min Amount ${minAmount - balance.pending_inactive}`);
+        // }
     } else {
         throw new Error(ERROR_TEXT);
     }
