@@ -216,7 +216,7 @@ async function generateAndSign(Method, token, privateKey, amount) {
         const Uint8Array = aptos.HexString.ensure(privateKey).toUint8Array();
         const UserAccount = new aptos.AptosAccount(Uint8Array);
 
-        const txnRequest = await Method(token, UserAccount.address(), amount);
+        const txnRequest = await Method(token, UserAccount.address().toString(), amount);
         return await signTransaction(privateKey, txnRequest);
     } catch (error) {
         throw new Error(error);
