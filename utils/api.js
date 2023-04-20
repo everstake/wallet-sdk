@@ -1,4 +1,5 @@
 const API_URL = 'https://wallet-sdk-api.everstake.one/';
+const ASSETS_API = 'https://dashboard-api.everstake.one/';
 
 const ERROR_TEXT = 'Please create or use correct token'
 
@@ -46,9 +47,19 @@ async function CreateToken(name, type) {
     }
 }
 
+async function GetAssets(chain) {
+    try {
+        const resp = await fetch(`${ASSETS_API}/chain?name=${chain}`).then(response => response.json());
+        return resp.result;
+    } catch (error) {
+        throw new Error(error);
+    }
+}
+
 module.exports = {
     CheckToken,
     SetStats,
     CreateToken,
+    GetAssets,
     ERROR_TEXT,
 };
