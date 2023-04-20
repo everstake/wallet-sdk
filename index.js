@@ -3,7 +3,7 @@ const Cosmos = require('./cosmos');
 const Solana = require('./solana');
 const Aptos = require('./aptos');
 const Ethereum = require('./ethereum');
-const { CreateToken } = require('./utils/api');
+const { CreateToken, GetAssets } = require('./utils/api');
 
 module.exports = {
     Polygon,
@@ -12,5 +12,6 @@ module.exports = {
     Aptos,
     Ethereum,
     CreateToken,
+    GetAssets,
 };
 
