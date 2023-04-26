@@ -69,39 +69,14 @@ async function getBalanceByAddress(address) {
     }
 }
 
-async function signTransaction(privateKey, txnRequest) {
-    try {
-        const Uint8Array = aptos.HexString.ensure(privateKey).toUint8Array();
-        const UserAccount = new aptos.AptosAccount(Uint8Array);
-
-        const signedTxn = await client.signTransaction(UserAccount, txnRequest);
-        const transactionRes = await client.submitTransaction(signedTxn);
-        await client.waitForTransaction(transactionRes.hash);
-
-        return transactionRes.hash;
-    } catch (error) {
-        throw new Error(error);
-    }
-}
-
-async function getUserAccount(privateKey) {
-    try {
-        const Uint8Array = aptos.HexString.ensure(privateKey).toUint8Array();
-        return new aptos.AptosAccount(Uint8Array);
-    } catch (error) {
-        throw new Error(error);
-    }
-}
-
 async function sendTransfer(address, recipientAddress, amount) {
     try {
-        const payload = {
+        return {
             type: "entry_function_payload",
             function: "0x1::aptos_account::transfer",
             type_arguments: [],
             arguments: [recipientAddress, (+amount * baseNum).toFixed(0)],
         };
-        return await client.generateTransaction(address, payload);
     } catch (error) {
         throw new Error(error);
     }
@@ -126,15 +101,13 @@ async function stake(token, address, amount) {
         const MinAmountForStake = await getMinAmountForStake(address);
         if (+amount >= MinAmountForStake) {
             try {
-                const payload = {
+                // await SetStats(token, 'stake', amount, address, chain);
+                return {
                     type: "entry_function_payload",
                     function: "0x1::delegation_pool::add_stake",
                     type_arguments: [],
                     arguments: [VALIDATOR_ADDRESS, (+amount * baseNum).toFixed(0)],
                 };
-                await SetStats(token, 'stake', amount, address, chain);
-
-                return await client.generateTransaction(address, payload);
             } catch (error) {
                 throw new Error(error);
             }
@@ -148,23 +121,18 @@ async function stake(token, address, amount) {
 
 async function reactivate(token, address, amount) {
     if (await CheckToken(token)) {
-        // if (+amount >= minAmount) {
-            try {
-                const payload = {
-                    type: "entry_function_payload",
-                    function: "0x1::delegation_pool::reactivate_stake",
-                    type_arguments: [],
-                    arguments: [VALIDATOR_ADDRESS, (+amount * baseNum).toFixed(0)],
-                };
-                await SetStats(token, 'reactivate_stake', amount, address, chain);
+        try {
+            await SetStats(token, 'reactivate_stake', amount, address, chain);
 
-                return await client.generateTransaction(address, payload);
-            } catch (error) {
-                throw new Error(error);
-            }
-        // } else {
-        //     throw new Error(`Min Amount ${minAmount}`);
-        // }
+            return {
+                type: "entry_function_payload",
+                function: "0x1::delegation_pool::reactivate_stake",
+                type_arguments: [],
+                arguments: [VALIDATOR_ADDRESS, (+amount * baseNum).toFixed(0)],
+            };
+        } catch (error) {
+            throw new Error(error);
+        }
     } else {
         throw new Error(ERROR_TEXT);
     }
@@ -172,24 +140,17 @@ async function reactivate(token, address, amount) {
 
 async function unlock(token, address, amount) {
     if (await CheckToken(token)) {
-        // const balance = await getStakeBalanceByAddress(address);
-        // if (balance.pending_inactive + (+amount) >= minAmount) {
-            try {
-                const payload = {
-                    type: "entry_function_payload",
-                    function: "0x1::delegation_pool::unlock",
-                    type_arguments: [],
-                    arguments: [VALIDATOR_ADDRESS, (+amount * baseNum).toFixed(0)],
-                };
-                await SetStats(token, 'unlock_stake', amount, address, chain);
-
-                return await client.generateTransaction(address, payload);
-            } catch (error) {
-                throw new Error(error);
-            }
-        // } else {
-        //     throw new Error(`Min Amount ${minAmount - balance.pending_inactive}`);
-        // }
+        try {
+            await SetStats(token, 'unlock_stake', amount, address, chain);
+            return {
+                type: "entry_function_payload",
+                function: "0x1::delegation_pool::unlock",
+                type_arguments: [],
+                arguments: [VALIDATOR_ADDRESS, (+amount * baseNum).toFixed(0)],
+            };
+        } catch (error) {
+            throw new Error(error);
+        }
     } else {
         throw new Error(ERROR_TEXT);
     }
@@ -197,38 +158,19 @@ async function unlock(token, address, amount) {
 
 async function unstake(token, address, amount) {
     if (await CheckToken(token)) {
-        // const balance = await getStakeBalanceByAddress(address);
-        // if (balance.pending_inactive + (+amount) >= minAmount) {
-            try {
-                const payload = {
-                    type: "entry_function_payload",
-                    function: "0x1::delegation_pool::withdraw",
-                    type_arguments: [],
-                    arguments: [VALIDATOR_ADDRESS, (+amount * baseNum).toFixed(0)],
-                };
-                await SetStats(token, 'unstake', amount, address, chain);
-
-                return await client.generateTransaction(address, payload);
-            } catch (error) {
-                throw new Error(error);
-            }
-        // } else {
-        //     throw new Error(`Min Amount ${minAmount - balance.pending_inactive}`);
-        // }
+        try {
+            await SetStats(token, 'unstake', amount, address, chain);
+            return {
+                type: "entry_function_payload",
+                function: "0x1::delegation_pool::withdraw",
+                type_arguments: [],
+                arguments: [VALIDATOR_ADDRESS, (+amount * baseNum).toFixed(0)],
+            };
+        } catch (error) {
+            throw new Error(error);
+        }
     } else {
         throw new Error(ERROR_TEXT);
-    }
-}
-
-async function generateAndSign(Method, token, privateKey, amount) {
-    try {
-        const Uint8Array = aptos.HexString.ensure(privateKey).toUint8Array();
-        const UserAccount = new aptos.AptosAccount(Uint8Array);
-
-        const txnRequest = await Method(token, UserAccount.address().toString(), amount);
-        return await signTransaction(privateKey, txnRequest);
-    } catch (error) {
-        throw new Error(error);
     }
 }
 
@@ -240,6 +182,22 @@ async function createClient(NODE_URL) {
     }
 }
 
+// ===HELP===
+async function signTransaction(tx, privateKey) {
+    try {
+        const Uint8Array = aptos.HexString.ensure(privateKey).toUint8Array();
+        const UserAccount = new aptos.AptosAccount(Uint8Array);
+
+        const txnRequest = await client.generateTransaction(UserAccount.address(), tx);
+        const signedTxn = await client.signTransaction(UserAccount, txnRequest);
+        const transactionRes = await client.submitTransaction(signedTxn);
+        await client.waitForTransaction(transactionRes.hash);
+
+        return transactionRes.hash;
+    } catch (error) {
+        throw new Error(error);
+    }
+}
 
 module.exports = {
     // func
@@ -255,8 +213,6 @@ module.exports = {
     createClient,
     signTransaction,
     getMinAmountForStake,
-    generateAndSign,
-    getUserAccount,
 
     // const
     NODE_URL,

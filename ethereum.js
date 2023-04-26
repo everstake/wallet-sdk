@@ -15,295 +15,310 @@ const contract_poll = new web3.eth.Contract(ABI_CONTRACT_POOL, ADDRESS_CONTRACT_
 const minAmount = 0.1;
 const baseGas = 500000;
 
+const notRewardsMessage = 'Not active rewards for claim';
+
 // ===ACCOUNTING===
 
-// Return total deposited and activated pool balance
+/** Return total deposited and activated pool balance */
 async function balance() {
     try {
         const result = await contract_accounting.methods.balance().call()
-        return { result: web3.utils.fromWei(result, 'ether') };
+        return +web3.utils.fromWei(result, 'ether');
     } catch (error) {
         throw new Error(error);
     }
 }
 
-// Return pool pending balance. Always < 32 ETH
+/** Return pool pending balance. Always < 32 ETH */
 async function pendingBalance() {
     try {
         const result = await contract_accounting.methods.pendingBalance().call();
-        return { result: web3.utils.fromWei(result, 'ether') };
+        return +web3.utils.fromWei(result, 'ether');
     } catch (error) {
         throw new Error(error);
     }
 }
 
-// Return user pending balances. Common and Autocompound
+/** Return user pending balances. Common and Autocompound */
 async function pendingBalanceOf(address) {
     try {
         const result = await contract_accounting.methods.pendingBalanceOf(address).call();
-        // TODO: uint256 Object
-        return { result: result };
+        return {
+            common: +web3.utils.fromWei(result[0], 'ether'),
+            autocompound: +web3.utils.fromWei(result[1], 'ether'),
+        };
     } catch (error) {
         throw new Error(error);
     }
 }
-// Pool fee in bips (1/10000)
+
+/** Pool fee in bips (1/10000) */
+// TODO: Test
 async function getPoolFee() {
     try {
-        const result = await contract_accounting.methods.getPoolFee().call();
-        return { result: result };
+        return await contract_accounting.methods.getPoolFee().call();
     } catch (error) {
         throw new Error(error);
     }
 }
 
-// Common active user balance
+/** Common active user balance */
 async function commonBalanceOf(address) {
     try {
-        const result = await contract_accounting.methods.commonBalanceOf(address).call();
-        return { result: result };
+        return await contract_accounting.methods.commonBalanceOf(address).call();
     } catch (error) {
         throw new Error(error);
     }
 }
 
-// Returns (bool) Claim user staking rewards
-async function claim() {
-    // TODO: if reward = 0 // send
+/** Returns (bool) Claim user staking rewards */
+// TODO: Test
+async function claim(address) {
     try {
-        const result = await contract_accounting.methods.claim().call();
-        return { result: result };
-    } catch (error) {
-        throw new Error(error);
-    }
-}
-// Claim all autocompound user rewards and restake it into pool
-async function autocompound() {
-    try {
-        // TODO: send
-        const result = await contract_accounting.methods.autocompound().call();
-        return { result: result };
+        const rewards = await withdrawRequest(address);
+        if (rewards.ready !== 0) {
+            // Create the transaction
+            return {
+                'from': address,
+                'to': ADDRESS_CONTRACT_POOL,
+                'value': 0,
+                'gas': baseGas,
+                'data': contract_accounting.methods.claim().encodeABI()
+            };
+        } else {
+            return notRewardsMessage;
+        }
     } catch (error) {
         throw new Error(error);
     }
 }
 
-// Return total user autocompound balance. Part of this balance could be in pending state after rewards autocompound
+/** Claim all autocompound user rewards and restake it into pool */
+// TODO: Test
+async function autocompound(address) {
+    try {
+        const rewards = await withdrawRequest(address);
+        if (rewards.ready !== 0) {
+            return {
+                'from': address,
+                'to': ADDRESS_CONTRACT_POOL,
+                'value': 0,
+                'gas': baseGas,
+                'data': contract_accounting.methods.autocompound().encodeABI()
+            };
+        } else {
+            return notRewardsMessage;
+        }
+    } catch (error) {
+        throw new Error(error);
+    }
+}
+
+/** Return total user autocompound balance. Part of this balance could be in pending state after rewards autocompound */
 async function autocompoundBalanceOf(address) {
     try {
         const result = await contract_accounting.methods.autocompoundBalanceOf(address).call();
-        return { result: result };
+        return +web3.utils.fromWei(result, 'ether');
     } catch (error) {
         throw new Error(error);
     }
 }
 
-// Return info about withdraw requests queue. Totally alltime requested withdraw amount. Actual allowed for intercharge with deposits amount. Alltime withdraw treasury filled amount. Alltime claimed by users amount
+/**
+ * Return info about withdraw requests queue.
+ * Totally alltime requested withdraw amount.
+ * Actual allowed for intercharge with deposits amount.
+ * Alltime withdraw treasury filled amount.
+ * Alltime claimed by users amount
+ */
+
 async function withdrawRequestQueueParams() {
     try {
         const result = await contract_accounting.methods.withdrawRequestQueueParams().call();
-        // TODO: uint256 Object
-        // result
-        return { result: result };
+        return {
+            // Totally alltime requested withdraw amount.
+            withdraw: +web3.utils.fromWei(result[0], 'ether'),
+            // Actual allowed for intercharge with deposits amount.
+            deposits: +web3.utils.fromWei(result[1], 'ether'),
+            // Alltime withdraw treasury filled amount.
+            filled: +web3.utils.fromWei(result[2], 'ether'),
+            // Alltime claimed by users amount
+            claimed: +web3.utils.fromWei(result[3], 'ether'),
+        };
     } catch (error) {
         throw new Error(error);
     }
 }
 
-// Return user withdraw request info. Actual requested amount and amount ready for claim
+/** Return user withdraw request info. Actual requested amount and amount ready for claim */
 async function withdrawRequest(address) {
     try {
-        // 1 - req; 2 - ready
         const result = await contract_accounting.methods.withdrawRequest(address).call();
-        // TODO: uint256 Object
-        return { result: result };
+        return {
+            requested: +web3.utils.fromWei(result[0], 'ether'),
+            ready: +web3.utils.fromWei(result[1], 'ether'),
+        };
     } catch (error) {
         throw new Error(error);
     }
 }
 
-// Claim funds requested by withdraw
+/** Claim funds requested by withdraw */
 async function claimWithdrawRequest() {
     try {
         // TODO: send; if = 0
         const result = await contract_accounting.methods.claimWithdrawRequest().call();
-        return { result: result };
+        return result;
     } catch (error) {
         throw new Error(error);
     }
 }
 
-// Return number of expected to stop validators
+/** Return number of expected to stop validators */
 async function closeValidatorsStat() {
     try {
         const result = await contract_accounting.methods.closeValidatorsStat().call();
-        return { result: result };
+        return +web3.utils.fromWei(result, 'ether');
     } catch (error) {
         throw new Error(error);
     }
 }
 
 // ===POOL===
-
-async function getPublicKey(privateKey) {
-    const accounts = web3.eth.accounts.privateKeyToAccount(privateKey);
-    return accounts.address;
+/** Stake funds into pool. */
+async function stake(address, source, isAutocompound, amount) {
+    if (+amount >= minAmount) {
+        try {
+            const amountWei = await web3.utils.toWei(amount.toString(), 'ether');
+            // Create the transaction
+            return {
+                'from': address,
+                'to': ADDRESS_CONTRACT_POOL,
+                'value': amountWei,
+                'gas': baseGas,
+                'data': contract_poll.methods.stake(source, isAutocompound).encodeABI()
+            };
+        } catch (error) {
+            throw new Error(error);
+        }
+    } else {
+        throw new Error(`Min Amount ${minAmount}`);
+    }
 }
 
+/** Unstake value from common or autocompound balance. Unstaked immediately if value <= pool pending balance or create withdraw request */
+// TODO: test
+async function unstake(address, amount, isAutocompound) {
+    try {
+        const amountWei = await web3.utils.toWei(amount.toString(), 'ether');
+        // Create the transaction
+        return {
+            'from': address,
+            'value': 0,
+            'to': ADDRESS_CONTRACT_POOL,
+            'gas': baseGas,
+            'data': contract_poll.methods.unstake(amountWei, isAutocompound).encodeABI()
+        };
+    } catch (error) {
+        throw new Error(error);
+    }
+}
+
+/** Unstake pending amount from Common, Autocompound or Total(both accounts) */
+async function unstakePending(address, userAccount, amount) {
+    // TODO: userAccount = 0;1;2: > amount
+    if (+amount >= minAmount) {
+        try {
+            const amountWei = await web3.utils.toWei(amount.toString(), 'ether');
+            // Create the transaction
+            return  {
+                'from': address,
+                'value': 0,
+                'to': ADDRESS_CONTRACT_POOL,
+                'gas': baseGas,
+                'data': contract_poll.methods.unstakePending(userAccount, amountWei).encodeABI()
+            };
+        } catch (err) {
+            return err;
+        }
+    } else {
+        throw new Error(`Min Amount ${minAmount}`);
+    }
+}
+
+/** Return total pending balance. Common + autocompound */
+async function pendingBalanceOfAccount(address) {
+    try {
+        const result = await contract_poll.methods.pendingBalanceOf(address).call();
+        return +web3.utils.fromWei(result, 'ether');
+    } catch (error) {
+        throw new Error(error);
+    }
+}
+
+/** Return total active balance. Common + autocompound */
+async function unstakeBalanceOf(address) {
+    try {
+        const result = await contract_poll.methods.unstakeBalanceOf(address).call();
+        return +web3.utils.fromWei(result, 'ether');
+    } catch (error) {
+        throw new Error(error);
+    }
+}
+
+/** Returns num of validators prepared for deposit */
+async function getPendingValidatorCount() {
+    try {
+        const result = await contract_poll.methods.getPendingValidatorCount().call();
+        return +web3.utils.fromWei(result, 'ether');
+    } catch (error) {
+        throw new Error(error);
+    }
+}
+
+/** By index return pending validator pubkey. List of pending validators is dinamic so ordering unstable */
+// TODO: test
+async function getPendingValidator(index) {
+    try {
+        const result = await contract_poll.methods.getPendingValidator(index).call();
+        return result;
+    } catch (error) {
+        throw new Error(error);
+    }
+}
+
+/** Return total num of known validators. Validator can be in one of statuses: pending, deposited, exited. Exited validators will be rewrited by new pending validators to optimize memory usage */
+async function getValidatorCount() {
+    try {
+        return await contract_poll.methods.getValidatorCount().call();
+    } catch (error) {
+        throw new Error(error);
+    }
+}
+
+/** Return validator pubkey and status */
+// TODO: test
+async function getValidator(index) {
+    try {
+        const result = await contract_poll.methods.getValidator(index).call();
+        return result;
+    } catch (error) {
+        throw new Error(error);
+    }
+}
+
+// ===HELP===
 async function sendTransaction(tx, privateKey) {
     try {
         let result = null;
         await web3.eth.accounts.signTransaction(tx, privateKey).then(async (signedTx) => {
             result = await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
         });
-        return { result: result.transactionHash }
+        return result;
     } catch (error) {
         throw new Error(error);
     }
 }
-
-// unstakePending('27c8b162ce3f386f1b0cecec81aad57d363baa15ce14ac5a46471074ee9e5a4d', '1', 1).then(r => console.log(r));
-
-// Stake funds into pool.
-async function stake(privateKey, source, isAutocompound, amount) {
-    if (+amount >= minAmount) {
-        try {
-            const publicKey = await getPublicKey(privateKey);
-
-            const amountWei = await web3.utils.toWei(amount.toString(), 'ether');
-            // Create the transaction
-            const tx = {
-                'from': publicKey,
-                'to': ADDRESS_CONTRACT_POOL,
-                'value': amountWei,
-                'gas': baseGas,
-                'data': contract_poll.methods.stake(source, isAutocompound).encodeABI()
-            };
-
-            // Sign the transaction
-            return await sendTransaction(tx, privateKey);
-        } catch (err) {
-            return err;
-        }
-    } else {
-        throw new Error(`Min Amount ${minAmount}`);
-    }
-}
-
-// Unstake value from common or autocompound balance. Unstaked immediately if value <= pool pending balance or create withdraw request
-// TODO: test
-async function unstake(privateKey, value, isAutocompound) {
-    if (+value >= minAmount) {
-        try {
-            const publicKey = await getPublicKey(privateKey);
-
-            const amountWei = await web3.utils.toWei(value.toString(), 'ether');
-            // Create the transaction
-            const tx = {
-                'from': publicKey,
-                'value': 0,
-                'to': ADDRESS_CONTRACT_POOL,
-                'gas': baseGas,
-                'data': contract_poll.methods.unstake(amountWei, isAutocompound).encodeABI()
-            };
-
-            // Sign the transaction
-            return await sendTransaction(tx, privateKey);
-        } catch (err) {
-            return err;
-        }
-    } else {
-        throw new Error(`Min Amount ${minAmount}`);
-    }
-}
-
-// Unstake pending amount from Common, Autocompound or Total(both accounts)
-async function unstakePending(privateKey, userAccount, amount) {
-    // TODO: userAccount = 0;1;2: > amout
-    if (+amount >= minAmount) {
-        try {
-            const publicKey = await getPublicKey(privateKey);
-
-            const amountWei = await web3.utils.toWei(amount.toString(), 'ether');
-            // Create the transaction
-            const tx = {
-                'from': publicKey,
-                'value': 0,
-                'to': ADDRESS_CONTRACT_POOL,
-                'gas': baseGas,
-                'data': contract_poll.methods.unstakePending(userAccount, amountWei).encodeABI()
-            };
-
-            // Sign the transaction
-            return await sendTransaction(tx, privateKey);
-        } catch (err) {
-            return err;
-        }
-    } else {
-        throw new Error(`Min Amount ${minAmount}`);
-    }
-}
-
-// Return total pending balance. Common + autocompound
-async function pendingBalanceOfAccount(address) {
-    try {
-        const result = await contract_poll.methods.pendingBalanceOf(address).call();
-        return { result: web3.utils.fromWei(result, 'ether') };
-    } catch (error) {
-        throw new Error(error);
-    }
-}
-
-// Return total active balance. Common + autocompound
-async function unstakeBalanceOf(address) {
-    try {
-        const result = await contract_poll.methods.unstakeBalanceOf(address).call();
-        return { result: web3.utils.fromWei(result, 'ether') };
-    } catch (error) {
-        throw new Error(error);
-    }
-}
-
-// Returns num of validators prepared for deposit
-async function getPendingValidatorCount() {
-    try {
-        const result = await contract_poll.methods.getPendingValidatorCount().call();
-        return { result: result };
-    } catch (error) {
-        throw new Error(error);
-    }
-}
-
-// By index return pending validator pubkey. List of pending validators is dinamic so ordering unstable
-async function getPendingValidator(index) {
-    try {
-        const result = await contract_poll.methods.getPendingValidator(index).call();
-        return { result: result };
-    } catch (error) {
-        throw new Error(error);
-    }
-}
-
-// Return total num of known validators. Validator can be in one of statuses: pending, deposited, exited. Exited validators will be rewrited by new pending validators to optimize memory usage
-async function getValidatorCount() {
-    try {
-        const result = await contract_poll.methods.getValidatorCount().call();
-        return { result: result };
-    } catch (error) {
-        throw new Error(error);
-    }
-}
-
-// Return validator pubkey and status
-async function getValidator(index) {
-    try {
-        const result = await contract_poll.methods.getValidator(index).call();
-        return { result: result };
-    } catch (error) {
-        throw new Error(error);
-    }
-}
-
 
 module.exports = {
     // accounting
@@ -330,4 +345,7 @@ module.exports = {
     getPendingValidator,
     getValidatorCount,
     getValidator,
+
+    // help
+    sendTransaction,
 };
