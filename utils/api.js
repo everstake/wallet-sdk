@@ -49,8 +49,7 @@ async function CreateToken(name, type) {
 
 async function GetAssets(chain) {
     try {
-        const resp = await fetch(`${ASSETS_API}/chain?name=${chain.toLowerCase()}`).then(response => response.json());
-        return resp;
+        return await fetch(`${ASSETS_API}/chain?name=${chain.toLowerCase()}`).then(response => response.json());
     } catch (error) {
         throw new Error(error);
     }
