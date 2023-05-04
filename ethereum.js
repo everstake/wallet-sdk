@@ -23,13 +23,11 @@ const minAmount = 0.1;
 const baseGas = 500000;
 
 const notRewardsMessage = 'Not active rewards for claim';
-// TODO: new error message;
-
 
 // ===ACCOUNTING===
 
 /** Return total deposited and activated pool balance */
-async function balance(network = NETWORK) {
+async function balance() {
     try {
         const result = await contract_accounting.methods.balance().call()
         return +web3.utils.fromWei(result, 'ether');
@@ -91,7 +89,6 @@ async function commonBalanceOf(address) {
 }
 
 /** Returns (bool) Claim user staking rewards */
-// TODO: Test
 async function claim(address) {
     try {
         const rewards = await userPendingRewards(address);
@@ -113,7 +110,6 @@ async function claim(address) {
 }
 
 /** Claim all autocompound user rewards and restake it into pool */
-// TODO: Test
 async function autocompound(address) {
     try {
         const rewards = await userPendingRewards(rewards_treasury);
@@ -195,7 +191,6 @@ async function claimWithdrawRequest(address) {
                 'data': contract_accounting.methods.claimWithdrawRequest().encodeABI()
             };
         } else {
-            // TODO: new error;
             return notRewardsMessage;
         }
     } catch (error) {
@@ -257,7 +252,7 @@ async function unstake(address, amount, isAutocompound) {
                 'data': contract_poll.methods.unstake(amountWei, isAutocompound).encodeABI()
             };
         } else {
-            // TODO: new error
+            throw new Error(`Max Amount For Unstake ${balance}`);
         }
     } catch (error) {
         throw new Error(error);
