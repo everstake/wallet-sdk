@@ -347,19 +347,6 @@ async function getValidator(index) {
     }
 }
 
-// ===HELP===
-async function sendTransaction(tx, privateKey) {
-    try {
-        let result = null;
-        await web3.eth.accounts.signTransaction(tx, privateKey).then(async (signedTx) => {
-            result = await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
-        });
-        return result;
-    } catch (error) {
-        throw new Error(error);
-    }
-}
-
 function selectNetwork(network) {
     if (network === 'sepolia') {
         RPC_URL = 'https://rpc.sepolia.org';
@@ -403,6 +390,9 @@ module.exports = {
     getValidator,
 
     // help
-    sendTransaction,
     selectNetwork,
+    ABI_CONTRACT_ACCOUNTING,
+    ADDRESS_CONTRACT_ACCOUNTING,
+    ABI_CONTRACT_POOL,
+    ADDRESS_CONTRACT_POOL
 };
