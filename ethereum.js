@@ -1,18 +1,16 @@
 const Web3 = require('web3');
 
-const ABI_CONTRACT_ACCOUNTING = [{"inputs":[{"internalType":"string","name":"field","type":"string"}],"name":"ZeroAddress","type":"error"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Autocompound","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint8","name":"version","type":"uint8"}],"name":"Initialized","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"staker","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"RewardClaim","type":"event"},{"inputs":[],"name":"BEACON_AMOUNT","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"FEE_DENOMINATOR","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"balance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"value","type":"address"}],"name":"setSuperAdmin","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"superAdmin","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"staker","type":"address"}],"name":"withdrawRequest","outputs":[{"internalType":"uint256","name":"","type":"uint256"},{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"withdrawRequestQueueParams","outputs":[{"internalType":"uint256","name":"","type":"uint256"},{"internalType":"uint256","name":"","type":"uint256"},{"internalType":"uint256","name":"","type":"uint256"},{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"poolFee","type":"uint256"},{"internalType":"address","name":"rewardsTreasury","type":"address"},{"internalType":"address","name":"withdrawTreasury","type":"address"}],"name":"initialize","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"},{"internalType":"bool","name":"isAutocompound","type":"bool"}],"name":"deposit","outputs":[{"internalType":"uint256","name":"interchangedAmount","type":"uint256"},{"internalType":"uint256","name":"activatedSlots","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"pendingBalance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"pendingBalanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"},{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"},{"internalType":"enum Enum.UserAccount","name":"userAccount","type":"uint8"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"withdrawPending","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"commonBalanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"staker","type":"address"},{"internalType":"uint256","name":"value","type":"uint256"},{"internalType":"bool","name":"isAutocompound","type":"bool"}],"name":"withdraw","outputs":[{"internalType":"uint256","name":"withdrawFromPendingAmount","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"claim","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"claimPoolFee","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"getPoolFee","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"feeBalance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"update","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"userPendingRewards","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"feeValue","type":"uint256"}],"name":"setFee","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"autocompound","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"autocompoundBalanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"fromAutocompoundToMain","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"fromMainToAutocompound","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"claimWithdrawRequest","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"closeValidatorsStat","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"stakeAmount","type":"uint256"}],"name":"setMinStakeAmount","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"}];
-let ADDRESS_CONTRACT_ACCOUNTING = '0x906d2f4b1466a6C64A04D313266863d01d9AA8CF';
+const ABI_CONTRACT_ACCOUNTING = [{"inputs":[{"internalType":"string","name":"field","type":"string"}],"name":"InvalidParam","type":"error"},{"inputs":[{"internalType":"string","name":"field","type":"string"}],"name":"InvalidValue","type":"error"},{"inputs":[{"internalType":"string","name":"field","type":"string"}],"name":"ZeroValue","type":"error"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"round","type":"uint256"}],"name":"ActivateRound","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"staker","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"AddWithdrawRequest","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Autocompound","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"int256","name":"","type":"int256"}],"name":"ChangeExpectValidatorsToStop","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"ClaimPoolFee","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"staker","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"ClaimWithdrawRequest","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"staker","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"DepositPending","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"newFee","type":"uint256"}],"name":"FeeUpdated","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"oldGovernor","type":"address"},{"indexed":false,"internalType":"address","name":"newGovernor","type":"address"}],"name":"GovernorChanged","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint8","name":"version","type":"uint8"}],"name":"Initialized","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"staker","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"InterchangeDeposit","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"staker","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"InterchangeWithdraw","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"superAdmin","type":"address"}],"name":"SetSuperAdmin","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"rewarderBalance","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"reward","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"fee","type":"uint256"}],"name":"Update","type":"event"},{"inputs":[],"name":"BEACON_AMOUNT","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"FEE_DENOMINATOR","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"governor","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"value","type":"address"}],"name":"setSuperAdmin","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"superAdmin","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"poolFee","type":"uint256"},{"internalType":"address","name":"rewardsTreasury","type":"address"},{"internalType":"address","name":"withdrawTreasury","type":"address"},{"internalType":"address","name":"accountingGovernor","type":"address"}],"name":"initialize","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"},{"internalType":"uint256","name":"depositToPendingValue","type":"uint256"}],"name":"deposit","outputs":[{"internalType":"uint256","name":"interchangedAmount","type":"uint256"},{"internalType":"uint256","name":"activatedSlots","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"balance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"pendingDepositedBalance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"pendingBalance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"autocompoundBalanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"depositedBalanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"pendingDepositedBalanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"pendingBalanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"withdrawPending","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"staker","type":"address"},{"internalType":"uint256","name":"value","type":"uint256"}],"name":"withdraw","outputs":[{"internalType":"uint256","name":"withdrawFromPendingAmount","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"claimPoolFee","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"getPoolFee","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"feeBalance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"update","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"feeValue","type":"uint256"}],"name":"setFee","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"autocompound","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"pendingRestakedRewards","outputs":[{"internalType":"uint256","name":"amount","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"pendingRestakedRewardOf","outputs":[{"internalType":"uint256","name":"amount","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"withdrawRequestQueueParams","outputs":[{"internalType":"uint256","name":"","type":"uint256"},{"internalType":"uint256","name":"","type":"uint256"},{"internalType":"uint256","name":"","type":"uint256"},{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"staker","type":"address"}],"name":"withdrawRequest","outputs":[{"internalType":"uint256","name":"","type":"uint256"},{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"claimWithdrawRequest","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"readyforAutocompoundRewardsAmount","outputs":[{"internalType":"uint256","name":"unclaimedReward","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"closeValidatorsStat","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"stakeAmount","type":"uint256"}],"name":"setMinRestakeAmount","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"activatedValidatorNum","type":"uint256"}],"name":"activateValidators","outputs":[],"stateMutability":"nonpayable","type":"function"}];
+let ADDRESS_CONTRACT_ACCOUNTING = '0x6e95818C2Dde3d87406F5C5d0A759d9372053a94';
 
-const ABI_CONTRACT_POOL = [{"inputs":[{"internalType":"string","name":"field","type":"string"}],"name":"ZeroAddress","type":"error"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"oldFee","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"newFee","type":"uint256"}],"name":"FeeUpdated","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"oldGovernor","type":"address"},{"indexed":false,"internalType":"address","name":"newGovernor","type":"address"}],"name":"GovernorChanged","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint8","name":"version","type":"uint8"}],"name":"Initialized","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"oldRewards","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"newRewards","type":"uint256"}],"name":"RewardsUpdated","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"staker","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"StakeAdded","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"staker","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"StakeCanceled","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"bytes","name":"validator","type":"bytes"}],"name":"StakeDeposited","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"staker","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"},{"indexed":false,"internalType":"bytes","name":"validator","type":"bytes"}],"name":"TokensClaimed","type":"event"},{"inputs":[],"name":"BEACON_AMOUNT","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"value","type":"address"}],"name":"setSuperAdmin","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"superAdmin","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"depositContract","type":"address"},{"internalType":"address","name":"accountingContract","type":"address"},{"internalType":"address","name":"withdrawTreasury","type":"address"},{"internalType":"address","name":"rewardsTreasury","type":"address"},{"internalType":"address","name":"poolGovernor","type":"address"}],"name":"initialize","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint64","name":"","type":"uint64"},{"internalType":"bool","name":"isAutocompound","type":"bool"}],"name":"stake","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"pendingBalanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"unstakeBalanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"enum Enum.UserAccount","name":"userAccount","type":"uint8"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"unstakePending","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"value","type":"uint256"},{"internalType":"bool","name":"isAutocompound","type":"bool"}],"name":"unstake","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"components":[{"internalType":"bytes","name":"pubkey","type":"bytes"},{"internalType":"bytes","name":"signature","type":"bytes"},{"internalType":"bytes32","name":"deposit_data_root","type":"bytes32"}],"internalType":"struct ValidatorList.DepositData[]","name":"pendingValidators","type":"tuple[]"}],"name":"setPendingValidators","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"getPendingValidatorCount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"index","type":"uint256"}],"name":"getPendingValidator","outputs":[{"internalType":"bytes","name":"","type":"bytes"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getValidatorCount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"index","type":"uint256"}],"name":"getValidator","outputs":[{"internalType":"bytes","name":"","type":"bytes"},{"internalType":"enum ValidatorList.ValidatorStatus","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"index","type":"uint256"},{"components":[{"internalType":"bytes","name":"pubkey","type":"bytes"},{"internalType":"bytes","name":"signature","type":"bytes"},{"internalType":"bytes32","name":"deposit_data_root","type":"bytes32"}],"internalType":"struct ValidatorList.DepositData","name":"pendingValidator","type":"tuple"}],"name":"replacePendingValidator","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"num","type":"uint256"}],"name":"markValidatorsAsExited","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bool","name":"pause","type":"bool"}],"name":"pauseStaking","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bool","name":"pause","type":"bool"}],"name":"pauseWithdraw","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"governor","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"newGovernor","type":"address"}],"name":"setGovernor","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"stakeAmount","type":"uint256"}],"name":"setMinStakeAmount","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"}];
-let ADDRESS_CONTRACT_POOL = '0x1048bE0Bac2fC94415023a3d9f2097E9ba46bb04';
+const ABI_CONTRACT_POOL = [{"inputs":[{"internalType":"string","name":"field","type":"string"}],"name":"InvalidAmount","type":"error"},{"inputs":[{"internalType":"string","name":"field","type":"string"}],"name":"InvalidParam","type":"error"},{"inputs":[{"internalType":"string","name":"field","type":"string"}],"name":"InvalidValue","type":"error"},{"inputs":[{"internalType":"string","name":"field","type":"string"}],"name":"Paused","type":"error"},{"inputs":[{"internalType":"string","name":"field","type":"string"}],"name":"ZeroValue","type":"error"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"oldGovernor","type":"address"},{"indexed":false,"internalType":"address","name":"newGovernor","type":"address"}],"name":"GovernorChanged","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint8","name":"version","type":"uint8"}],"name":"Initialized","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"bool","name":"","type":"bool"}],"name":"PauseStaking","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"bool","name":"","type":"bool"}],"name":"PauseWithdraw","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"SetMinStakeAmount","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"superAdmin","type":"address"}],"name":"SetSuperAdmin","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"staker","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"source","type":"uint256"}],"name":"StakeAdded","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"staker","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"StakeCanceled","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"bytes","name":"validator","type":"bytes"}],"name":"StakeDeposited","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"staker","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Unstake","type":"event"},{"inputs":[],"name":"BEACON_AMOUNT","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"governor","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"value","type":"address"}],"name":"setSuperAdmin","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"superAdmin","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"depositContract","type":"address"},{"internalType":"address","name":"accountingContract","type":"address"},{"internalType":"address","name":"withdrawTreasury","type":"address"},{"internalType":"address","name":"rewardsTreasury","type":"address"},{"internalType":"address","name":"poolGovernor","type":"address"}],"name":"initialize","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint64","name":"source","type":"uint64"}],"name":"stake","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"unstakePending","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"value","type":"uint256"}],"name":"unstake","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"restake","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[{"components":[{"internalType":"bytes","name":"pubkey","type":"bytes"},{"internalType":"bytes","name":"signature","type":"bytes"},{"internalType":"bytes32","name":"deposit_data_root","type":"bytes32"}],"internalType":"struct ValidatorList.DepositData[]","name":"pendingValidators","type":"tuple[]"}],"name":"setPendingValidators","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"getPendingValidatorCount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"index","type":"uint256"}],"name":"getPendingValidator","outputs":[{"internalType":"bytes","name":"","type":"bytes"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getValidatorCount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"index","type":"uint256"}],"name":"getValidator","outputs":[{"internalType":"bytes","name":"","type":"bytes"},{"internalType":"enum ValidatorList.ValidatorStatus","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"index","type":"uint256"},{"components":[{"internalType":"bytes","name":"pubkey","type":"bytes"},{"internalType":"bytes","name":"signature","type":"bytes"},{"internalType":"bytes32","name":"deposit_data_root","type":"bytes32"}],"internalType":"struct ValidatorList.DepositData","name":"pendingValidator","type":"tuple"}],"name":"replacePendingValidator","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"num","type":"uint256"}],"name":"markValidatorsAsExited","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bool","name":"pause","type":"bool"}],"name":"pauseStaking","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bool","name":"pause","type":"bool"}],"name":"pauseWithdraw","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newGovernor","type":"address"}],"name":"setGovernor","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"minStakeAmount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"stakeAmount","type":"uint256"}],"name":"setMinStakeAmount","outputs":[],"stateMutability":"nonpayable","type":"function"}];
+let ADDRESS_CONTRACT_POOL = '0x1F28aD3B3e26192a09c1248D4092c692c32f8Ec0';
 
 let RPC_URL = 'https://eth-goerli.public.blastapi.io';
 
-const rewards_treasury = '0x8d74F76a85Ef3c2F0Ac5EF821bAa88aF6Eb6F7c5';
-
 let web3 = new Web3(RPC_URL);
 let contract_accounting = new web3.eth.Contract(ABI_CONTRACT_ACCOUNTING, ADDRESS_CONTRACT_ACCOUNTING);
-let contract_poll = new web3.eth.Contract(ABI_CONTRACT_POOL, ADDRESS_CONTRACT_POOL);
+let contract_pool = new web3.eth.Contract(ABI_CONTRACT_POOL, ADDRESS_CONTRACT_POOL);
 
 const minAmount = 0.1;
 const baseGas = 500000;
@@ -41,23 +39,72 @@ async function pendingBalance() {
     }
 }
 
-async function userPendingRewards(address) {
+/** Return pool pending deposited balance. Balance deposited into Beacon deposit contract but validators still not active */
+async function pendingDepositedBalance() {
     try {
-        const result = await contract_accounting.methods.userPendingRewards(address).call();
+        const result = await contract_accounting.methods.pendingDepositedBalance().call();
         return +web3.utils.fromWei(result, 'ether');
     } catch (error) {
         throw new Error(error);
     }
 }
 
-/** Return user pending balances. Common and Autocompound */
+/** Return pool restaked rewards which in pending status */
+async function pendingRestakedRewards() {
+    try {
+        const result = await contract_accounting.methods.pendingRestakedRewards().call();
+        return +web3.utils.fromWei(result, 'ether');
+    } catch (error) {
+        throw new Error(error);
+    }
+}
+
+/** Return pool unclaimed rewards amount which can be restaked */
+async function readyforAutocompoundRewardsAmount() {
+    try {
+        const result = await contract_accounting.methods.readyforAutocompoundRewardsAmount().call();
+        return +web3.utils.fromWei(result, 'ether');
+    } catch (error) {
+        throw new Error(error);
+    }
+}
+
+/** Return user pending balance. */
 async function pendingBalanceOf(address) {
     try {
         const result = await contract_accounting.methods.pendingBalanceOf(address).call();
-        return {
-            common: +web3.utils.fromWei(result[0], 'ether'),
-            autocompound: +web3.utils.fromWei(result[1], 'ether'),
-        };
+        return +web3.utils.fromWei(result, 'ether');
+    } catch (error) {
+        throw new Error(error);
+    }
+}
+
+/** Return user pending deposited balance. Balance which deposited into validator but not active yet. Pending deposited balance can't be unstake till validator activation */
+async function pendingDepositedBalanceOf(address) {
+    try {
+        const result = await contract_accounting.methods.pendingDepositedBalanceOf(address).call();
+        return +web3.utils.fromWei(result, 'ether');
+    } catch (error) {
+        throw new Error(error);
+    }
+}
+
+
+/** Return user active origin deposited balance */
+async function depositedBalanceOf(address) {
+    try {
+        const result = await contract_accounting.methods.depositedBalanceOf(address).call();
+        return +web3.utils.fromWei(result, 'ether');
+    } catch (error) {
+        throw new Error(error);
+    }
+}
+
+/** Return user restaked rewards in pending state */
+async function pendingRestakedRewardOf(address) {
+    try {
+        const result = await contract_accounting.methods.pendingRestakedRewardOf(address).call();
+        return +web3.utils.fromWei(result, 'ether');
     } catch (error) {
         throw new Error(error);
     }
@@ -73,41 +120,10 @@ async function getPoolFee() {
     }
 }
 
-/** Common active user balance */
-async function commonBalanceOf(address) {
-    try {
-        const result = await contract_accounting.methods.commonBalanceOf(address).call();
-        return +web3.utils.fromWei(result, 'ether');
-    } catch (error) {
-        throw new Error(error);
-    }
-}
-
-/** Returns (bool) Claim user staking rewards */
-async function claim(address) {
-    try {
-        const rewards = await userPendingRewards(address);
-        if (rewards !== 0) {
-            // Create the transaction
-            return {
-                'from': address,
-                'to': ADDRESS_CONTRACT_ACCOUNTING,
-                'value': 0,
-                'gas': baseGas,
-                'data': contract_accounting.methods.claim().encodeABI()
-            };
-        } else {
-            return notRewardsMessage;
-        }
-    } catch (error) {
-        throw new Error(error);
-    }
-}
-
-/** Claim all autocompound user rewards and restake it into pool */
+/** Claim all pool rewards and restake it into pool */
 async function autocompound(address) {
     try {
-        const rewards = await userPendingRewards(rewards_treasury);
+        const rewards = await readyforAutocompoundRewardsAmount();
         if (rewards !== 0) {
             return {
                 'from': address,
@@ -204,7 +220,7 @@ async function closeValidatorsStat() {
 
 // ===POOL===
 /** Stake funds into pool. */
-async function stake(address, isAutocompound, amount, source = '0') {
+async function stake(address, amount, source = '0') {
     if (+amount >= minAmount) {
         try {
             const amountWei = await web3.utils.toWei(amount.toString(), 'ether');
@@ -214,7 +230,7 @@ async function stake(address, isAutocompound, amount, source = '0') {
                 'to': ADDRESS_CONTRACT_POOL,
                 'value': amountWei,
                 'gas': baseGas,
-                'data': contract_poll.methods.stake(source, isAutocompound).encodeABI()
+                'data': contract_pool.methods.stake(source).encodeABI()
             };
         } catch (error) {
             throw new Error(error);
@@ -224,18 +240,12 @@ async function stake(address, isAutocompound, amount, source = '0') {
     }
 }
 
-/** Unstake value from common or autocompound balance. Unstaked immediately if value <= pool pending balance or create withdraw request */
-async function unstake(address, amount, isAutocompound) {
+/** Unstake value from active autocompound balance. Unstaked immediately if value <= pool pending balance or create withdraw request */
+async function unstake(address, amount) {
     try {
         const amountWei = await web3.utils.toWei(amount.toString(), 'ether');
 
-        let balance = 0;
-
-        if (isAutocompound) {
-            balance = await autocompoundBalanceOf(address);
-        } else {
-            balance = await commonBalanceOf(address);
-        }
+        let balance = await autocompoundBalanceOf(address);
 
         if (balance >= +amount) {
             // Create the transaction
@@ -244,7 +254,7 @@ async function unstake(address, amount, isAutocompound) {
                 'value': 0,
                 'to': ADDRESS_CONTRACT_POOL,
                 'gas': baseGas,
-                'data': contract_poll.methods.unstake(amountWei, isAutocompound).encodeABI()
+                'data': contract_pool.methods.unstake(amountWei).encodeABI()
             };
         } else {
             throw new Error(`Max Amount For Unstake ${balance}`);
@@ -254,21 +264,10 @@ async function unstake(address, amount, isAutocompound) {
     }
 }
 
-/** Unstake pending amount from Common, Autocompound or Total(both accounts) */
-async function unstakePending(address, userAccount, amount) {
+/** Unstake pending amount from Autocompound */
+async function unstakePending(address, amount) {
     const pendingBalance = await pendingBalanceOf(address);
-
-    let balance = 0;
-
-    if (+userAccount === 0) {
-        balance = pendingBalance.common
-    } else if (+userAccount === 1) {
-        balance = pendingBalance.autocompound;
-    } else {
-        balance = pendingBalance.common + pendingBalance.autocompound
-    }
-
-    if (+amount <= balance) {
+    if (+amount <= pendingBalance) {
         try {
             const amountWei = await web3.utils.toWei(amount.toString(), 'ether');
             // Create the transaction
@@ -277,7 +276,7 @@ async function unstakePending(address, userAccount, amount) {
                 'value': 0,
                 'to': ADDRESS_CONTRACT_POOL,
                 'gas': baseGas,
-                'data': contract_poll.methods.unstakePending(userAccount, amountWei).encodeABI()
+                'data': contract_pool.methods.unstakePending(amountWei).encodeABI()
             };
         } catch (err) {
             return err;
@@ -287,30 +286,10 @@ async function unstakePending(address, userAccount, amount) {
     }
 }
 
-/** Return total pending balance. Common + autocompound */
-async function pendingBalanceOfAccount(address) {
-    try {
-        const result = await contract_poll.methods.pendingBalanceOf(address).call();
-        return +web3.utils.fromWei(result, 'ether');
-    } catch (error) {
-        throw new Error(error);
-    }
-}
-
-/** Return total active balance. Common + autocompound */
-async function unstakeBalanceOf(address) {
-    try {
-        const result = await contract_poll.methods.unstakeBalanceOf(address).call();
-        return +web3.utils.fromWei(result, 'ether');
-    } catch (error) {
-        throw new Error(error);
-    }
-}
-
 /** Returns num of validators prepared for deposit */
 async function getPendingValidatorCount() {
     try {
-        return await contract_poll.methods.getPendingValidatorCount().call();
+        return await contract_pool.methods.getPendingValidatorCount().call();
     } catch (error) {
         throw new Error(error);
     }
@@ -319,7 +298,7 @@ async function getPendingValidatorCount() {
 /** By index return pending validator pubkey. List of pending validators is dinamic so ordering unstable */
 async function getPendingValidator(index) {
     try {
-        return await contract_poll.methods.getPendingValidator(index).call();
+        return await contract_pool.methods.getPendingValidator(index).call();
     } catch (error) {
         throw new Error(error);
     }
@@ -328,16 +307,17 @@ async function getPendingValidator(index) {
 /** Return total num of known validators. Validator can be in one of statuses: pending, deposited, exited. Exited validators will be rewrited by new pending validators to optimize memory usage */
 async function getValidatorCount() {
     try {
-        return await contract_poll.methods.getValidatorCount().call();
+        return await contract_pool.methods.getValidatorCount().call();
     } catch (error) {
         throw new Error(error);
     }
 }
 
+
 /** Return validator pubkey and status */
 async function getValidator(index) {
     try {
-        const result = await contract_poll.methods.getValidator(index).call();
+        const result = await contract_pool.methods.getValidator(index).call();
         return {
             pubkey: result[0],
             status: result[1] === '0' ? 'unknown' : result[1] === '1' ? 'pending' : 'deposited',
@@ -359,31 +339,32 @@ function selectNetwork(network) {
     }
     web3 = new Web3(RPC_URL);
     contract_accounting = new web3.eth.Contract(ABI_CONTRACT_ACCOUNTING, ADDRESS_CONTRACT_ACCOUNTING);
-    contract_poll = new web3.eth.Contract(ABI_CONTRACT_POOL, ADDRESS_CONTRACT_POOL);
+    contract_pool = new web3.eth.Contract(ABI_CONTRACT_POOL, ADDRESS_CONTRACT_POOL);
 }
 
 module.exports = {
     // accounting
     balance,
     pendingBalance,
+    pendingDepositedBalance,
+    pendingRestakedRewards,
+    readyforAutocompoundRewardsAmount,
     pendingBalanceOf,
-    getPoolFee,
-    commonBalanceOf,
-    claim,
-    autocompound,
+    pendingDepositedBalanceOf,
+    depositedBalanceOf,
+    pendingRestakedRewardOf,
     autocompoundBalanceOf,
+    getPoolFee,
+    autocompound,    
     withdrawRequestQueueParams,
     withdrawRequest,
     claimWithdrawRequest,
     closeValidatorsStat,
-    userPendingRewards,
 
     // pool
     stake,
     unstake,
     unstakePending,
-    pendingBalanceOfAccount,
-    unstakeBalanceOf,
     getPendingValidatorCount,
     getPendingValidator,
     getValidatorCount,
