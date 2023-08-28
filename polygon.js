@@ -215,6 +215,13 @@ async function getUnbond(address) {
         throw new Error(error);
     }
 }
+async function getUnbondNonces(address) {
+    try {
+        return await contract_buy.methods.unbondNonces(address).call();
+    } catch (error) {
+        throw new Error(error);
+    }
+}
 async function getBalanceOf(address) {
     try {
         const result = await contract_approve.methods.balanceOf(address).call();
@@ -236,6 +243,7 @@ module.exports = {
     getUnbond,
     getBalance,
     getBalanceOf,
+    getUnbondNonces,
     ABI_CONTRACT_APPROVE,
     ADDRESS_CONTRACT_APPROVE,
     ABI_CONTRACT_BUY,
