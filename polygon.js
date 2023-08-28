@@ -185,8 +185,7 @@ async function restake(privateKey) {
 async function getBalance(address) {
     try {
         const resp = await web3.eth.getBalance(address);
-        const result = +web3.utils.fromWei(resp, "ether");
-        return  { result: result };
+        return +web3.utils.fromWei(resp, "ether");
     } catch (error) {
         throw new Error(error);
     }
@@ -194,7 +193,7 @@ async function getBalance(address) {
 async function getReward(address) {
     try {
         const result = await contract_buy.methods.getLiquidRewards(address).call()
-        return  { result: web3.utils.fromWei(result, 'ether') };
+        return +web3.utils.fromWei(result, 'ether');
     } catch (error) {
         throw new Error(error);
     }
@@ -202,7 +201,7 @@ async function getReward(address) {
 async function getTotalDelegate(address) {
     try {
         const result = await contract_buy.methods.getTotalStake(address).call();
-        return { result: web3.utils.fromWei(result[0], 'ether') };
+        return +web3.utils.fromWei(result[0], 'ether');
     } catch (error) {
         throw new Error(error);
     }
@@ -211,7 +210,7 @@ async function getUnbond(address) {
     try {
         const unbondNonces = await contract_buy.methods.unbondNonces(address).call();
         const result = await contract_buy.methods.unbonds_new(address, unbondNonces).call();
-        return { result: web3.utils.fromWei(result[0], 'ether') };
+        return +web3.utils.fromWei(result[0], 'ether');
     } catch (error) {
         throw new Error(error);
     }
