@@ -182,6 +182,15 @@ async function restake(privateKey) {
 }
 
 // get func
+async function getBalance(address) {
+    try {
+        const resp = await web3.eth.getBalance(address);
+        const result = +web3.utils.fromWei(resp, "ether");
+        return  { result: result };
+    } catch (error) {
+        throw new Error(error);
+    }
+}
 async function getReward(address) {
     try {
         const result = await contract_buy.methods.getLiquidRewards(address).call()
@@ -218,4 +227,9 @@ module.exports = {
     getReward,
     getTotalDelegate,
     getUnbond,
+    getBalance,
+    ABI_CONTRACT_APPROVE,
+    ADDRESS_CONTRACT_APPROVE,
+    ABI_CONTRACT_BUY,
+    ADDRESS_CONTRACT_BUY
 };
