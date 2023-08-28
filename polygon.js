@@ -215,6 +215,14 @@ async function getUnbond(address) {
         throw new Error(error);
     }
 }
+async function getBalanceOf(address) {
+    try {
+        const result = await contract_approve.methods.balanceOf(address).call();
+        return +web3.utils.fromWei(result, 'ether');
+    } catch (error) {
+        throw new Error(error);
+    }
+}
 
 module.exports = {
     isTransactionLoading,
@@ -227,6 +235,7 @@ module.exports = {
     getTotalDelegate,
     getUnbond,
     getBalance,
+    getBalanceOf,
     ABI_CONTRACT_APPROVE,
     ADDRESS_CONTRACT_APPROVE,
     ABI_CONTRACT_BUY,
