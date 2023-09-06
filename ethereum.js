@@ -309,10 +309,20 @@ async function simulateUnstake(address, amount, allowedInterchangeNum = 1, sourc
 
 /** Unstake pending amount from Autocompound */
 async function unstakePending(address, amount) {
-    const pendingBalance = await pendingBalanceOf(address);
+    let pendingBalance = await pendingBalanceOf(address);
     if (+amount <= pendingBalance) {
         try {
+
+            pendingBalance -= +amount;    
+            if (pendingBalance > 0) {
+                const minStake = await minStakeAmount();
+                if (pendingBalance < minStake) {
+                    throw new Error(`Pending balance less than min stake amount ${minStake}`);
+                }
+            }
+
             const amountWei = await web3.utils.toWei(amount.toString(), 'ether');
+
             // Create the transaction
             return  {
                 'from': address,
@@ -325,7 +335,7 @@ async function unstakePending(address, amount) {
             return err;
         }
     } else {
-        throw new Error(`Min Amount ${minAmount}`);
+        throw new Error(`Amount gt than pending balance ${pendingBalance}`);
     }
 }
 
@@ -386,6 +396,16 @@ async function getValidator(index) {
     }
 }
 
+/** Return minimal user single stake amount */
+async function minStakeAmount() {
+    try {
+        const result = await contract_pool.methods.minStakeAmount().call();
+        return +web3.utils.fromWei(result, 'ether');
+    } catch (error) {
+        throw new Error(error);
+    }
+}
+
 function selectNetwork(network) {
     if (network === 'sepolia') {
         RPC_URL = 'https://rpc.sepolia.org';
@@ -431,6 +451,7 @@ module.exports = {
     getPendingValidator,
     getValidatorCount,
     getValidator,
+    minStakeAmount,
 
     // help
     selectNetwork,
