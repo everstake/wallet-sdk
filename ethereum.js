@@ -407,14 +407,14 @@ async function minStakeAmount() {
 }
 
 function selectNetwork(network) {
-    if (network === 'sepolia') {
-        RPC_URL = 'https://rpc.sepolia.org';
-        ADDRESS_CONTRACT_ACCOUNTING = '0x995FC235f0051cDe7Cc53B6858D3688B96c3D915';
-        ADDRESS_CONTRACT_POOL = '0x839B9d0402002df0eDdBa66d1Fd96A6d2c8E5EF1';
+    if (network === 'mainnet') {
+        RPC_URL = 'https://cloudflare-eth.com';
+        ADDRESS_CONTRACT_ACCOUNTING = '0x7a7f0b3c23C23a31cFcb0c44709be70d4D545c6e';
+        ADDRESS_CONTRACT_POOL = '0xD523794C879D9eC028960a231F866758e405bE34';
     } else {
         RPC_URL = 'https://eth-goerli.public.blastapi.io';
-        ADDRESS_CONTRACT_ACCOUNTING = '0x906d2f4b1466a6C64A04D313266863d01d9AA8CF';
-        ADDRESS_CONTRACT_POOL = '0x1048bE0Bac2fC94415023a3d9f2097E9ba46bb04';
+        ADDRESS_CONTRACT_ACCOUNTING = '0x6e95818C2Dde3d87406F5C5d0A759d9372053a94';
+        ADDRESS_CONTRACT_POOL = '0x1F28aD3B3e26192a09c1248D4092c692c32f8Ec0';
     }
     web3 = new Web3(RPC_URL);
     contract_accounting = new web3.eth.Contract(ABI_CONTRACT_ACCOUNTING, ADDRESS_CONTRACT_ACCOUNTING);
