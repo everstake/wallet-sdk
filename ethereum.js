@@ -419,6 +419,8 @@ function selectNetwork(network) {
     web3 = new Web3(RPC_URL);
     contract_accounting = new web3.eth.Contract(ABI_CONTRACT_ACCOUNTING, ADDRESS_CONTRACT_ACCOUNTING);
     contract_pool = new web3.eth.Contract(ABI_CONTRACT_POOL, ADDRESS_CONTRACT_POOL);
+
+    return {address_accounting: ADDRESS_CONTRACT_ACCOUNTING, address_pool: ADDRESS_CONTRACT_POOL};
 }
 
 module.exports = {
