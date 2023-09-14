@@ -458,5 +458,7 @@ module.exports = {
     ABI_CONTRACT_ACCOUNTING,
     ADDRESS_CONTRACT_ACCOUNTING,
     ABI_CONTRACT_POOL,
-    ADDRESS_CONTRACT_POOL
+    ADDRESS_CONTRACT_POOL,
+    contract_accounting,
+    contract_pool,
 };
