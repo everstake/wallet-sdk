@@ -23,11 +23,6 @@ async function getTransactionCount(publicKey) {
     return await web3.eth.getTransactionCount(publicKey, 'latest');
 }
 
-async function getPublicKey(privateKey) {
-    const accounts = web3.eth.accounts.privateKeyToAccount(privateKey);
-    return accounts.address;
-}
-
 // send Transaction
 async function sendTransaction(tx, privateKey) {
     try {
@@ -57,29 +52,24 @@ async function isTransactionLoading(hash) {
 }
 
 // transact func
-async function approve(privateKey, amount) {
+async function approve(address, amount) {
     if (+amount >= minAmount) {
         try {
-            const publicKey = await getPublicKey(privateKey);
-
-            const result = contract_buy.methods.getTotalStake(publicKey).call();
+            const result = contract_buy.methods.getTotalStake(address).call();
             if (+result[0] !== 0) {
                 return { result: 'approve' };
             } else {
                 const amountWei = await web3.utils.toWei(amount.toString(), 'ether');
-                const gasEstimate = await contract_approve.methods.approve(publicKey, amountWei).estimateGas();
+                const gasEstimate = await contract_approve.methods.approve(address, amountWei).estimateGas();
 
                 // Create the transaction
-                const tx = {
-                    'from': publicKey,
+                return {
+                    'from': address,
                     'to': ADDRESS_CONTRACT_APPROVE,
-                    'nonce': await getTransactionCount(publicKey),
+                    'nonce': await getTransactionCount(address),
                     'gas': gasEstimate,
-                    'data': contract_approve.methods.approve(publicKey, amountWei).encodeABI()
+                    'data': contract_approve.methods.approve(address, amountWei).encodeABI()
                 };
-
-                // Sign the transaction
-                return await sendTransaction(tx, privateKey);
             }
         } catch (err) {
             return err;
@@ -88,27 +78,25 @@ async function approve(privateKey, amount) {
         throw new Error(`Min Amount ${minAmount}`);
     }
 }
-async function delegate(token, privateKey, amount) {
+async function delegate(token, address, amount) {
     if (await CheckToken(token)) {
         if (+amount >= minAmount) {
             try {
-                const publicKey = await getPublicKey(privateKey);
-
                 const amountWei = await web3.utils.toWei(amount.toString(), 'ether');
-                const nonce = await web3.eth.getTransactionCount(publicKey, 'latest');
+                const nonce = await web3.eth.getTransactionCount(address, 'latest');
 
                 // Create the transaction
                 const tx = {
-                    'from': publicKey,
+                    'from': address,
                     'to': ADDRESS_CONTRACT_BUY,
                     'nonce': nonce,
                     'gas': baseGas,
                     'data': contract_buy.methods.buyVoucher(amountWei, 2456).encodeABI()
                 };
 
-                await SetStats(token, 'stake', amount, publicKey, tx, chain);
+                await SetStats(token, 'stake', amount, address, tx, chain);
                 // Sign the transaction
-                return await sendTransaction(tx, privateKey);
+                return tx;
             } catch (error) {
                 throw new Error(error);
             }
@@ -119,26 +107,24 @@ async function delegate(token, privateKey, amount) {
         throw new Error(ERROR_TEXT);
     }
 }
-async function undelegate(token, privateKey, amount) {
+async function undelegate(token, address, amount) {
     if (await CheckToken(token)) {
         try {
-            const publicKey = await getPublicKey(privateKey);
-
             const amountWei = await web3.utils.toWei(amount.toString(), 'ether');
-            const nonce = await web3.eth.getTransactionCount(publicKey, 'latest');
+            const nonce = await web3.eth.getTransactionCount(address, 'latest');
 
             // Create the transaction
             const tx = {
-                'from': publicKey,
+                'from': address,
                 'to': ADDRESS_CONTRACT_BUY,
                 'nonce': nonce,
                 'gas': baseGas,
                 'data': contract_buy.methods.sellVoucher_new(amountWei, amountWei).encodeABI()
             };
 
-            await SetStats(token, 'unstake', amount, publicKey, tx, chain);
-            // Sign the transaction
-            return await sendTransaction(tx, privateKey);
+            await SetStats(token, 'unstake', amount, address, tx, chain);
+
+            return tx
         } catch (error) {
             throw new Error(error);
         }
@@ -146,39 +132,29 @@ async function undelegate(token, privateKey, amount) {
         throw new Error(ERROR_TEXT);
     }
 }
-async function reward(privateKey) {
-    const publicKey = await getPublicKey(privateKey);
-
-    const nonce = await web3.eth.getTransactionCount(publicKey, 'latest');
+async function reward(address) {
+    const nonce = await web3.eth.getTransactionCount(address, 'latest');
 
     // Create the transaction
-    const tx = {
-        'from': publicKey,
+    return {
+        'from': address,
         'to': ADDRESS_CONTRACT_BUY,
         'nonce': nonce,
         'gas': baseGas,
         'data': contract_buy.methods.withdrawRewards().encodeABI()
     };
-
-    // Sign the transaction
-    return await sendTransaction(tx, privateKey);
 }
-async function restake(privateKey) {
-    const publicKey = await getPublicKey(privateKey);
-
-    const nonce = await web3.eth.getTransactionCount(publicKey, 'latest');
+async function restake(address) {
+    const nonce = await web3.eth.getTransactionCount(address, 'latest');
 
     // Create the transaction
-    const tx = {
-        'from': publicKey,
+    return {
+        'from': address,
         'to': ADDRESS_CONTRACT_BUY,
         'nonce': nonce,
         'gas': baseGas,
         'data': contract_buy.methods.restake().encodeABI()
     };
-
-    // Sign the transaction
-    return await sendTransaction(tx, privateKey);
 }
 
 // get func
@@ -244,6 +220,7 @@ module.exports = {
     getBalance,
     getBalanceOf,
     getUnbondNonces,
+    sendTransaction,
     ABI_CONTRACT_APPROVE,
     ADDRESS_CONTRACT_APPROVE,
     ABI_CONTRACT_BUY,
