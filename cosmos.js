@@ -1,6 +1,7 @@
 const { DirectSecp256k1HdWallet } = require("@cosmjs/proto-signing");
 const { SigningStargateClient } = require("@cosmjs/stargate");
 const { CheckToken, ERROR_TEXT, SetStats } = require("./utils/api");
+const axios = require('axios');
 
 const RPC_URL = 'https://rpc-cosmoshub-ia.cosmosia.notional.ventures';
 const API_URL = 'https://api-cosmoshub-ia.cosmosia.notional.ventures';
@@ -152,8 +153,11 @@ async function getDelegations(address) {
     try {
         const delegatorArray = [];
 
-        const delegator = await fetch(`${API_URL}/staking/delegators/${address}/delegations`).then(response => response.json());
-        const validator = await fetch(`${API_URL}/staking/delegators/${address}/validators`).then(response => response.json());
+        const delegatorResponse = await axios.get(`${API_URL}/staking/delegators/${address}/delegations`);
+        const delegator = delegatorResponse.data;
+
+        const validatorResponse = await axios.get(`${API_URL}/staking/delegators/${address}/validators`);
+        const validator = validatorResponse.data;
 
         for (let i = 0; i < validator.result.length; i++) {
             delegatorArray.push({
