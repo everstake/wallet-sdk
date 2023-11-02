@@ -36,7 +36,7 @@ module.exports = {
     ADDRESS_CONTRACT,
     ABI_CONTRACT_BRIDGE,
     ADDRESS_CONTRACT_BRIDGE,
-    contract_approve,
+    contract,
     contract_bridge,
     RPC_URL
 };
