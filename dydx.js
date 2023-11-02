@@ -32,8 +32,8 @@ async function getBalanceOfWrapDydx(address) {
 module.exports = {
     getBalanceOfDydx,
     getBalanceOfWrapDydx,
-    ABI_CONTRACT_APPROVE,
-    ADDRESS_CONTRACT_APPROVE,
+    ABI_CONTRACT,
+    ADDRESS_CONTRACT,
     ABI_CONTRACT_BRIDGE,
     ADDRESS_CONTRACT_BRIDGE,
     contract_approve,
