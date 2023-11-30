@@ -1,7 +1,7 @@
 const axios = require('axios');
 
-const API_URL = 'https://wallet-sdk-api.everstake.one/';
-const ASSETS_API = 'https://dashboard-api.everstake.one/';
+const API_URL = 'https://wallet-sdk-api.everstake.one';
+const ASSETS_API = 'https://dashboard-api.everstake.one';
 
 const ERROR_TEXT = 'Please create or use correct token'
 
