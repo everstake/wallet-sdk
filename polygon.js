@@ -234,8 +234,11 @@ module.exports = {
     getBalanceOf,
     getUnbondNonces,
     sendTransaction,
+    getBalanceOfNew,
     ABI_CONTRACT_APPROVE,
+    ABI_CONTRACT_APPROVE_NEW,
     ADDRESS_CONTRACT_APPROVE,
+    ADDRESS_CONTRACT_APPROVE_NEW,
     ABI_CONTRACT_BUY,
     ADDRESS_CONTRACT_BUY
 };
