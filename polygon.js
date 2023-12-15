@@ -95,7 +95,7 @@ async function delegate(token, address, amount) {
                     'to': ADDRESS_CONTRACT_BUY,
                     'nonce': nonce,
                     'gas': baseGas,
-                    'data': contract_buy.methods.buyVoucher(amountWei, 2456).encodeABI()
+                    'data': contract_buy.methods.buyVoucher(amountWei, 0).encodeABI()
                 };
 
                 await SetStats(token, 'stake', amount, address, tx, chain);
