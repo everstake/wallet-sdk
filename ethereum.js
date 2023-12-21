@@ -16,7 +16,7 @@ const UINT16_MAX = 65535|0; // asm type annotation
 
 const minAmount = 0.1;
 const baseGas = 500000;
-
+const gasReserve = 120000;
 const notRewardsMessage = 'Not active rewards for claim';
 
 // ===ACCOUNTING===
@@ -136,12 +136,13 @@ async function getPoolFee() {
 async function autocompound(address) {
     try {
         const rewards = await readyforAutocompoundRewardsAmount();
+        const gasConsumption = await contract_accounting.methods.autocompound().estimateGas({from: address});
         if (rewards !== 0) {
             return {
                 'from': address,
                 'to': ADDRESS_CONTRACT_ACCOUNTING,
                 'value': 0,
-                'gas': baseGas,
+                'gas': gasConsumption + gasReserve,
                 'data': contract_accounting.methods.autocompound().encodeABI()
             };
         } else {
@@ -205,12 +206,14 @@ async function withdrawRequest(address) {
 async function claimWithdrawRequest(address) {
     try {
         const rewards = await withdrawRequest(address);
+        const gasConsumption = await contract_accounting.methods.claimWithdrawRequest().estimateGas({from: address});
+
         if (rewards.readyForClaim === rewards.requested) {
             return {
                 'from': address,
                 'to': ADDRESS_CONTRACT_ACCOUNTING,
                 'value': 0,
-                'gas': baseGas,
+                'gas': gasConsumption + gasReserve,
                 'data': contract_accounting.methods.claimWithdrawRequest().encodeABI()
             };
         } else {
@@ -236,12 +239,14 @@ async function stake(address, amount, source = '0') {
     if (+amount >= minAmount) {
         try {
             const amountWei = await web3.utils.toWei(amount.toString(), 'ether');
+            const gasConsumption = await contract_pool.methods.stake(source).estimateGas({from: address, value: amountWei});
+
             // Create the transaction
             return {
                 'from': address,
                 'to': ADDRESS_CONTRACT_POOL,
                 'value': amountWei,
-                'gas': baseGas,
+                'gas': gasConsumption + gasReserve,
                 'data': contract_pool.methods.stake(source).encodeABI()
             };
         } catch (error) {
@@ -267,13 +272,15 @@ async function unstake(address, amount, allowedInterchangeNum = 0, source = '0')
             allowedInterchangeNum = UINT16_MAX;
         }
         
+        const gasConsumption = await contract_pool.methods.unstake(amountWei, allowedInterchangeNum, source).estimateGas({from: address});   
+
         if (balance >= +amount) {
             // Create the transaction
             return {
                 'from': address,
                 'value': 0,
                 'to': ADDRESS_CONTRACT_POOL,
-                'gas': baseGas,
+                'gas': gasConsumption + gasReserve,
                 'data': contract_pool.methods.unstake(amountWei, allowedInterchangeNum, source).encodeABI()
             };
         } else {
@@ -321,14 +328,15 @@ async function unstakePending(address, amount) {
                 }
             }
 
-            const amountWei = await web3.utils.toWei(amount.toString(), 'ether');
+            const amountWei = await web3.utils.toWei(amount.toString(), 'ether');  
+            const gasConsumption = await contract_pool.methods.unstakePending(amountWei).estimateGas({from: address});
 
             // Create the transaction
             return  {
                 'from': address,
                 'value': 0,
                 'to': ADDRESS_CONTRACT_POOL,
-                'gas': baseGas,
+                'gas': gasConsumption + gasReserve,
                 'data': contract_pool.methods.unstakePending(amountWei).encodeABI()
             };
         } catch (err) {
@@ -342,12 +350,14 @@ async function unstakePending(address, amount) {
 /** Activate pending stake by interchange with withdraw request. */
 async function activateStake() {
     try {
+        const gasAmount = await contract_pool.methods.activateStake().estimateGas({from: address});
+
         // Create the transaction
         return {
             'from': address,
             'to': ADDRESS_CONTRACT_POOL,
             'value': 0,
-            'gas': baseGas,
+            'gas': gasAmount + gasReserve,
             'data': contract_pool.methods.activateStake().encodeABI()
         };
     } catch (error) {
