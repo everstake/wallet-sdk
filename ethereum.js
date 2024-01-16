@@ -1,4 +1,5 @@
 const Web3 = require('web3');
+const BigNumber = require('bignumber.js');
 
 const ABI_CONTRACT_ACCOUNTING = [{"inputs":[{"internalType":"string","name":"field","type":"string"}],"name":"InvalidParam","type":"error"},{"inputs":[{"internalType":"string","name":"field","type":"string"}],"name":"InvalidValue","type":"error"},{"inputs":[{"internalType":"string","name":"field","type":"string"}],"name":"ZeroValue","type":"error"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"round","type":"uint256"}],"name":"ActivateRound","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"staker","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"AddWithdrawRequest","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Autocompound","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"int256","name":"","type":"int256"}],"name":"ChangeExpectValidatorsToStop","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"ClaimPoolFee","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"staker","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"ClaimWithdrawRequest","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"staker","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"DepositPending","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"newFee","type":"uint256"}],"name":"FeeUpdated","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"oldGovernor","type":"address"},{"indexed":false,"internalType":"address","name":"newGovernor","type":"address"}],"name":"GovernorChanged","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint8","name":"version","type":"uint8"}],"name":"Initialized","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"staker","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"InterchangeDeposit","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"staker","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"InterchangeWithdraw","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"superAdmin","type":"address"}],"name":"SetSuperAdmin","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"rewarderBalance","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"reward","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"fee","type":"uint256"}],"name":"Update","type":"event"},{"inputs":[],"name":"BEACON_AMOUNT","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"FEE_DENOMINATOR","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"governor","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"value","type":"address"}],"name":"setSuperAdmin","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"superAdmin","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"poolFee","type":"uint256"},{"internalType":"address","name":"rewardsTreasury","type":"address"},{"internalType":"address","name":"withdrawTreasury","type":"address"},{"internalType":"address","name":"accountingGovernor","type":"address"}],"name":"initialize","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"},{"internalType":"uint256","name":"depositToPendingValue","type":"uint256"}],"name":"deposit","outputs":[{"internalType":"uint256","name":"interchangedAmount","type":"uint256"},{"internalType":"uint256","name":"activatedSlots","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"balance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"pendingDepositedBalance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"pendingBalance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"autocompoundBalanceOf","outputs":[{"internalType":"uint256","name":"autocompoundBalance","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"depositedBalanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"pendingDepositedBalanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"pendingBalanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"withdrawPending","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"staker","type":"address"},{"internalType":"uint256","name":"value","type":"uint256"}],"name":"withdraw","outputs":[{"internalType":"uint256","name":"withdrawFromPendingAmount","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"claimPoolFee","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"getPoolFee","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"feeBalance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"update","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"feeValue","type":"uint256"}],"name":"setFee","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"autocompound","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"pendingRestakedRewards","outputs":[{"internalType":"uint256","name":"amount","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"pendingRestakedRewardOf","outputs":[{"internalType":"uint256","name":"amount","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"restakedRewardOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"withdrawRequestQueueParams","outputs":[{"internalType":"uint256","name":"","type":"uint256"},{"internalType":"uint256","name":"","type":"uint256"},{"internalType":"uint256","name":"","type":"uint256"},{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"staker","type":"address"}],"name":"withdrawRequest","outputs":[{"internalType":"uint256","name":"","type":"uint256"},{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"claimWithdrawRequest","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"readyforAutocompoundRewardsAmount","outputs":[{"internalType":"uint256","name":"unclaimedReward","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"closeValidatorsStat","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"stakeAmount","type":"uint256"}],"name":"setMinRestakeAmount","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"activatedValidatorNum","type":"uint256"}],"name":"activateValidators","outputs":[],"stateMutability":"nonpayable","type":"function"}];
 let ADDRESS_CONTRACT_ACCOUNTING = '0x7a7f0b3c23C23a31cFcb0c44709be70d4D545c6e';
@@ -14,10 +15,14 @@ let contract_pool = new web3.eth.Contract(ABI_CONTRACT_POOL, ADDRESS_CONTRACT_PO
 
 const UINT16_MAX = 65535|0; // asm type annotation
 
-const minAmount = 0.1;
+// 0.1 ETH
+const minAmount = new BigNumber('100000000000000000');
 const baseGas = 500000;
 const gasReserve = 120000;
-const notRewardsMessage = 'Not active rewards for claim';
+const notRewardsMessage = 'No active rewards for claim';
+const notFilledUnstakeMessage = 'Unstake request not filled yet';
+const zeroUnstakeMessage = 'No amount requested for unstake';
+const wrongTypeMessage = 'Wrong input type';
 
 // ===ACCOUNTING===
 
@@ -25,7 +30,7 @@ const notRewardsMessage = 'Not active rewards for claim';
 async function balance() {
     try {
         const result = await contract_accounting.methods.balance().call()
-        return +web3.utils.fromWei(result, 'ether');
+        return new BigNumber(web3.utils.fromWei(result, 'ether'));
     } catch (error) {
         throw new Error(error);
     }
@@ -35,7 +40,7 @@ async function balance() {
 async function pendingBalance() {
     try {
         const result = await contract_accounting.methods.pendingBalance().call();
-        return +web3.utils.fromWei(result, 'ether');
+        return new BigNumber(web3.utils.fromWei(result, 'ether'));
     } catch (error) {
         throw new Error(error);
     }
@@ -45,7 +50,7 @@ async function pendingBalance() {
 async function pendingDepositedBalance() {
     try {
         const result = await contract_accounting.methods.pendingDepositedBalance().call();
-        return +web3.utils.fromWei(result, 'ether');
+        return new BigNumber(web3.utils.fromWei(result, 'ether'));
     } catch (error) {
         throw new Error(error);
     }
@@ -55,7 +60,7 @@ async function pendingDepositedBalance() {
 async function pendingRestakedRewards() {
     try {
         const result = await contract_accounting.methods.pendingRestakedRewards().call();
-        return +web3.utils.fromWei(result, 'ether');
+        return new BigNumber(web3.utils.fromWei(result, 'ether'));
     } catch (error) {
         throw new Error(error);
     }
@@ -65,7 +70,7 @@ async function pendingRestakedRewards() {
 async function readyforAutocompoundRewardsAmount() {
     try {
         const result = await contract_accounting.methods.readyforAutocompoundRewardsAmount().call();
-        return +web3.utils.fromWei(result, 'ether');
+        return new BigNumber(web3.utils.fromWei(result, 'ether'));
     } catch (error) {
         throw new Error(error);
     }
@@ -75,7 +80,7 @@ async function readyforAutocompoundRewardsAmount() {
 async function pendingBalanceOf(address) {
     try {
         const result = await contract_accounting.methods.pendingBalanceOf(address).call();
-        return +web3.utils.fromWei(result, 'ether');
+        return new BigNumber(web3.utils.fromWei(result, 'ether'));
     } catch (error) {
         throw new Error(error);
     }
@@ -85,7 +90,7 @@ async function pendingBalanceOf(address) {
 async function pendingDepositedBalanceOf(address) {
     try {
         const result = await contract_accounting.methods.pendingDepositedBalanceOf(address).call();
-        return +web3.utils.fromWei(result, 'ether');
+        return new BigNumber(web3.utils.fromWei(result, 'ether'));
     } catch (error) {
         throw new Error(error);
     }
@@ -96,7 +101,7 @@ async function pendingDepositedBalanceOf(address) {
 async function depositedBalanceOf(address) {
     try {
         const result = await contract_accounting.methods.depositedBalanceOf(address).call();
-        return +web3.utils.fromWei(result, 'ether');
+        return new BigNumber(web3.utils.fromWei(result, 'ether'));
     } catch (error) {
         throw new Error(error);
     }
@@ -106,7 +111,7 @@ async function depositedBalanceOf(address) {
 async function pendingRestakedRewardOf(address) {
     try {
         const result = await contract_accounting.methods.pendingRestakedRewardOf(address).call();
-        return +web3.utils.fromWei(result, 'ether');
+        return new BigNumber(web3.utils.fromWei(result, 'ether'));
     } catch (error) {
         throw new Error(error);
     }
@@ -116,7 +121,7 @@ async function pendingRestakedRewardOf(address) {
 async function restakedRewardOf(address) {
     try {
         const result = await contract_accounting.methods.restakedRewardOf(address).call();
-        return +web3.utils.fromWei(result, 'ether');
+        return new BigNumber(web3.utils.fromWei(result, 'ether'));
     } catch (error) {
         throw new Error(error);
     }
@@ -126,7 +131,7 @@ async function restakedRewardOf(address) {
 async function getPoolFee() {
     try {
         const result = await contract_accounting.methods.getPoolFee().call();
-        return (+result / 10000);
+        return (new BigNumber(result).divn(10000));
     } catch (error) {
         throw new Error(error);
     }
@@ -137,16 +142,16 @@ async function autocompound(address) {
     try {
         const rewards = await readyforAutocompoundRewardsAmount();
         const gasConsumption = await contract_accounting.methods.autocompound().estimateGas({from: address});
-        if (rewards !== 0) {
+        if (!rewards.isZero()) {
             return {
                 'from': address,
                 'to': ADDRESS_CONTRACT_ACCOUNTING,
                 'value': 0,
-                'gas': gasConsumption + gasReserve,
+                'gasLimit': gasConsumption + gasReserve,
                 'data': contract_accounting.methods.autocompound().encodeABI()
             };
         } else {
-            return notRewardsMessage;
+            throw new Error(notRewardsMessage);
         }
     } catch (error) {
         throw new Error(error);
@@ -157,7 +162,7 @@ async function autocompound(address) {
 async function autocompoundBalanceOf(address) {
     try {
         const result = await contract_accounting.methods.autocompoundBalanceOf(address).call();
-        return +web3.utils.fromWei(result, 'ether');
+        return new BigNumber(web3.utils.fromWei(result, 'ether'));
     } catch (error) {
         throw new Error(error);
     }
@@ -176,13 +181,13 @@ async function withdrawRequestQueueParams() {
         const result = await contract_accounting.methods.withdrawRequestQueueParams().call();
         return {
             // Totally alltime requested withdraw amount.
-            withdrawRequested: +web3.utils.fromWei(result[0], 'ether'),
+            withdrawRequested: new BigNumber(web3.utils.fromWei(result[0], 'ether')),
             // Actual allowed for interchange with deposits amount.
-            interchangeAllowed: +web3.utils.fromWei(result[1], 'ether'),
+            interchangeAllowed: new BigNumber(web3.utils.fromWei(result[1], 'ether')),
             // Alltime withdraw treasury filled amount.
-            filled: +web3.utils.fromWei(result[2], 'ether'),
+            filled: new BigNumber(web3.utils.fromWei(result[2], 'ether')),
             // Alltime claimed by users amount
-            claimed: +web3.utils.fromWei(result[3], 'ether'),
+            claimed: new BigNumber(web3.utils.fromWei(result[3], 'ether')),
         };
     } catch (error) {
         throw new Error(error);
@@ -194,8 +199,8 @@ async function withdrawRequest(address) {
     try {
         const result = await contract_accounting.methods.withdrawRequest(address).call();
         return {
-            requested: +web3.utils.fromWei(result[0], 'ether'),
-            readyForClaim: +web3.utils.fromWei(result[1], 'ether'),
+            requested: new BigNumber(web3.utils.fromWei(result[0], 'ether')),
+            readyForClaim: new BigNumber(web3.utils.fromWei(result[1], 'ether')),
         };
     } catch (error) {
         throw new Error(error);
@@ -206,18 +211,22 @@ async function withdrawRequest(address) {
 async function claimWithdrawRequest(address) {
     try {
         const rewards = await withdrawRequest(address);
-        const gasConsumption = await contract_accounting.methods.claimWithdrawRequest().estimateGas({from: address});
+        if (rewards.requested.isZero()) {
+            throw new Error(zeroUnstakeMessage);
+        }
 
-        if (rewards.readyForClaim === rewards.requested) {
+        if (rewards.readyForClaim.eq(rewards.requested)) {
+            const gasConsumption = await contract_accounting.methods.claimWithdrawRequest().estimateGas({from: address});
+
             return {
                 'from': address,
                 'to': ADDRESS_CONTRACT_ACCOUNTING,
                 'value': 0,
-                'gas': gasConsumption + gasReserve,
+                'gasLimit': gasConsumption + gasReserve,
                 'data': contract_accounting.methods.claimWithdrawRequest().encodeABI()
             };
         } else {
-            return notRewardsMessage;
+            throw new Error(notFilledUnstakeMessage);
         }
     } catch (error) {
         throw new Error(error);
@@ -234,11 +243,20 @@ async function closeValidatorsStat() {
 }
 
 // ===POOL===
-/** Stake funds into pool. */
+/** Stake funds into pool. 
+ * @param {string} address - Sender address.
+ * @param {string} amount - Stake amount ETH.
+ * @param {string} source - Stake source.
+*/
 async function stake(address, amount, source = '0') {
-    if (+amount >= minAmount) {
-        try {
-            const amountWei = await web3.utils.toWei(amount.toString(), 'ether');
+    if (typeof(amount) !== 'string') {
+        throw new Error(wrongTypeMessage);
+    }
+
+    let amountWei = await web3.utils.toWei(amount, 'ether');
+
+    if (new BigNumber(amountWei).comparedTo(minAmount) >= 0) {
+        try { 
             const gasConsumption = await contract_pool.methods.stake(source).estimateGas({from: address, value: amountWei});
 
             // Create the transaction
@@ -246,14 +264,14 @@ async function stake(address, amount, source = '0') {
                 'from': address,
                 'to': ADDRESS_CONTRACT_POOL,
                 'value': amountWei,
-                'gas': gasConsumption + gasReserve,
+                'gasLimit': gasConsumption + gasReserve,
                 'data': contract_pool.methods.stake(source).encodeABI()
             };
         } catch (error) {
             throw new Error(error);
         }
     } else {
-        throw new Error(`Min Amount ${minAmount}`);
+        throw new Error(`Min Amount ${minAmount} wei`);
     }
 }
 
@@ -261,26 +279,34 @@ async function stake(address, amount, source = '0') {
  * allowedInterchangeNum is max allowed number interchanges with pending stakers. 
  * Unstaked immediately if value <= pool pending balance or create withdraw request. 
  * Interchange disallowed as default
+ * @param {string} address - Sender address.
+ * @param {string} amount - Unstake amount ETH.
+ * @param {string} allowedInterchangeNum - Max allowed number of interchanges.
+ * @param {string} source - Unstake source.
 */
 async function unstake(address, amount, allowedInterchangeNum = 0, source = '0') {
-    try {
-        const amountWei = await web3.utils.toWei(amount.toString(), 'ether');
+    if (typeof(amount) !== 'string') {
+        throw new Error(wrongTypeMessage);
+    }
 
+    try {
         let balance = await autocompoundBalanceOf(address);
         // Check for type overflow
         if (allowedInterchangeNum > UINT16_MAX) {
             allowedInterchangeNum = UINT16_MAX;
         }
-        
-        const gasConsumption = await contract_pool.methods.unstake(amountWei, allowedInterchangeNum, source).estimateGas({from: address});   
 
-        if (balance >= +amount) {
+        if (balance.comparedTo(new BigNumber(amount)) >= 0) {
+                    
+            const amountWei = await web3.utils.toWei(amount.toString(), 'ether');
+            const gasConsumption = await contract_pool.methods.unstake(amountWei, allowedInterchangeNum, source).estimateGas({from: address});   
+
             // Create the transaction
             return {
                 'from': address,
                 'value': 0,
                 'to': ADDRESS_CONTRACT_POOL,
-                'gas': gasConsumption + gasReserve,
+                'gasLimit': gasConsumption + gasReserve,
                 'data': contract_pool.methods.unstake(amountWei, allowedInterchangeNum, source).encodeABI()
             };
         } else {
@@ -293,19 +319,25 @@ async function unstake(address, amount, allowedInterchangeNum = 0, source = '0')
 
 /** Simulate unstake tx and return amount of instant unstake. 
  * Required to compare evaluation of allowedInterchangeNum param
+ * @param {string} address - Sender address.
+ * @param {string} amount - Unstake amount ETH.
+ * @param {string} allowedInterchangeNum - Max allowed number of interchanges.
+ * @param {string} source - Unstake source.
 */
 async function simulateUnstake(address, amount, allowedInterchangeNum = 1, source = '0') {
     try {
-        const amountWei = await web3.utils.toWei(amount.toString(), 'ether');
-
+        
         let balance = await autocompoundBalanceOf(address);
         // Check for type overflow
         if (allowedInterchangeNum > UINT16_MAX) {
             allowedInterchangeNum = UINT16_MAX;
         }
 
-        if (balance >= +amount) {
-            return await contract_pool.methods.unstake(amountWei, allowedInterchangeNum, source).call({from: address});
+        // Balance gt or eq to amount
+        if (balance.comparedTo(new BigNumber(amount)) >= 0) {
+            const amountWei = await web3.utils.toWei(amount.toString(), 'ether');
+            const result = await contract_pool.methods.unstake(amountWei, allowedInterchangeNum, source).call({from: address});         
+            return new BigNumber(web3.utils.fromWei(result, 'ether'));
         } else {
             throw new Error(`Max Amount For Unstake ${balance}`);
         }
@@ -317,13 +349,18 @@ async function simulateUnstake(address, amount, allowedInterchangeNum = 1, sourc
 /** Unstake pending amount from Autocompound */
 async function unstakePending(address, amount) {
     let pendingBalance = await pendingBalanceOf(address);
-    if (+amount <= pendingBalance) {
-        try {
-
-            pendingBalance -= +amount;    
-            if (pendingBalance > 0) {
+    if (pendingBalance.isZero()) {
+        throw new Error(`Zero pending balance`);
+    }
+    
+    const bnAmount = new BigNumber(amount);
+    if (bnAmount.comparedTo(pendingBalance) <= 0) {
+        try {            
+            pendingBalance = pendingBalance.minus(bnAmount);    
+            if (!pendingBalance.isZero()) {
                 const minStake = await minStakeAmount();
-                if (pendingBalance < minStake) {
+
+                if (pendingBalance.comparedTo(minStake) < 0) {
                     throw new Error(`Pending balance less than min stake amount ${minStake}`);
                 }
             }
@@ -336,7 +373,7 @@ async function unstakePending(address, amount) {
                 'from': address,
                 'value': 0,
                 'to': ADDRESS_CONTRACT_POOL,
-                'gas': gasConsumption + gasReserve,
+                'gasLimit': gasConsumption + gasReserve,
                 'data': contract_pool.methods.unstakePending(amountWei).encodeABI()
             };
         } catch (err) {
@@ -357,7 +394,7 @@ async function activateStake() {
             'from': address,
             'to': ADDRESS_CONTRACT_POOL,
             'value': 0,
-            'gas': gasAmount + gasReserve,
+            'gasLimit': gasAmount + gasReserve,
             'data': contract_pool.methods.activateStake().encodeABI()
         };
     } catch (error) {
@@ -410,12 +447,13 @@ async function getValidator(index) {
 async function minStakeAmount() {
     try {
         const result = await contract_pool.methods.minStakeAmount().call();
-        return +web3.utils.fromWei(result, 'ether');
+        return new BigNumber(web3.utils.fromWei(result, 'ether'));
     } catch (error) {
         throw new Error(error);
     }
 }
 
+// TODO refactor to class with constructor
 function selectNetwork(network) {
     switch (network) {
         case 'mainnet':
