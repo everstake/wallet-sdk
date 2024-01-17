@@ -19,7 +19,7 @@ const UINT16_MAX = 65535|0; // asm type annotation
 const minAmount = new BigNumber('100000000000000000');
 const baseGas = 500000;
 const gasReserve = 120000;
-const notRewardsMessage = 'No active rewards for claim';
+const noRewardsMessage = 'No active rewards for claim';
 const notFilledUnstakeMessage = 'Unstake request not filled yet';
 const zeroUnstakeMessage = 'No amount requested for unstake';
 const wrongTypeMessage = 'Wrong input type';
@@ -142,7 +142,7 @@ async function autocompound(address) {
     try {
         const rewards = await readyforAutocompoundRewardsAmount();
         const gasConsumption = await contract_accounting.methods.autocompound().estimateGas({from: address});
-        if (rewards.isZero()) throw new Error(notRewardsMessage);
+        if (rewards.isZero()) throw new Error(noRewardsMessage);
 
         return {
             'from': address,
@@ -345,13 +345,13 @@ async function unstakePending(address, amount) {
     }
     
     const bnAmount = new BigNumber(amount);
-    if (bnAmount.comparedTo(pendingBalance) > 0) throw new Error(`Amount gt than pending balance ${pendingBalance}`);
+    if (bnAmount.gt(pendingBalance)) throw new Error(`Amount greater than pending balance ${pendingBalance}`);
 
     try {
         pendingBalance = pendingBalance.minus(bnAmount);
         if (!pendingBalance.isZero()) {
             const minStake = await minStakeAmount();
-            if (pendingBalance.comparedTo(minStake) < 0) {
+            if (pendingBalance.lt(minStake)) {
                 throw new Error(`Pending balance less than min stake amount ${minStake}`);
             }
         }
