@@ -131,7 +131,7 @@ async function restakedRewardOf(address) {
 async function getPoolFee() {
     try {
         const result = await contract_accounting.methods.getPoolFee().call();
-        return (new BigNumber(result).divn(10000));
+        return new BigNumber(result).divn(10000);
     } catch (error) {
         throw new Error(error);
     }
@@ -142,17 +142,15 @@ async function autocompound(address) {
     try {
         const rewards = await readyforAutocompoundRewardsAmount();
         const gasConsumption = await contract_accounting.methods.autocompound().estimateGas({from: address});
-        if (!rewards.isZero()) {
-            return {
-                'from': address,
-                'to': ADDRESS_CONTRACT_ACCOUNTING,
-                'value': 0,
-                'gasLimit': gasConsumption + gasReserve,
-                'data': contract_accounting.methods.autocompound().encodeABI()
-            };
-        } else {
-            throw new Error(notRewardsMessage);
-        }
+        if (rewards.isZero()) throw new Error(notRewardsMessage);
+
+        return {
+            'from': address,
+            'to': ADDRESS_CONTRACT_ACCOUNTING,
+            'value': 0,
+            'gasLimit': gasConsumption + gasReserve,
+            'data': contract_accounting.methods.autocompound().encodeABI()
+        };
     } catch (error) {
         throw new Error(error);
     }
@@ -215,19 +213,16 @@ async function claimWithdrawRequest(address) {
             throw new Error(zeroUnstakeMessage);
         }
 
-        if (rewards.readyForClaim.eq(rewards.requested)) {
-            const gasConsumption = await contract_accounting.methods.claimWithdrawRequest().estimateGas({from: address});
+        if (!rewards.readyForClaim.eq(rewards.requested)) throw new Error(notFilledUnstakeMessage);
 
-            return {
-                'from': address,
-                'to': ADDRESS_CONTRACT_ACCOUNTING,
-                'value': 0,
-                'gasLimit': gasConsumption + gasReserve,
-                'data': contract_accounting.methods.claimWithdrawRequest().encodeABI()
-            };
-        } else {
-            throw new Error(notFilledUnstakeMessage);
-        }
+        const gasConsumption = await contract_accounting.methods.claimWithdrawRequest().estimateGas({from: address});
+        return {
+            'from': address,
+            'to': ADDRESS_CONTRACT_ACCOUNTING,
+            'value': 0,
+            'gasLimit': gasConsumption + gasReserve,
+            'data': contract_accounting.methods.claimWithdrawRequest().encodeABI()
+        };
     } catch (error) {
         throw new Error(error);
     }
@@ -247,6 +242,7 @@ async function closeValidatorsStat() {
  * @param {string} address - Sender address.
  * @param {string} amount - Stake amount ETH.
  * @param {string} source - Stake source.
+ * @returns {Promise<object>} Promise object represents the unsigned ETH tx object
 */
 async function stake(address, amount, source = '0') {
     if (typeof(amount) !== 'string') {
@@ -255,23 +251,21 @@ async function stake(address, amount, source = '0') {
 
     let amountWei = await web3.utils.toWei(amount, 'ether');
 
-    if (new BigNumber(amountWei).comparedTo(minAmount) >= 0) {
-        try { 
-            const gasConsumption = await contract_pool.methods.stake(source).estimateGas({from: address, value: amountWei});
+    if (new BigNumber(amountWei).lt(minAmount)) throw new Error(`Min Amount ${minAmount} wei`);
 
-            // Create the transaction
-            return {
-                'from': address,
-                'to': ADDRESS_CONTRACT_POOL,
-                'value': amountWei,
-                'gasLimit': gasConsumption + gasReserve,
-                'data': contract_pool.methods.stake(source).encodeABI()
-            };
-        } catch (error) {
-            throw new Error(error);
-        }
-    } else {
-        throw new Error(`Min Amount ${minAmount} wei`);
+    try {
+        const gasConsumption = await contract_pool.methods.stake(source).estimateGas({from: address, value: amountWei});
+
+        // Create the transaction
+        return {
+            'from': address,
+            'to': ADDRESS_CONTRACT_POOL,
+            'value': amountWei,
+            'gasLimit': gasConsumption + gasReserve,
+            'data': contract_pool.methods.stake(source).encodeABI()
+        };
+    } catch (error) {
+        throw new Error(error);
     }
 }
 
@@ -283,6 +277,7 @@ async function stake(address, amount, source = '0') {
  * @param {string} amount - Unstake amount ETH.
  * @param {string} allowedInterchangeNum - Max allowed number of interchanges.
  * @param {string} source - Unstake source.
+ * @returns {Promise<object>} Promise object represents the unsigned ETH tx object
 */
 async function unstake(address, amount, allowedInterchangeNum = 0, source = '0') {
     if (typeof(amount) !== 'string') {
@@ -296,22 +291,19 @@ async function unstake(address, amount, allowedInterchangeNum = 0, source = '0')
             allowedInterchangeNum = UINT16_MAX;
         }
 
-        if (balance.comparedTo(new BigNumber(amount)) >= 0) {
+        if (balance.lt(new BigNumber(amount))) throw new Error(`Max Amount For Unstake ${balance}`);
                     
-            const amountWei = await web3.utils.toWei(amount.toString(), 'ether');
-            const gasConsumption = await contract_pool.methods.unstake(amountWei, allowedInterchangeNum, source).estimateGas({from: address});   
+        const amountWei = await web3.utils.toWei(amount.toString(), 'ether');
+        const gasConsumption = await contract_pool.methods.unstake(amountWei, allowedInterchangeNum, source).estimateGas({from: address});
 
-            // Create the transaction
-            return {
-                'from': address,
-                'value': 0,
-                'to': ADDRESS_CONTRACT_POOL,
-                'gasLimit': gasConsumption + gasReserve,
-                'data': contract_pool.methods.unstake(amountWei, allowedInterchangeNum, source).encodeABI()
-            };
-        } else {
-            throw new Error(`Max Amount For Unstake ${balance}`);
-        }
+        // Create the transaction
+        return {
+            'from': address,
+            'value': 0,
+            'to': ADDRESS_CONTRACT_POOL,
+            'gasLimit': gasConsumption + gasReserve,
+            'data': contract_pool.methods.unstake(amountWei, allowedInterchangeNum, source).encodeABI()
+        };
     } catch (error) {
         throw new Error(error);
     }
@@ -323,6 +315,7 @@ async function unstake(address, amount, allowedInterchangeNum = 0, source = '0')
  * @param {string} amount - Unstake amount ETH.
  * @param {string} allowedInterchangeNum - Max allowed number of interchanges.
  * @param {string} source - Unstake source.
+ * @returns {Promise<BigNumber>} Promise BigNumber represents the instant unstake amount in ETH
 */
 async function simulateUnstake(address, amount, allowedInterchangeNum = 1, source = '0') {
     try {
@@ -334,13 +327,11 @@ async function simulateUnstake(address, amount, allowedInterchangeNum = 1, sourc
         }
 
         // Balance gt or eq to amount
-        if (balance.comparedTo(new BigNumber(amount)) >= 0) {
-            const amountWei = await web3.utils.toWei(amount.toString(), 'ether');
-            const result = await contract_pool.methods.unstake(amountWei, allowedInterchangeNum, source).call({from: address});         
-            return new BigNumber(web3.utils.fromWei(result, 'ether'));
-        } else {
-            throw new Error(`Max Amount For Unstake ${balance}`);
-        }
+        if (balance.lt(new BigNumber(amount))) throw new Error(`Max Amount For Unstake ${balance}`);
+        const amountWei = await web3.utils.toWei(amount.toString(), 'ether');
+        const result = await contract_pool.methods.unstake(amountWei, allowedInterchangeNum, source).call({from: address});
+        return new BigNumber(web3.utils.fromWei(result, 'ether'));
+
     } catch (error) {
         throw new Error(error);
     }
@@ -354,33 +345,30 @@ async function unstakePending(address, amount) {
     }
     
     const bnAmount = new BigNumber(amount);
-    if (bnAmount.comparedTo(pendingBalance) <= 0) {
-        try {            
-            pendingBalance = pendingBalance.minus(bnAmount);    
-            if (!pendingBalance.isZero()) {
-                const minStake = await minStakeAmount();
+    if (bnAmount.comparedTo(pendingBalance) > 0) throw new Error(`Amount gt than pending balance ${pendingBalance}`);
 
-                if (pendingBalance.comparedTo(minStake) < 0) {
-                    throw new Error(`Pending balance less than min stake amount ${minStake}`);
-                }
+    try {
+        pendingBalance = pendingBalance.minus(bnAmount);
+        if (!pendingBalance.isZero()) {
+            const minStake = await minStakeAmount();
+            if (pendingBalance.comparedTo(minStake) < 0) {
+                throw new Error(`Pending balance less than min stake amount ${minStake}`);
             }
-
-            const amountWei = await web3.utils.toWei(amount.toString(), 'ether');  
-            const gasConsumption = await contract_pool.methods.unstakePending(amountWei).estimateGas({from: address});
-
-            // Create the transaction
-            return  {
-                'from': address,
-                'value': 0,
-                'to': ADDRESS_CONTRACT_POOL,
-                'gasLimit': gasConsumption + gasReserve,
-                'data': contract_pool.methods.unstakePending(amountWei).encodeABI()
-            };
-        } catch (err) {
-            return err;
         }
-    } else {
-        throw new Error(`Amount gt than pending balance ${pendingBalance}`);
+
+        const amountWei = await web3.utils.toWei(amount.toString(), 'ether');
+        const gasConsumption = await contract_pool.methods.unstakePending(amountWei).estimateGas({from: address});
+
+        // Create the transaction
+        return  {
+            'from': address,
+            'value': 0,
+            'to': ADDRESS_CONTRACT_POOL,
+            'gasLimit': gasConsumption + gasReserve,
+            'data': contract_pool.methods.unstakePending(amountWei).encodeABI()
+        };
+    } catch (err) {
+        return err;
     }
 }
 
