@@ -467,7 +467,7 @@ function selectNetwork(network) {
     contract_accounting = new web3.eth.Contract(ABI_CONTRACT_ACCOUNTING, ADDRESS_CONTRACT_ACCOUNTING);
     contract_pool = new web3.eth.Contract(ABI_CONTRACT_POOL, ADDRESS_CONTRACT_POOL);
 
-    return {address_accounting: ADDRESS_CONTRACT_ACCOUNTING, address_pool: ADDRESS_CONTRACT_POOL};
+    return {address_accounting: ADDRESS_CONTRACT_ACCOUNTING, address_pool: ADDRESS_CONTRACT_POOL, contract_pool, contract_accounting};
 }
 
 module.exports = {
