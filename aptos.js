@@ -18,23 +18,6 @@ const minAmount = 10;
 // min amount for stake if user staked >= 10 APT
 const lowerAmount = 0.1;
 
-async function createAccount() {
-    try {
-        return new aptos.AptosAccount().toPrivateKeyObject();
-    } catch (error) {
-        throw new Error(error);
-    }
-}
-
-async function importAccount(importPrivateKey) {
-    try {
-        const Uint8Array = aptos.HexString.ensure(importPrivateKey).toUint8Array();
-        return new aptos.AptosAccount(Uint8Array).toPrivateKeyObject();
-    } catch (error) {
-        throw new Error(error);
-    }
-}
-
 async function getStakeBalanceByAddress(address) {
     try {
         const payload = {
@@ -182,27 +165,8 @@ async function createClient(NODE_URL) {
     }
 }
 
-// ===HELP===
-async function signTransaction(tx, privateKey) {
-    try {
-        const Uint8Array = aptos.HexString.ensure(privateKey).toUint8Array();
-        const UserAccount = new aptos.AptosAccount(Uint8Array);
-
-        const txnRequest = await client.generateTransaction(UserAccount.address(), tx);
-        const signedTxn = await client.signTransaction(UserAccount, txnRequest);
-        const transactionRes = await client.submitTransaction(signedTxn);
-        await client.waitForTransaction(transactionRes.hash);
-
-        return transactionRes.hash;
-    } catch (error) {
-        throw new Error(error);
-    }
-}
-
 module.exports = {
     // func
-    createAccount,
-    importAccount,
     getBalanceByAddress,
     sendTransfer,
     stake,
@@ -211,7 +175,6 @@ module.exports = {
     unstake,
     getStakeBalanceByAddress,
     createClient,
-    signTransaction,
     getMinAmountForStake,
 
     // const

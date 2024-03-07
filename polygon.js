@@ -25,19 +25,6 @@ async function getTransactionCount(publicKey) {
     return await web3.eth.getTransactionCount(publicKey, 'latest');
 }
 
-// send Transaction
-async function sendTransaction(tx, privateKey) {
-    try {
-        let result = null;
-        await web3.eth.accounts.signTransaction(tx, privateKey).then(async (signedTx) => {
-            result = await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
-        });
-        return { result: result.transactionHash }
-    } catch (error) {
-        throw new Error(error);
-    }
-}
-
 // is (bool) func
 async function isTransactionLoading(hash) {
     try {
@@ -231,7 +218,6 @@ module.exports = {
     getBalance,
     getBalanceOf,
     getUnbondNonces,
-    sendTransaction,
     ABI_CONTRACT_APPROVE,
     ADDRESS_CONTRACT_APPROVE,
     ABI_CONTRACT_BUY,

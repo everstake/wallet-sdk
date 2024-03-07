@@ -1,7 +1,5 @@
 const { getFullnodeUrl, SuiClient } = require("@mysten/sui.js/client");
 const { SUI_SYSTEM_STATE_OBJECT_ID } = require("@mysten/sui.js/utils");
-const { Ed25519Keypair } = require("@mysten/sui.js/keypairs/ed25519");
-const { hexToBytes } = require("@noble/hashes/utils");
 const { TransactionBlock } = require("@mysten/sui.js/transactions")
 
 const client = new SuiClient({url: getFullnodeUrl('mainnet')});
@@ -86,23 +84,6 @@ async function unstake(stakedSuiId) {
     }
 }
 
-// ===HELP===
-async function signTransaction(txb, privateKey) {
-    try {
-        const hexString = privateKey.includes('0x') ? privateKey.slice(2) : privateKey;
-        const keypair = Ed25519Keypair.fromSecretKey(hexToBytes(hexString).slice(0, 32));
-
-        const result = await client.signAndExecuteTransactionBlock({
-            signer: keypair,
-            transactionBlock: txb,
-        });
-        // hash
-        return result.digest;
-    } catch (error) {
-        throw new Error(error);
-    }
-}
-
 module.exports = {
     // func
     getBalanceByAddress,
@@ -110,7 +91,6 @@ module.exports = {
     stake,
     unstake,
     getStakeBalanceByAddress,
-    signTransaction,
     minAmountForStake,
 
     // const
