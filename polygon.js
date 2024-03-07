@@ -44,7 +44,7 @@ async function isTransactionLoading(hash) {
 async function approve(address, amount) {
     if (+amount >= minAmount) {
         try {
-            const result = contract_buy.methods.getTotalStake(address).call();
+            const result = await contract_buy.methods.getTotalStake(address).call();
             if (+result[0] !== 0) {
                 return { result: 'approve' };
             } else {

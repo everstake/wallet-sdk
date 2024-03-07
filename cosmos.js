@@ -41,8 +41,12 @@ async function transition(address, amount, typeUrl, value, memo, token = null, a
             typeUrl: `/cosmos.staking.v1beta1.${typeUrl}`,
             value: msgData,
         };
-        await SetStats(token, action, amount, address, msg.typeUrl, chain);
-        return { result: address, msg, fee, memo };
+
+        if (token) {
+            await SetStats(token, action, amount, address, msg.typeUrl, chain);
+        }
+
+        return { result: { address, msg, fee, memo } };
     } catch (error) {
         throw new Error(error);
     }
