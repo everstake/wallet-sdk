@@ -131,7 +131,7 @@ async function restakedRewardOf(address) {
 async function getPoolFee() {
     try {
         const result = await contract_accounting.methods.getPoolFee().call();
-        return new BigNumber(result).divn(10000);
+        return new BigNumber(result).div(10000);
     } catch (error) {
         throw new Error(error);
     }
@@ -238,7 +238,7 @@ async function closeValidatorsStat() {
 }
 
 // ===POOL===
-/** Stake funds into pool. 
+/** Stake funds into pool.
  * @param {string} address - Sender address.
  * @param {string} amount - Stake amount ETH.
  * @param {string} source - Stake source.
@@ -269,9 +269,9 @@ async function stake(address, amount, source = '0') {
     }
 }
 
-/** Unstake value from active autocompound balance. 
- * allowedInterchangeNum is max allowed number interchanges with pending stakers. 
- * Unstaked immediately if value <= pool pending balance or create withdraw request. 
+/** Unstake value from active autocompound balance.
+ * allowedInterchangeNum is max allowed number interchanges with pending stakers.
+ * Unstaked immediately if value <= pool pending balance or create withdraw request.
  * Interchange disallowed as default
  * @param {string} address - Sender address.
  * @param {string} amount - Unstake amount ETH.
@@ -292,7 +292,7 @@ async function unstake(address, amount, allowedInterchangeNum = 0, source = '0')
         }
 
         if (balance.lt(new BigNumber(amount))) throw new Error(`Max Amount For Unstake ${balance}`);
-                    
+
         const amountWei = await web3.utils.toWei(amount.toString(), 'ether');
         const gasConsumption = await contract_pool.methods.unstake(amountWei, allowedInterchangeNum, source).estimateGas({from: address});
 
@@ -309,7 +309,7 @@ async function unstake(address, amount, allowedInterchangeNum = 0, source = '0')
     }
 }
 
-/** Simulate unstake tx and return amount of instant unstake. 
+/** Simulate unstake tx and return amount of instant unstake.
  * Required to compare evaluation of allowedInterchangeNum param
  * @param {string} address - Sender address.
  * @param {string} amount - Unstake amount ETH.
@@ -319,7 +319,7 @@ async function unstake(address, amount, allowedInterchangeNum = 0, source = '0')
 */
 async function simulateUnstake(address, amount, allowedInterchangeNum = 1, source = '0') {
     try {
-        
+
         let balance = await autocompoundBalanceOf(address);
         // Check for type overflow
         if (allowedInterchangeNum > UINT16_MAX) {
@@ -343,7 +343,7 @@ async function unstakePending(address, amount) {
     if (pendingBalance.isZero()) {
         throw new Error(`Zero pending balance`);
     }
-    
+
     const bnAmount = new BigNumber(amount);
     if (bnAmount.gt(pendingBalance)) throw new Error(`Amount greater than pending balance ${pendingBalance}`);
 
@@ -373,7 +373,7 @@ async function unstakePending(address, amount) {
 }
 
 /** Activate pending stake by interchange with withdraw request. */
-async function activateStake() {
+async function activateStake(address) {
     try {
         const gasAmount = await contract_pool.methods.activateStake().estimateGas({from: address});
 
@@ -454,11 +454,11 @@ function selectNetwork(network) {
             ADDRESS_CONTRACT_ACCOUNTING = '0x624087DD1904ab122A32878Ce9e933C7071F53B9';
             ADDRESS_CONTRACT_POOL = '0xAFA848357154a6a624686b348303EF9a13F63264';
             break;
-        case 'goerli':    
+        case 'goerli':
             RPC_URL = 'https://eth-goerli.public.blastapi.io';
             ADDRESS_CONTRACT_ACCOUNTING = '0x6e95818C2Dde3d87406F5C5d0A759d9372053a94';
             ADDRESS_CONTRACT_POOL = '0x1F28aD3B3e26192a09c1248D4092c692c32f8Ec0';
-            break;   
+            break;
         default:
             throw new Error(`Unsupported network ${network}`);
     }
@@ -484,7 +484,7 @@ module.exports = {
     restakedRewardOf,
     autocompoundBalanceOf,
     getPoolFee,
-    autocompound,    
+    autocompound,
     withdrawRequestQueueParams,
     withdrawRequest,
     claimWithdrawRequest,
