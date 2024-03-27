@@ -18,7 +18,7 @@ const UINT16_MAX = 65535|0; // asm type annotation
 // 0.1 ETH
 const minAmount = new BigNumber('100000000000000000');
 const baseGas = 500000;
-const gasReserve = 120000;
+const gasReserve = 220000;
 const noRewardsMessage = 'No active rewards for claim';
 const notFilledUnstakeMessage = 'Unstake request not filled yet';
 const zeroUnstakeMessage = 'No amount requested for unstake';
