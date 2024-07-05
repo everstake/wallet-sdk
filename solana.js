@@ -44,6 +44,8 @@ async function createAccount(address, amount) {
                 stakePubkey: stakeAccount.publicKey,
             });
 
+            createStakeAccountTx.sign(stakeAccount);
+
             return { result: { createStakeAccountTx, stakeAccount: stakeAccount.publicKey.toString() } };
         } catch (error) {
             throw new Error(error);
