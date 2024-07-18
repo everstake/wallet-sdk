@@ -8,7 +8,6 @@ const {
     PublicKey,
     StakeProgram,
     Transaction,
-    TransactionInstruction,
     TransactionMessage,
     VersionedTransaction
 } = require('@solana/web3.js');
