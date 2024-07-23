@@ -1,13 +1,20 @@
 {
   "name": "@everstake/wallet-sdk",
-  "version": "0.3.48",
+  "version": "1.0.0",
   "description": "Everstake Wallet SDK for Javascript",
-  "main": "index.js",
   "publishConfig": {
     "access": "public"
   },
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "pnpm run prebuild && tsup src/index.ts --format cjs,esm --dts",
+    "type-check": "tsc",
+    "lint": "eslint 'src/**/*.{ts,tsx}'",
+    "prettier": "prettier --write 'src/**/*.{ts,tsx}'",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prebuild": "pnpm run type-check && pnpm run lint"
   },
   "keywords": [
     "ethereum",
@@ -40,5 +47,16 @@
     "bip39": "^3.1.0",
     "bs58": "^5.0.0",
     "web3": "^1.9.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.7.0",
+    "eslint": "9.x",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.2.1",
+    "globals": "^15.8.0",
+    "prettier": "^3.3.3",
+    "tsup": "^8.2.2",
+    "typescript": "^5.5.3",
+    "typescript-eslint": "^7.17.0"
   }
 }
