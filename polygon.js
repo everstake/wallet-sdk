@@ -53,7 +53,6 @@ async function approve(address, amount) {
     if (new BigNumber(amountWei).isLessThan(minAmount)) throw new Error(`Min Amount ${web3.utils.fromWei(minAmount.toString(), 'ether').toString()} matic`);
 
     try {
-        const amountWei = await web3.utils.toWei(amount.toString(), 'ether');
         const gasEstimate = await contract_approve.methods.approve(ADDRESS_CONTRACT_STAKING, amountWei).estimateGas();
 
         // Create the transaction
@@ -76,7 +75,7 @@ async function delegate(token, address, amount) {
 
         try {
             const allowedAmount = await getAllowance(address);
-            if (new BigNumber(allowedAmount).isLessThan(allowedAmount)) throw new Error(`Allowance less than amount`);
+            if (new BigNumber(allowedAmount).isLessThan(amountWei)) throw new Error(`Allowance less than amount`);
 
             // Create the transaction
             const tx = {
