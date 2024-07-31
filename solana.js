@@ -1,12 +1,17 @@
 const {
     Authorized,
     clusterApiUrl,
+    ComputeBudgetProgram,
     Connection,
     Keypair,
     LAMPORTS_PER_SOL,
     PublicKey,
-    StakeProgram
+    StakeProgram,
+    Transaction,
+    TransactionMessage,
+    VersionedTransaction
 } = require('@solana/web3.js');
+const bs58 = require('bs58');
 
 const { CheckToken, ERROR_TEXT, SetStats } = require("./utils/api");
 
@@ -43,7 +48,8 @@ async function createAccount(address, amount) {
                 lamports: amountToStake,
                 stakePubkey: stakeAccount.publicKey,
             });
-
+            const blockhash = await getBlockhash();
+            createStakeAccountTx.recentBlockhash = await blockhash
             createStakeAccountTx.sign(stakeAccount);
 
             return { result: { createStakeAccountTx, stakeAccount: stakeAccount.publicKey.toString() } };
@@ -53,6 +59,22 @@ async function createAccount(address, amount) {
     } else {
         throw new Error(`Min Amount ${minAmount}`);
     }
+}
+
+async function prepareTransaction(instructions, payer) {
+    const blockhash = await getBlockhash();
+    const messageV0 = new TransactionMessage({
+        payerKey: payer,
+        recentBlockhash: blockhash,
+        instructions
+    }).compileToV0Message();
+    return new VersionedTransaction(messageV0);
+}
+
+async function getBlockhash(){
+    return await connection
+    .getLatestBlockhash({ commitment: 'max' })
+    .then((res) => res.blockhash);
 }
 
 async function delegate(token, address, amount, stakeAccount) {
@@ -136,12 +158,46 @@ async function getDelegations(address) {
 
         accounts = await connection.getParsedProgramAccounts(new PublicKey("Stake11111111111111111111111111111111111111"), {
             filters: [
-                {dataSize: 200},
-                {memcmp: {offset: 44, bytes: address}},
+                { dataSize: 200 },
+                { memcmp: { offset: 44, bytes: address } },
             ],
         });
 
         return { result: accounts };
+    } catch (error) {
+        throw new Error(error);
+    }
+}
+
+async function stake(sender, lamports) {
+    try {
+        await connect();
+        const senderPublicKey = new PublicKey(sender);
+        const stakeAccount = Keypair.generate();
+        const validatorPubkey = new PublicKey(VALIDATOR_ADDRESS);
+
+        // Calculate how much we want to stake
+        const minimumRent = await connection.getMinimumBalanceForRentExemption(StakeProgram.space);
+
+        const tx = new Transaction().add(
+            ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50 }),
+            StakeProgram.createAccount({
+                authorized: new Authorized(senderPublicKey, senderPublicKey),
+                fromPubkey: senderPublicKey,
+                lamports: lamports + minimumRent,
+                stakePubkey: stakeAccount.publicKey,
+            }),
+            StakeProgram.delegate({
+                stakePubkey: stakeAccount.publicKey,
+                authorizedPubkey: senderPublicKey,
+                votePubkey: validatorPubkey,
+            })
+        );
+
+        let versionedTX = await prepareTransaction(tx.instructions, senderPublicKey);
+        versionedTX.sign([stakeAccount]);
+
+        return versionedTX;
     } catch (error) {
         throw new Error(error);
     }
@@ -153,4 +209,5 @@ module.exports = {
     deactivate,
     withdraw,
     getDelegations,
+    stake,
 };
