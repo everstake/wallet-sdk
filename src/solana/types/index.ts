@@ -2,7 +2,7 @@ import {
   AccountInfo,
   ParsedAccountData,
   PublicKey,
-  Transaction,
+  VersionedTransaction,
 } from '@solana/web3.js';
 
 export interface ApiResponse<T> {
@@ -15,6 +15,6 @@ export type Delegation = {
 };
 
 export type CreateAccountResponse = {
-  createStakeAccountTx: Transaction;
+  createStakeAccountVerTx: VersionedTransaction;
   stakeAccount: string;
 };

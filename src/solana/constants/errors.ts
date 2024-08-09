@@ -7,4 +7,5 @@ export const ERROR_MESSAGES = {
   DEACTIVATE_ERROR: 'An error occurred while deactivating the stake',
   WITHDRAW_ERROR: 'An error occurred while withdrawing the stake',
   GET_DELEGATIONS_ERROR: 'An error occurred while fetching the delegations',
+  STAKE_ERROR: 'An error occurred while staking',
 };
