@@ -9,4 +9,12 @@ export default [
   pluginJs.configs.recommended,
   ...tseslint.configs.recommended,
   eslintPluginPrettierRecommended,
+  {
+    rules: {
+      'padding-line-between-statements': [
+        'error',
+        { blankLine: 'always', prev: '*', next: 'return' },
+      ],
+    },
+  },
 ];

@@ -1,0 +1,20 @@
+import {
+  AccountInfo,
+  ParsedAccountData,
+  PublicKey,
+  Transaction,
+} from '@solana/web3.js';
+
+export interface ApiResponse<T> {
+  result: T;
+}
+
+export type Delegation = {
+  pubkey: PublicKey;
+  account: AccountInfo<Buffer | ParsedAccountData>;
+};
+
+export type CreateAccountResponse = {
+  createStakeAccountTx: Transaction;
+  stakeAccount: string;
+};
