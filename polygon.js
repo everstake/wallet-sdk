@@ -189,11 +189,7 @@ async function getUnbondNonces(address) {
     }
 }
 async function getCurrentEpoch() {
-    try {
-        return await contract_staking.methods.currentEpoch().call();
-    } catch (error) {
-        throw new Error(error);
-    }
+    return await contract_staking.methods.currentEpoch().call();
 }
 
 async function getBalanceOf(address) {
