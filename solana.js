@@ -169,37 +169,41 @@ async function getDelegations(address) {
     }
 }
 
-async function stake(sender, lamports) {
-    try {
-        await connect();
-        const senderPublicKey = new PublicKey(sender);
-        const stakeAccount = Keypair.generate();
-        const validatorPubkey = new PublicKey(VALIDATOR_ADDRESS);
+async function stake(token, sender, lamports) {
+    if (await CheckToken(token)) {
+        try {
+            await connect();
+            const senderPublicKey = new PublicKey(sender);
+            const stakeAccount = Keypair.generate();
+            const validatorPubkey = new PublicKey(VALIDATOR_ADDRESS);
 
-        // Calculate how much we want to stake
-        const minimumRent = await connection.getMinimumBalanceForRentExemption(StakeProgram.space);
+            // Calculate how much we want to stake
+            const minimumRent = await connection.getMinimumBalanceForRentExemption(StakeProgram.space);
 
-        const tx = new Transaction().add(
-            ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50 }),
-            StakeProgram.createAccount({
-                authorized: new Authorized(senderPublicKey, senderPublicKey),
-                fromPubkey: senderPublicKey,
-                lamports: lamports + minimumRent,
-                stakePubkey: stakeAccount.publicKey,
-            }),
-            StakeProgram.delegate({
-                stakePubkey: stakeAccount.publicKey,
-                authorizedPubkey: senderPublicKey,
-                votePubkey: validatorPubkey,
-            })
-        );
+            const tx = new Transaction().add(
+                ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50 }),
+                StakeProgram.createAccount({
+                    authorized: new Authorized(senderPublicKey, senderPublicKey),
+                    fromPubkey: senderPublicKey,
+                    lamports: lamports + minimumRent,
+                    stakePubkey: stakeAccount.publicKey,
+                }),
+                StakeProgram.delegate({
+                    stakePubkey: stakeAccount.publicKey,
+                    authorizedPubkey: senderPublicKey,
+                    votePubkey: validatorPubkey,
+                })
+            );
 
-        let versionedTX = await prepareTransaction(tx.instructions, senderPublicKey);
-        versionedTX.sign([stakeAccount]);
-
-        return versionedTX;
-    } catch (error) {
-        throw new Error(error);
+            let versionedTX = await prepareTransaction(tx.instructions, senderPublicKey);
+            versionedTX.sign([stakeAccount]);
+            
+            return { result: versionedTX };
+        } catch (error) {
+            throw new Error(error);
+        }
+    } else {
+        throw new Error(ERROR_TEXT);
     }
 }
 
