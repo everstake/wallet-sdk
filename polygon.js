@@ -25,7 +25,7 @@ const restakeBaseGas = 220000;
 
 const chain = 'polygon';
 
-const withdrawEpochDelay = 80;
+const WITHDRAW_EPOCH_DELAY = 80;
 const web3 = new Web3(RPC_URL);
 const contract_approve = new web3.eth.Contract(ABI_CONTRACT_APPROVE, ADDRESS_CONTRACT_APPROVE);
 const contract_buy = new web3.eth.Contract(ABI_CONTRACT_BUY, ADDRESS_CONTRACT_BUY);
@@ -127,7 +127,7 @@ async function claimUndelegate(address) {
     if (BigNumber(unbond.amount).isZero()) throw new Error(`Nothing to claim`);
 
     const currentEpoch = await getCurrentEpoch();
-    if (BigNumber(currentEpoch).isLessThan(BigNumber(unbond.withdrawEpoch).plus(BigNumber(withdrawEpochDelay)))) throw new Error(`Current epoch less than withdraw delay`);
+    if (BigNumber(currentEpoch).isLessThan(BigNumber(unbond.withdrawEpoch).plus(BigNumber(WITHDRAW_EPOCH_DELAY)))) throw new Error(`Current epoch less than withdraw delay`);
 
     return {
         'from': address,
@@ -229,4 +229,5 @@ module.exports = {
     ABI_CONTRACT_BUY,
     ADDRESS_CONTRACT_BUY,
     ADDRESS_CONTRACT_STAKING,
+    WITHDRAW_EPOCH_DELAY
 };
