@@ -84,7 +84,7 @@ async function stake(token, address, amount) {
         const MinAmountForStake = await getMinAmountForStake(address);
         if (+amount >= MinAmountForStake) {
             try {
-                // await SetStats(token, 'stake', amount, address, chain);
+                await SetStats(token, 'stake', amount, address, '', chain);
                 return {
                     type: "entry_function_payload",
                     function: "0x1::delegation_pool::add_stake",
@@ -105,7 +105,7 @@ async function stake(token, address, amount) {
 async function reactivate(token, address, amount) {
     if (await CheckToken(token)) {
         try {
-            await SetStats(token, 'reactivate_stake', amount, address, chain);
+            await SetStats(token, 'reactivate_stake', amount, address, '', chain);
 
             return {
                 type: "entry_function_payload",
@@ -124,7 +124,7 @@ async function reactivate(token, address, amount) {
 async function unlock(token, address, amount) {
     if (await CheckToken(token)) {
         try {
-            await SetStats(token, 'unlock_stake', amount, address, chain);
+            await SetStats(token, 'unlock_stake', amount, address, '', chain);
             return {
                 type: "entry_function_payload",
                 function: "0x1::delegation_pool::unlock",
@@ -142,7 +142,7 @@ async function unlock(token, address, amount) {
 async function unstake(token, address, amount) {
     if (await CheckToken(token)) {
         try {
-            await SetStats(token, 'unstake', amount, address, chain);
+            await SetStats(token, 'unstake', amount, address, '', chain);
             return {
                 type: "entry_function_payload",
                 function: "0x1::delegation_pool::withdraw",
