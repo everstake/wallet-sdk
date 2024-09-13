@@ -1,17 +1,16 @@
 import Web3 from 'web3';
 import BigNumber from 'bignumber.js';
-import type { AbiItem } from 'web3-utils';
 
-import type { Contract } from 'web3-eth-contract';
-import type { provider } from 'web3-core';
+import { HttpProvider } from 'web3';
+import type { Web3BaseProvider, Contract } from 'web3';
 import {
-  ABI_CONTRACT_ACCOUNTING,
-  ABI_CONTRACT_POOL,
   NETWORK_ADDRESSES,
   GAS_RESERVE,
   MIN_AMOUNT,
   UINT16_MAX,
 } from './constants';
+import { ABI_CONTRACT_ACCOUNTING, ABI_CONTRACT_POOL } from './abi';
+
 import { ERROR_MESSAGES, ORIGINAL_ERROR_MESSAGES } from './constants/errors';
 import type { NetworkType, Transaction, ValidatorStatus } from './types';
 import { Blockchain } from '../utils';
@@ -36,17 +35,17 @@ export class Ethereum extends Blockchain {
   public addressContractAccounting!: string;
   public addressContractPool!: string;
   public addressContractWithdrawTreasury!: string;
-  public contractAccounting!: Contract;
-  public contractPool!: Contract;
+  public contractAccounting!: Contract<typeof ABI_CONTRACT_ACCOUNTING>;
+  public contractPool!: Contract<typeof ABI_CONTRACT_POOL>;
 
-  private rpcUrl!: provider;
+  private rpcUrl!: Web3BaseProvider;
   private web3!: Web3;
   private minAmount = new BigNumber(MIN_AMOUNT);
 
   protected ERROR_MESSAGES = ERROR_MESSAGES;
   protected ORIGINAL_ERROR_MESSAGES = ORIGINAL_ERROR_MESSAGES;
 
-  constructor(network: NetworkType = 'mainnet', url?: provider) {
+  constructor(network: NetworkType = 'mainnet', url?: string) {
     super();
     this.initializeNetwork(network, url);
   }
@@ -265,7 +264,10 @@ export class Ethereum extends Blockchain {
    */
   public async getPoolFee(): Promise<BigNumber> {
     try {
-      const result = await this.contractAccounting.methods.getPoolFee().call();
+      const result = await this.contractAccounting.methods
+        .getPoolFee()
+        .call()
+        .toString();
 
       return new BigNumber(result).div(10000);
     } catch (error) {
@@ -294,7 +296,7 @@ export class Ethereum extends Blockchain {
         from: address,
         to: this.addressContractAccounting,
         value: 0,
-        gasLimit: gasConsumption + GAS_RESERVE,
+        gasLimit: this.calculateGasLimit(gasConsumption),
         data: this.contractAccounting.methods.autocompound().encodeABI(),
       };
     } catch (error) {
@@ -415,7 +417,7 @@ export class Ethereum extends Blockchain {
         from: address,
         to: this.addressContractAccounting,
         value: 0,
-        gasLimit: gasConsumption + GAS_RESERVE,
+        gasLimit: this.calculateGasLimit(gasConsumption),
         data: this.contractAccounting.methods
           .claimWithdrawRequest()
           .encodeABI(),
@@ -481,7 +483,7 @@ export class Ethereum extends Blockchain {
         from: address,
         to: this.addressContractPool,
         value: Number(amountWei),
-        gasLimit: gasConsumption + GAS_RESERVE,
+        gasLimit: this.calculateGasLimit(gasConsumption),
         data: this.contractPool.methods.stake(source).encodeABI(),
       };
     } catch (error) {
@@ -535,7 +537,7 @@ export class Ethereum extends Blockchain {
         from: address,
         value: 0,
         to: this.addressContractPool,
-        gasLimit: gasConsumption + GAS_RESERVE,
+        gasLimit: this.calculateGasLimit(gasConsumption),
         data: this.contractPool.methods
           .unstake(amountWei, allowedInterchangeNum, source)
           .encodeABI(),
@@ -636,7 +638,7 @@ export class Ethereum extends Blockchain {
         from: address,
         value: 0,
         to: this.addressContractPool,
-        gasLimit: gasConsumption + GAS_RESERVE,
+        gasLimit: this.calculateGasLimit(gasConsumption),
         data: this.contractPool.methods.unstakePending(amountWei).encodeABI(),
       };
     } catch (error) {
@@ -664,7 +666,7 @@ export class Ethereum extends Blockchain {
         from: address,
         to: this.addressContractPool,
         value: 0,
-        gasLimit: gasAmount + GAS_RESERVE,
+        gasLimit: this.calculateGasLimit(gasAmount),
         data: this.contractPool.methods.activateStake().encodeABI(),
       };
     } catch (error) {
@@ -707,7 +709,7 @@ export class Ethereum extends Blockchain {
         .getPendingValidator(index)
         .call();
 
-      return result;
+      return result.toString();
     } catch (error) {
       throw this.handleError('GET_PENDING_VALIDATOR_ERROR', error);
     }
@@ -744,13 +746,13 @@ export class Ethereum extends Blockchain {
    */
   public async getValidator(
     index: number,
-  ): Promise<{ pubkey: string; status: string }> {
+  ): Promise<{ pubkey: string; status: ValidatorStatus }> {
     try {
       const result = await this.contractPool.methods.getValidator(index).call();
 
       return {
-        pubkey: result[0],
-        status: this.getStatusFromCode(result[1]),
+        pubkey: result[0].toString(),
+        status: this.getStatusFromCode(result[1].toString()),
       };
     } catch (error) {
       throw this.handleError('GET_VALIDATOR_ERROR', error);
@@ -786,7 +788,7 @@ export class Ethereum extends Blockchain {
    *
    * @returns The current instance of the `Ethereum` class.
    */
-  public selectNetwork(network: NetworkType, url?: provider): Ethereum {
+  public selectNetwork(network: NetworkType, url?: string): Ethereum {
     this.initializeNetwork(network, url);
 
     return this;
@@ -802,14 +804,14 @@ export class Ethereum extends Blockchain {
    *
    * @throws Will throw an error if the provided network is not supported (i.e., not a key in `NETWORK_ADDRESSES`).
    */
-  private initializeNetwork(network: NetworkType, url?: provider): void {
+  private initializeNetwork(network: NetworkType, url?: string): void {
     const networkAddresses = NETWORK_ADDRESSES[network];
 
     if (!networkAddresses) {
       this.throwError('NETWORK_NOT_SUPPORTED', network);
     }
-
-    this.rpcUrl = url || networkAddresses.rpcUrl;
+    const providerUrl = url || networkAddresses.rpcUrl;
+    this.rpcUrl = new HttpProvider(providerUrl);
     this.addressContractAccounting = networkAddresses.addressContractAccounting;
     this.addressContractPool = networkAddresses.addressContractPool;
     this.addressContractWithdrawTreasury =
@@ -817,13 +819,12 @@ export class Ethereum extends Blockchain {
 
     this.web3 = new Web3(this.rpcUrl);
 
-    // TODO: Avoid using casting to AbiItem[].
     this.contractAccounting = new this.web3.eth.Contract(
-      ABI_CONTRACT_ACCOUNTING as AbiItem[],
+      ABI_CONTRACT_ACCOUNTING,
       this.addressContractAccounting,
     );
     this.contractPool = new this.web3.eth.Contract(
-      ABI_CONTRACT_POOL as AbiItem[],
+      ABI_CONTRACT_POOL,
       this.addressContractPool,
     );
   }
@@ -853,7 +854,18 @@ export class Ethereum extends Blockchain {
    *
    * @returns The converted amount in Ether as a BigNumber.
    */
-  private fromWeiToEther(amount: string): BigNumber {
+  private fromWeiToEther(amount: string | number | bigint): BigNumber {
     return new BigNumber(this.web3.utils.fromWei(amount, 'ether'));
+  }
+  /**
+   * Calculates the gas limit by adding a predefined GAS_RESERVE to the given gas consumption.
+   *
+   * @param gasConsumption - The amount of gas consumed.
+   * @returns The calculated gas limit as a number.
+   */
+  private calculateGasLimit(gasConsumption: bigint): number {
+    return new BigNumber(gasConsumption.toString())
+      .plus(GAS_RESERVE)
+      .toNumber();
   }
 }

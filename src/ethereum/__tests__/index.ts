@@ -13,7 +13,8 @@ import {
   unstakeSuccessFixture,
 } from '../__fixtures__';
 import { NetworkType } from '../types';
-import type { Contract } from 'web3-eth-contract';
+import type { Contract } from 'web3';
+import { ABI_CONTRACT_POOL } from '../abi';
 
 describe('selectNetwork', () => {
   selectNetworkSuccessFixture.forEach(({ description, args, result }) => {
@@ -68,7 +69,7 @@ describe('unstakePending', () => {
               encodeABI: jest.fn().mockReturnValue(mockContractPool.encodeABI),
             }),
           },
-        } as Contract;
+        } as unknown as Contract<typeof ABI_CONTRACT_POOL>;
 
         const transaction = await ethereum.unstakePending(
           args.address,

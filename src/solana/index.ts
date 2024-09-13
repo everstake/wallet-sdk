@@ -30,7 +30,7 @@ import { ApiResponse, CreateAccountResponse, Delegation } from './types';
  * @throws Throws an error if there's an issue establishing the connection.
  */
 export class Solana extends Blockchain {
-  private connection: Connection | null = null;
+  private connection!: Connection;
   protected ERROR_MESSAGES = ERROR_MESSAGES;
   protected ORIGINAL_ERROR_MESSAGES = {};
 
@@ -68,7 +68,7 @@ export class Solana extends Blockchain {
 
       // Get the minimum balance for rent exemption
       const minimumRent =
-        await this.connection!.getMinimumBalanceForRentExemption(
+        await this.connection.getMinimumBalanceForRentExemption(
           StakeProgram.space,
         );
 
@@ -133,7 +133,7 @@ export class Solana extends Blockchain {
    * @returns A promise that resolves to a string representing the blockhash.
    */
   public async getBlockhash(): Promise<string> {
-    const res = await this.connection!.getLatestBlockhash({
+    const res = await this.connection.getLatestBlockhash({
       commitment: 'max',
     });
 
@@ -315,7 +315,7 @@ export class Solana extends Blockchain {
       ];
 
       // Fetch the accounts
-      const accounts = await this.connection!.getParsedProgramAccounts(
+      const accounts = await this.connection.getParsedProgramAccounts(
         stakeProgramAddress,
         { filters },
       );
@@ -345,7 +345,7 @@ export class Solana extends Blockchain {
 
       // Calculate how much we want to stake
       const minimumRent =
-        await this.connection!.getMinimumBalanceForRentExemption(
+        await this.connection.getMinimumBalanceForRentExemption(
           StakeProgram.space,
         );
 

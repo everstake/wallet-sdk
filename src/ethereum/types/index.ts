@@ -1,10 +1,3 @@
-import type {
-  AbiInput,
-  AbiOutput,
-  StateMutabilityType,
-  AbiType,
-} from 'web3-utils';
-
 export type NetworkType = 'mainnet' | 'holesky';
 
 export interface NetworkAddresses {
@@ -27,15 +20,3 @@ export type Transaction = {
 };
 
 export type ValidatorStatus = 'unknown' | 'pending' | 'deposited';
-
-export interface ExtendedAbiItem {
-  anonymous?: boolean;
-  constant?: boolean;
-  inputs?: AbiInput[];
-  name?: string;
-  outputs?: AbiOutput[];
-  payable?: boolean;
-  stateMutability?: StateMutabilityType;
-  type: AbiType | 'error'; // added 'error' type to AbiType
-  gas?: number;
-}
