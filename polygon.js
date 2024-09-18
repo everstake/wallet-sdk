@@ -57,17 +57,17 @@ async function approve(address, amount, isPOL = false) {
     const contract = isPOL ? contract_approve_pol : contract_approve;
 
     try {
-        const gasEstimate = await contract.methods.approve(ADDRESS_CONTRACT_STAKING, amountWei).estimateGas();
+        const gasEstimate = await contract.methods.approve(ADDRESS_CONTRACT_STAKING, amountWei).estimateGas({from: address});
 
         // Create the transaction
         return {
             'from': address,
-            'to': ADDRESS_CONTRACT_APPROVE,
+            'to': contract._address,
             'gasLimit': gasEstimate,
             'data': contract.methods.approve(ADDRESS_CONTRACT_STAKING, amountWei).encodeABI()
         };
-    } catch (err) {
-        return err;
+    } catch (error) {
+        throw new Error(error);
     }
 
 }

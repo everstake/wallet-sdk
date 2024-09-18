@@ -369,7 +369,7 @@ async function unstakePending(address, amount) {
             'data': contract_pool.methods.unstakePending(amountWei).encodeABI()
         };
     } catch (err) {
-        return err;
+        throw new Error(error);
     }
 }
 
