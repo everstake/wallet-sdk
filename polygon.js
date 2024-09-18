@@ -128,8 +128,8 @@ async function undelegate(token, address, amount, isPOL = false) {
     }
 }
 
-async function claimUndelegate(address, isPOL = false) {
-    const unbond = await getUnbond(address);
+async function claimUndelegate(address, unbondNonce = 0, isPOL = false) {
+    const unbond = await getUnbond(address, unbondNonce);
     if (BigNumber(unbond.amount).isZero()) throw new Error(`Nothing to claim`);
 
     const currentEpoch = await getCurrentEpoch();
@@ -184,9 +184,10 @@ async function getTotalDelegate(address) {
         throw new Error(error);
     }
 }
-async function getUnbond(address) {
+async function getUnbond(address, unbondNonce = 0) {
     try {
-        const unbondNonces = await contract_buy.methods.unbondNonces(address).call();
+        // Get recent nonces if not provided
+        const unbondNonces = unbondNonce === 0 ? await contract_buy.methods.unbondNonces(address).call() : unbondNonce;
         const result = await contract_buy.methods.unbonds_new(address, unbondNonces).call();
         return { amount: new BigNumber(web3.utils.fromWei(result[0], 'ether')), withdrawEpoch: result[1], unbondNonces: unbondNonces };
     } catch (error) {
