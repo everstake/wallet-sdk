@@ -1,7 +1,7 @@
 const { CheckToken, ERROR_TEXT, SetStats } = require("./utils/api");
 const axios = require('axios');
 
-const API_URL = 'https://api-cosmoshub-ia.cosmosia.notional.ventures';
+const API_URL = 'https://cosmos-rest.publicnode.com';
 const VALIDATOR_ADDRESS = 'cosmosvaloper1tflk30mq5vgqjdly92kkhhq3raev2hnz6eete3';
 const BASE_NUM = 1000000;
 const minAmount = 0.01;
@@ -126,15 +126,15 @@ async function getDelegations(address) {
     try {
         const delegatorArray = [];
 
-        const delegatorResponse = await axios.get(`${API_URL}/staking/delegators/${address}/delegations`);
+        const delegatorResponse = await axios.get(`${API_URL}/cosmos/staking/v1beta1/delegations/${address}`);
         const delegator = delegatorResponse.data;
 
-        const validatorResponse = await axios.get(`${API_URL}/staking/delegators/${address}/validators`);
+        const validatorResponse = await axios.get(`${API_URL}/cosmos/staking/v1beta1/delegators/${address}/validators`);
         const validator = validatorResponse.data;
 
-        for (let i = 0; i < validator.result.length; i++) {
+        for (let i = 0; i < validator.validators.length; i++) {
             delegatorArray.push({
-                ...delegator.result[i], ...validator.result[i]
+                ...delegator.delegation_responses[i], ...validator.validators[i]
             })
         }
         return { result: delegatorArray };
