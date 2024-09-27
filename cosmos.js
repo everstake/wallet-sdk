@@ -7,6 +7,7 @@ const API_URL = 'https://cosmos-rest.publicnode.com';
 const VALIDATOR_ADDRESS = 'cosmosvaloper1tflk30mq5vgqjdly92kkhhq3raev2hnz6eete3';
 const decimals = 6;
 const minAmount = new BigNumber(0.01);
+const defaultSource = '0'
 
 const chain = 'cosmos';
 
@@ -57,11 +58,11 @@ async function transition(address, amount, typeUrl, value, memo, token = null, a
 
     try {
         const msg = {
-            typeUrl: `/cosmos.staking.v1beta1.${typeUrl}`,
+            typeUrl: typeUrl,
             value: msgData,
         };
 
-        if (token) {
+        if (token && action) {
             await SetStats(token, action, amount, address, msg.typeUrl, chain);
         }
 
@@ -78,7 +79,7 @@ async function transition(address, amount, typeUrl, value, memo, token = null, a
  * @param {string} source - source value (partner identifier)
  * @returns {Promise<object>} Promise object represents the unsigned TX object
  */
-async function delegate(token, address, amount, source) {
+async function delegate(token, address, amount, source = defaultSource) {
     if (!await CheckToken(token)) {
         throw new Error(ERROR_TEXT);
     }
@@ -92,7 +93,7 @@ async function delegate(token, address, amount, source) {
     return await transition(
         address,
         amount,
-        'MsgDelegate',
+        '/cosmos.staking.v1beta1.MsgDelegate',
         {validatorAddress: VALIDATOR_ADDRESS},
         'Staked by Source ' + source + ' with Everstake',
         token,
@@ -109,7 +110,7 @@ async function delegate(token, address, amount, source) {
  * @param {string} source - source value (partner identifier)
  * @returns {Promise<object>} Promise object represents the unsigned TX object
  */
-async function redelegate(token, address, amount, validatorSrcAddress, source) {
+async function redelegate(token, address, amount, validatorSrcAddress, source = defaultSource) {
     if (!await CheckToken(token)) {
         throw new Error(ERROR_TEXT);
     }
@@ -123,7 +124,7 @@ async function redelegate(token, address, amount, validatorSrcAddress, source) {
     return await transition(
         address,
         amount,
-        'MsgBeginRedelegate',
+        '/cosmos.staking.v1beta1.MsgBeginRedelegate',
         {validatorSrcAddress: validatorSrcAddress, validatorDstAddress: VALIDATOR_ADDRESS},
         'Restaked by Source ' + source + ' with Everstake',
         token,
@@ -139,7 +140,7 @@ async function redelegate(token, address, amount, validatorSrcAddress, source) {
  * @param {string} source - source value (partner identifier)
  * @returns {Promise<object>} Promise object represents the unsigned TX object
  */
-async function undelegate(token, address, amount, source) {
+async function undelegate(token, address, amount, source = defaultSource) {
     if (typeof (amount) !== 'string') {
         throw new Error(wrongTypeMessage);
     }
@@ -148,7 +149,7 @@ async function undelegate(token, address, amount, source) {
             return await transition(
                 address,
                 amount,
-                'MsgUndelegate',
+                '/cosmos.staking.v1beta1.MsgUndelegate',
                 {validatorAddress: VALIDATOR_ADDRESS},
                 'Unstaked by Source ' + source + ' with Everstake',
                 token,
@@ -164,17 +165,20 @@ async function undelegate(token, address, amount, source) {
 }
 
 /** withdrawRewards - withdraw rewards
+ * @param {string} token - Auth API token
  * @param {string} address - Account blockchain address (staker)
  * @param {string} source - source value (partner identifier)
  * @returns {Promise<object>} Promise object represents the unsigned TX object
  */
-async function withdrawRewards(address, source) {
+async function withdrawRewards(token, address, source = defaultSource) {
     return await transition(
         address,
         '0',
-        'MsgWithdrawDelegationReward',
-        {validatorAddress: VALIDATOR_ADDRESS},
+        '/cosmos.distribution.v1beta1.MsgWithdrawDelegatorReward',
+        {delegatorAddress: address, validatorAddress: VALIDATOR_ADDRESS},
         'Withdraw Rewards by Source ' + source + ' with Everstake',
+        token,
+        null,
         '750000'
     );
 }

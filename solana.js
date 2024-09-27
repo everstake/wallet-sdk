@@ -79,7 +79,7 @@ async function getBlockhash() {
  * @param {string} token - auth API token
  * @param {string} address - account blockchain address (staker)
  * @param {number} lamports - lamport amount
- * @param {string} stakeAccount - stake account
+ * @param {string} stakeAccount - stake account pubKey
  * @returns {Promise<object>} Promise object Tx
  */
 async function delegate(token, address, lamports, stakeAccount) {
@@ -189,7 +189,7 @@ async function getDelegations(address) {
  * @param {string} token - auth API token
  * @param {string} sender - account blockchain address (staker)
  * @param {number} lamports - lamport amount
- * @returns {Promise<object>} Promise object with Tx
+ * @returns {Promise<object>} Promise object with Versioned Tx
  */
 async function stake(token, sender, lamports) {
     if (!await CheckToken(token)) {
