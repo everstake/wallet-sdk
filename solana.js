@@ -8,19 +8,15 @@ const {
     StakeProgram,
     Transaction,
     TransactionMessage,
-    VersionedTransaction
+    VersionedTransaction,
+    LAMPORTS_PER_SOL,
 } = require('@solana/web3.js');
-const BigNumber = require('bignumber.js');
 
 const {CheckToken, ERROR_TEXT, SetStats} = require("./utils/api");
-const {SetDecimal} = require("./utils/decimals");
 
 const chain = 'solana';
-const minAmount = new BigNumber(10000000); // 0.01
+const minAmount = 10000000; // 0.01
 const VALIDATOR_ADDRESS = '9QU2QSxhb24FUX3Tu2FpczXjpK3VYrvRudywSZaM29mF';
-const decimals = 9;
-
-const wrongTypeMessage = 'Wrong input type';
 
 let connection = null;
 
@@ -37,30 +33,21 @@ async function connect() {
 
 /** createAccount - create account
  * @param {string} address - account blockchain address (staker)
- * @param {string} lamports - lamport amount
+ * @param {number} lamports - lamport amount
  * @returns {Promise<object>} Promise object account data
  */
 async function createAccount(address, lamports) {
-    if (typeof (lamports) !== 'string') {
-        throw new Error(wrongTypeMessage);
-    }
-    const lamportsBN = new BigNumber(lamports);
-    if (lamportsBN.lt(minAmount)) {
-        throw new Error(`Min Amount ${minAmount.toString()}`);
-    }
-
     try {
         await connect();
         const publicKey = new PublicKey(address);
         const stakeAccount = Keypair.generate();
 
         const minimumRent = await connection.getMinimumBalanceForRentExemption(StakeProgram.space);
-        const amountToStake = lamportsBN.add(new BigNumber(minimumRent));
 
         const createStakeAccountTx = StakeProgram.createAccount({
             authorized: new Authorized(publicKey, publicKey),
             fromPubkey: publicKey,
-            lamports: amountToStake.toNumber(),
+            lamports: lamports + minimumRent,
             stakePubkey: stakeAccount.publicKey,
         });
         const blockhash = await getBlockhash();
@@ -91,7 +78,7 @@ async function getBlockhash() {
 /** createAccount - create account
  * @param {string} token - auth API token
  * @param {string} address - account blockchain address (staker)
- * @param {string} lamports - lamport amount
+ * @param {number} lamports - lamport amount
  * @param {string} stakeAccount - stake account
  * @returns {Promise<object>} Promise object Tx
  */
@@ -99,11 +86,7 @@ async function delegate(token, address, lamports, stakeAccount) {
     if (!await CheckToken(token)) {
         throw new Error(ERROR_TEXT);
     }
-    if (typeof (lamports) !== 'string') {
-        throw new Error(wrongTypeMessage);
-    }
-    const lamportsBN = new BigNumber(lamports)
-    if (lamportsBN.lt(minAmount)) {
+    if (lamports < minAmount) {
         throw new Error(`Min Amount ${minAmount.toString()}`);
     }
 
@@ -120,7 +103,7 @@ async function delegate(token, address, lamports, stakeAccount) {
             votePubkey: selectedValidatorPubkey,
         });
 
-        await SetStats(token, 'stake', SetDecimal(lamportsBN, decimals).toNumber(), address, delegateTx, chain);
+        await SetStats(token, 'stake', lamports / LAMPORTS_PER_SOL, address, delegateTx, chain);
         return {result: delegateTx};
     } catch (error) {
         throw new Error(error);
@@ -155,15 +138,10 @@ async function deactivate(address, stakeAccountPublicKey) {
  * @param {string} token - auth API token
  * @param {string} address - account blockchain address (staker)
  * @param {string} stakeAccountPublicKey - public key
- * @param {string} stakeBalance - stake balace
+ * @param {number} stakeBalance - stake balace
  * @returns {Promise<object>} Promise object deactivation Tx
  */
 async function withdraw(token, address, stakeAccountPublicKey, stakeBalance) {
-    if (!await CheckToken(token)) {
-        throw new Error(ERROR_TEXT);
-    }
-    const stakeBalanceBN = new BigNumber(stakeBalance);
-
     try {
         await connect();
 
@@ -174,10 +152,10 @@ async function withdraw(token, address, stakeAccountPublicKey, stakeBalance) {
             stakePubkey: stakeAccount,
             authorizedPubkey: publicKey,
             toPubkey: publicKey,
-            lamports: stakeBalanceBN.toNumber(),
+            lamports: stakeBalance,
         });
 
-        await SetStats(token, 'unstake', SetDecimal(stakeBalanceBN, decimals), address, withdrawTx, chain);
+        await SetStats(token, 'unstake', stakeBalance / LAMPORTS_PER_SOL, address, withdrawTx, chain);
         return {result: withdrawTx};
     } catch (error) {
         throw new Error(error);
@@ -185,7 +163,7 @@ async function withdraw(token, address, stakeAccountPublicKey, stakeBalance) {
 }
 
 /** getDelegations - list of delegations
- * @param {string} address - Account blockchain address (staker)
+ * @param {any} address - Account blockchain address (staker)
  * @returns {Promise<object>} Promise object with delegations
  */
 async function getDelegations(address) {
@@ -210,17 +188,13 @@ async function getDelegations(address) {
 /** stake - list of delegations
  * @param {string} token - auth API token
  * @param {string} sender - account blockchain address (staker)
- * @param {string} lamports - lamport amount
+ * @param {number} lamports - lamport amount
  * @returns {Promise<object>} Promise object with Tx
  */
 async function stake(token, sender, lamports) {
     if (!await CheckToken(token)) {
         throw new Error(ERROR_TEXT);
     }
-    if (typeof (lamports) !== 'string') {
-        throw new Error(wrongTypeMessage);
-    }
-    const lamportsBN = new BigNumber(lamports)
     try {
         await connect();
         const senderPublicKey = new PublicKey(sender);
@@ -235,7 +209,7 @@ async function stake(token, sender, lamports) {
             StakeProgram.createAccount({
                 authorized: new Authorized(senderPublicKey, senderPublicKey),
                 fromPubkey: senderPublicKey,
-                lamports: lamportsBN.toNumber() + minimumRent,
+                lamports: lamports + minimumRent,
                 stakePubkey: stakeAccount.publicKey,
             }),
             StakeProgram.delegate({

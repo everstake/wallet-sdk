@@ -1,5 +1,5 @@
 const {CheckToken, ERROR_TEXT, SetStats} = require("./utils/api");
-const {SetDecimal} = require("./utils/decimals");
+const {UnsetDecimal} = require("./utils/decimals");
 const BigNumber = require('bignumber.js');
 const axios = require('axios');
 
@@ -32,7 +32,7 @@ async function transition(address, amount, typeUrl, value, memo, token = null, a
     const fee = {
         amount: [{
             denom: 'uatom',
-            amount: '2000',
+            amount: '5000',
         }],
         gas: gas,
     };
@@ -45,7 +45,7 @@ async function transition(address, amount, typeUrl, value, memo, token = null, a
             ...value,
             amount: {
                 denom: 'uatom',
-                amount: SetDecimal(amountBN, decimals).toString(),
+                amount: UnsetDecimal(amountBN, decimals).toString(10),
             },
         }
     } else {
@@ -97,6 +97,7 @@ async function delegate(token, address, amount, source) {
         'Staked by Source ' + source + ' with Everstake',
         token,
         'stake',
+        '650000'
     );
 }
 
@@ -127,7 +128,7 @@ async function redelegate(token, address, amount, validatorSrcAddress, source) {
         'Restaked by Source ' + source + ' with Everstake',
         token,
         'redelegate',
-        '300000',
+        '1000000',
     );
 }
 
@@ -151,7 +152,8 @@ async function undelegate(token, address, amount, source) {
                 {validatorAddress: VALIDATOR_ADDRESS},
                 'Unstaked by Source ' + source + ' with Everstake',
                 token,
-                'unstake'
+                'unstake',
+                '750000'
             );
         } else {
             throw new Error(`Min Amount ${minAmount}`);
@@ -173,6 +175,7 @@ async function withdrawRewards(address, source) {
         'MsgWithdrawDelegationReward',
         {validatorAddress: VALIDATOR_ADDRESS},
         'Withdraw Rewards by Source ' + source + ' with Everstake',
+        '750000'
     );
 }
 
@@ -195,7 +198,11 @@ async function getDelegations(address) {
                 ...delegator.delegation_responses[i], ...validator.validators[i]
             })
         }
-        return {result: delegatorArray};
+
+        const unbindingResponse = await axios.get(`${API_URL}/cosmos/staking/v1beta1/delegators/${address}/unbonding_delegations`);
+        const unbonding = unbindingResponse.data.unbonding_responses;
+
+        return {result: {delegations: delegatorArray, unbonding: unbonding}};
     } catch (error) {
         throw new Error(error);
     }
