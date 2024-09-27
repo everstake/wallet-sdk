@@ -34,7 +34,7 @@ async function connect() {
 /** createAccount - create account
  * @param {string} address - account blockchain address (staker)
  * @param {number} lamports - lamport amount
- * @returns {Promise<object>} Promise object account data
+ * @returns {Promise<object>} Promise object Tx
  */
 async function createAccount(address, lamports) {
     try {
