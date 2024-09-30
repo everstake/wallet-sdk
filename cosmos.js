@@ -141,27 +141,26 @@ async function redelegate(token, address, amount, validatorSrcAddress, source = 
  * @returns {Promise<object>} Promise object represents the unsigned TX object
  */
 async function undelegate(token, address, amount, source = defaultSource) {
+    if (!await CheckToken(token)) {
+        throw new Error(ERROR_TEXT);
+    }
     if (typeof (amount) !== 'string') {
         throw new Error(wrongTypeMessage);
     }
-    if (await CheckToken(token)) {
-        if (+amount >= minAmount) {
-            return await transition(
-                address,
-                amount,
-                '/cosmos.staking.v1beta1.MsgUndelegate',
-                {validatorAddress: VALIDATOR_ADDRESS},
-                'Unstaked by Source ' + source + ' with Everstake',
-                token,
-                'unstake',
-                '750000'
-            );
-        } else {
-            throw new Error(`Min Amount ${minAmount}`);
-        }
-    } else {
-        throw new Error(ERROR_TEXT);
+    const amountBN = new BigNumber(amount)
+    if (amountBN.lt(minAmount)) {
+        throw new Error(`Min Amount ${minAmount.toString()}`);
     }
+    return await transition(
+        address,
+        amount,
+        '/cosmos.staking.v1beta1.MsgUndelegate',
+        {validatorAddress: VALIDATOR_ADDRESS},
+        'Unstaked by Source ' + source + ' with Everstake',
+        token,
+        'unstake',
+        '750000'
+    );
 }
 
 /** withdrawRewards - withdraw rewards
