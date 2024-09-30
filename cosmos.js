@@ -202,10 +202,22 @@ async function getDelegations(address) {
             })
         }
 
+        return {result: delegatorArray};
+    } catch (error) {
+        throw new Error(error);
+    }
+}
+
+/** getUndelegations - list of undelegations
+ * @param {string} address - Account blockchain address (staker)
+ * @returns {Promise<object>} Promise object with undelegations
+ */
+async function getUndelegations(address) {
+    try {
         const unbindingResponse = await axios.get(`${API_URL}/cosmos/staking/v1beta1/delegators/${address}/unbonding_delegations`);
         const unbonding = unbindingResponse.data.unbonding_responses;
 
-        return {result: {delegations: delegatorArray, unbonding: unbonding}};
+        return {result: unbonding};
     } catch (error) {
         throw new Error(error);
     }
@@ -217,4 +229,5 @@ module.exports = {
     undelegate,
     withdrawRewards,
     getDelegations,
+    getUndelegations,
 };
