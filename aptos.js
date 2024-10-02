@@ -6,7 +6,7 @@ const chain = 'aptos';
 const NODE_URL = "https://fullnode.mainnet.aptoslabs.com/v1";
 const client = new aptos.AptosClient(NODE_URL);
 
-const VALIDATOR_ADDRESS = '0xd7f20025a2e42f4d5b6b6366a711b36d9f694582ccad391736c13aae53440172';
+const VALIDATOR_ADDRESS = '0xdb5247f859ce63dbe8940cf8773be722a60dcc594a8be9aca4b76abceb251b8e';
 
 // this variable is the key by which we can find out the balance by the address
 const aptosCoin = "0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>";
