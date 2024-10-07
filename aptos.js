@@ -1,5 +1,5 @@
 const aptos = require("aptos");
-const { CheckToken, SetStats, ERROR_TEXT } = require("./utils/api");
+const {CheckToken, SetStats, ERROR_TEXT} = require("./utils/api");
 const BigNumber = require("bignumber.js");
 const {UnsetDecimal, SetDecimal} = require("./utils/decimals");
 
@@ -60,7 +60,7 @@ async function getLockupSecs() {
             type_arguments: [],
             arguments: [VALIDATOR_ADDRESS],
         };
-        const result =  await client.view(payload);
+        const result = await client.view(payload);
         return result[0]
     } catch (error) {
         throw new Error(error);
@@ -137,11 +137,12 @@ async function stake(token, address, amount) {
         throw new Error(ERROR_TEXT);
     }
     const amountBN = new BigNumber(amount)
-    const MinAmountForStake = await getMinAmountForStake(address);
-    if (amountBN.lt(MinAmountForStake)) {
-        throw new Error(`Min Amount ${minAmount.toString()}`);
+    const balance = await getStakeBalanceByAddress(address);
+    const active = new BigNumber(balance.active);
+    const activeAfter = active.plus(amountBN);
+    if (activeAfter.lt(minAmount)) {
+        throw new Error(`active stake should be more than ${minAmount.toString()}`);
     }
-
     try {
         await SetStats(token, 'stake', amount, address, '', chain);
         return {
@@ -169,6 +170,17 @@ async function reactivate(token, address, amount) {
         throw new Error(ERROR_TEXT);
     }
     const amountBN = new BigNumber(amount)
+    const balance = await getStakeBalanceByAddress(address);
+    const active = new BigNumber(balance.active);
+    const activeAfter = active.plus(amountBN);
+    if (activeAfter.lt(minAmount) && !activeAfter.isEqualTo(0)) {
+        throw new Error(`active stake should be more than ${minAmount.toString()}`);
+    }
+    const pending = new BigNumber(balance.pending_inactive);
+    const pendingAfter = pending.minus(amountBN);
+    if (pendingAfter.lt(minAmount) && !pendingAfter.isEqualTo(0)) {
+        throw new Error(`pending inactive stake should be more than ${minAmount.toString()}`);
+    }
     try {
         await SetStats(token, 'reactivate_stake', amount, address, '', chain);
 
@@ -197,6 +209,17 @@ async function unlock(token, address, amount) {
         throw new Error(ERROR_TEXT);
     }
     const amountBN = new BigNumber(amount)
+    const balance = await getStakeBalanceByAddress(address);
+    const active = new BigNumber(balance.active);
+    const activeAfter = active.minus(amountBN);
+    if (activeAfter.lt(minAmount) && !activeAfter.isEqualTo(0)) {
+        throw new Error(`active stake should be more than ${minAmount.toString()}`);
+    }
+    const pending = new BigNumber(balance.pending_inactive);
+    const pendingAfter = pending.plus(amountBN);
+    if (pendingAfter.lt(minAmount) && !pendingAfter.isEqualTo(0)) {
+        throw new Error(`pending inactive stake should be more than ${minAmount.toString()}`);
+    }
     try {
         await SetStats(token, 'unlock_stake', amount, address, '', chain);
         return {
@@ -223,7 +246,12 @@ async function unstake(token, address, amount) {
     if (!await CheckToken(token)) {
         throw new Error(ERROR_TEXT);
     }
-    const amountBN = new BigNumber(amount)
+    const amountBN = new BigNumber(amount);
+    const balance = await getStakeBalanceByAddress(address);
+    const inactive = new BigNumber(balance.inactive);
+    if (inactive.lt(amountBN)) {
+        throw new Error(`not enough inactive balance. You have ${inactive.toString()} APT`);
+    }
     try {
         await SetStats(token, 'unstake', amount, address, '', chain);
         return {
