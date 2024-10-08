@@ -8,7 +8,7 @@ const VALIDATOR_ADDRESS = 'cosmosvaloper1tflk30mq5vgqjdly92kkhhq3raev2hnz6eete3'
 const decimals = 6;
 const minAmount = new BigNumber(0.01);
 const defaultSource = '0'
-const maxMemoLength = 5
+const maxMemoLength = 50
 
 const chain = 'cosmos';
 
