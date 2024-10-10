@@ -51,7 +51,7 @@ async function getStakeBalanceByAddress(address) {
 }
 
 /** getLockupSecs - get lockup durations in sec
- * @returns {Promise<number>} Promise number of louckup in seconds
+ * @returns {Promise<string>} Promise number of louckup in seconds
  */
 async function getLockupSecs() {
     try {
