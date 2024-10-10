@@ -18,17 +18,17 @@ async function CheckToken(token) {
 async function SetStats(token, action, amount, address, hash, chain) {
     try {
         await axios.post(
-          `${API_URL}/stats/set`,
-          {
-              token: token,
-              action: action,
-              amount: +amount,
-              address: address,
-              chain: chain,
-          },
-          {
-              headers: { 'Content-Type': 'application/json' },
-          }
+            `${API_URL}/stats/set`,
+            {
+                token: token,
+                action: action,
+                amount: +amount,
+                address: address,
+                chain: chain,
+            },
+            {
+                headers: {'Content-Type': 'application/json'},
+            }
         );
     } catch (error) {
         throw new Error(error);
@@ -38,14 +38,14 @@ async function SetStats(token, action, amount, address, hash, chain) {
 async function CreateToken(name, type) {
     try {
         const response = await axios.post(
-          `${API_URL}/token/create`,
-          {
-              name: name,
-              type: type,
-          },
-          {
-              headers: { 'Content-Type': 'application/json' },
-          }
+            `${API_URL}/token/create`,
+            {
+                name: name,
+                type: type,
+            },
+            {
+                headers: {'Content-Type': 'application/json'},
+            }
         );
         return response.data;
     } catch (error) {

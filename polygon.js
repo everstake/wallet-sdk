@@ -34,7 +34,10 @@ const contract_approve_pol = new web3.eth.Contract(ABI_CONTRACT_APPROVE, ADDRESS
 const contract_buy = new web3.eth.Contract(ABI_CONTRACT_BUY, ADDRESS_CONTRACT_BUY);
 const contract_staking = new web3.eth.Contract(ABI_CONTRACT_STAKING, ADDRESS_CONTRACT_STAKING);
 
-// is (bool) func
+/** isTransactionLoading returns TX loading status
+ * @param {string} hash - TX hash
+ * @returns {Promise<Object>} Promise object the result of boolean type
+ */
 async function isTransactionLoading(hash) {
     try {
         const result = await web3.eth.getTransactionReceipt(hash);
@@ -49,7 +52,12 @@ async function isTransactionLoading(hash) {
     }
 }
 
-// transact func
+/** approve returns TX loading status
+ * @param {string} address - user's address
+ * @param {string|number} amount - amount for approve
+ * @param {boolean} isPOL - is POL token (false - old MATIC)
+ * @returns {Promise<Object>} Promise object the result of boolean type
+ */
 async function approve(address, amount, isPOL = false) {
 
     const amountWei = await web3.utils.toWei(amount.toString(), 'ether');
@@ -72,6 +80,13 @@ async function approve(address, amount, isPOL = false) {
 
 }
 
+/** delegate makes unsigned delegation TX
+ * @param {string} token - auth token
+ * @param {string} address - user's address
+ * @param {string|number} amount - amount for approve
+ * @param {boolean} isPOL - is POL token (false - old MATIC)
+ * @returns {Promise<Object>} Promise object represents the unsigned TX object
+ */
 async function delegate(token, address, amount, isPOL = false) {
     if (await CheckToken(token)) {
 
@@ -101,6 +116,13 @@ async function delegate(token, address, amount, isPOL = false) {
     }
 }
 
+/** undelegate makes unsigned undelegate TX
+ * @param {string} token - auth token
+ * @param {string} address - user's address
+ * @param {string|number} amount - amount for approve
+ * @param {boolean} isPOL - is POL token (false - old MATIC)
+ * @returns {Promise<Object>} Promise object represents the unsigned TX object
+ */
 async function undelegate(token, address, amount, isPOL = false) {
     if (await CheckToken(token)) {
         try {
@@ -128,6 +150,12 @@ async function undelegate(token, address, amount, isPOL = false) {
     }
 }
 
+/** claimUndelegate makes unsigned claim undelegate TX
+ * @param {string} address - user's address
+ * @param {number} unbondNonce - unbound nonce
+ * @param {boolean} isPOL - is POL token (false - old MATIC)
+ * @returns {Promise<Object>} Promise object represents the unsigned TX object
+ */
 async function claimUndelegate(address, unbondNonce = 0, isPOL = false) {
     const unbond = await getUnbond(address, unbondNonce);
     if (BigNumber(unbond.amount).isZero()) throw new Error(`Nothing to claim`);
@@ -144,6 +172,11 @@ async function claimUndelegate(address, unbondNonce = 0, isPOL = false) {
     };
 }
 
+/** reward makes unsigned claim reward TX
+ * @param {string} address - user's address
+ * @param {boolean} isPOL - is POL token (false - old MATIC)
+ * @returns {Promise<Object>} Promise object represents the unsigned TX object
+ */
 async function reward(address, isPOL = false) {
     const method = isPOL ? contract_buy.methods.withdrawRewardsPOL() : contract_buy.methods.withdrawRewards();
     // Create the transaction
@@ -155,7 +188,11 @@ async function reward(address, isPOL = false) {
     };
 }
 
-
+/** restake makes unsigned restake reward TX
+ * @param {string} address - user's address
+ * @param {boolean} isPOL - is POL token (false - old MATIC)
+ * @returns {Promise<Object>} Promise object represents the unsigned TX object
+ */
 async function restake(address, isPOL = false) {
     const method = isPOL ? contract_buy.methods.restakePOL() : contract_buy.methods.restake();
     // Create the transaction
@@ -167,6 +204,10 @@ async function restake(address, isPOL = false) {
     };
 }
 
+/** getReward returns reward number
+ * @param {string} address - user's address
+ * @returns {Promise<BigNumber>} Promise with number of the reward
+ */
 async function getReward(address) {
     try {
         const result = await contract_buy.methods.getLiquidRewards(address).call()
@@ -176,6 +217,10 @@ async function getReward(address) {
     }
 }
 
+/** getTotalDelegate returns total delegated number
+ * @param {string} address - user's address
+ * @returns {Promise<BigNumber>} Promise with number of the delegation
+ */
 async function getTotalDelegate(address) {
     try {
         const result = await contract_buy.methods.getTotalStake(address).call();
@@ -184,6 +229,12 @@ async function getTotalDelegate(address) {
         throw new Error(error);
     }
 }
+
+/** getUnbond returns unbound data
+ * @param {string} address - user's address
+ * @param {number} unbondNonce - unbound nonce
+ * @returns {Promise<Object>} Promise Object with unbound data
+ */
 async function getUnbond(address, unbondNonce = 0) {
     try {
         // Get recent nonces if not provided
@@ -194,6 +245,11 @@ async function getUnbond(address, unbondNonce = 0) {
         throw new Error(error);
     }
 }
+
+/** getUnbondNonces returns unbound nonce
+ * @param {string} address - user's address
+ * @returns {Promise<string>} Promise with unbound nonce number
+ */
 async function getUnbondNonces(address) {
     try {
         return await contract_buy.methods.unbondNonces(address).call();
@@ -201,10 +257,19 @@ async function getUnbondNonces(address) {
         throw new Error(error);
     }
 }
+
+/** getCurrentEpoch returns current epoch
+ * @returns {Promise<string>} Promise with current epoch number
+ */
 async function getCurrentEpoch() {
     return await contract_staking.methods.currentEpoch().call();
 }
 
+/** getBalanceOf returns user's balance
+ * @param {string} address - user's address
+ * @param {boolean} isPOL - is POL token (false - old MATIC)
+ * @returns {Promise<BigNumber>} Promise with current balance
+ */
 async function getBalanceOf(address, isPOL = false) {
     const contract = isPOL ? contract_approve_pol : contract_approve;
     try {
@@ -215,6 +280,12 @@ async function getBalanceOf(address, isPOL = false) {
     }
 }
 
+/** getAllowance returns allowed number for spender
+ * @param {string} owner - tokens owner
+ * @param {string} spender - contract spender
+ * @param {boolean} isPOL - is POL token (false - old MATIC)
+ * @returns {Promise<string>} Promise allowed number for spender
+ */
 async function getAllowance(owner, spender = ADDRESS_CONTRACT_STAKING, isPOL = false) {
     const contract = isPOL ? contract_approve_pol : contract_approve;
     try {
