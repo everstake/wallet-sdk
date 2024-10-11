@@ -136,7 +136,9 @@ async function delegate(token, address, lamports, stakeAccount) {
         })
         
         await SetStats(token, 'stake', lamports / LAMPORTS_PER_SOL, address, delegateTx, chain);
-        return {result: delegateTx};
+
+        const versionedTX = await prepareTransaction(delegateTx.instructions, publicKey, []);
+        return { result: versionedTX };
     } catch (error) {
         throw new Error(error);
     }
@@ -165,7 +167,8 @@ async function deactivate(address, stakeAccountPublicKey) {
             return new TransactionInstruction(instruction)
         })
 
-        return {result: deactivateTx};
+        const versionedTX = await prepareTransaction(deactivateTx.instructions, publicKey, []);
+        return {result: versionedTX};
     } catch (error) {
         throw new Error(error);
     }
@@ -178,7 +181,7 @@ function formatSource(source) {
     const timestamp = new Date().getTime();
 
     source = `everstake ${source}:${timestamp}`;
-    console.log(source);
+
     return source;
 }
 
@@ -209,7 +212,9 @@ async function withdraw(token, address, stakeAccountPublicKey, stakeBalance) {
         })
 
         await SetStats(token, 'unstake', stakeBalance / LAMPORTS_PER_SOL, address, withdrawTx, chain);
-        return {result: withdrawTx};
+        const versionedTX = await prepareTransaction(withdrawTx.instructions, publicKey, []);
+
+        return {result: versionedTX};
     } catch (error) {
         throw new Error(error);
     }
@@ -290,7 +295,11 @@ async function prepareTransaction(instructions, payer, externalSigners) {
     }).compileToV0Message();
 
     let tx = new VersionedTransaction(messageV0);
-    tx.sign(externalSigners); 
+
+    if (externalSigners.length > 0) {
+        tx.sign(externalSigners); 
+    }
+    
     return tx;
 }
 
