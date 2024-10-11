@@ -35,39 +35,65 @@ async function connect() {
 /** createAccount - create account
  * @param {string} address - account blockchain address (staker)
  * @param {number} lamports - lamport amount
+ * @param {string | null} source - stake source
  * @returns {Promise<object>} Promise object Tx
  */
-async function createAccount(address, lamports) {
+async function createAccount(address, lamports, source = '0') {
     try {
-        await connect();
-        const publicKey = new PublicKey(address);
-        const stakeAccount = Keypair.generate();
+            await connect();
+            const senderPublicKey = new PublicKey(address);
 
-        const minimumRent = await connection.getMinimumBalanceForRentExemption(StakeProgram.space);
+            const minimumRent = await connection.getMinimumBalanceForRentExemption(StakeProgram.space);
 
-        const createStakeAccountTx = StakeProgram.createAccount({
-            authorized: new Authorized(publicKey, publicKey),
-            fromPubkey: publicKey,
-            lamports: lamports + minimumRent,
-            stakePubkey: stakeAccount.publicKey,
-        });
-        const blockhash = await getBlockhash();
-        createStakeAccountTx.recentBlockhash = await blockhash
-        createStakeAccountTx.sign(stakeAccount);
-        return {result: {createStakeAccountTx, stakeAccount: stakeAccount.publicKey.toString()}};
+            const [createStakeAccountTx, stakeAccountPublicKey, externalSigners] = source === null 
+            ? await createAccountTx(senderPublicKey, lamports + minimumRent) 
+            : await createWithSeedTx(senderPublicKey, lamports + minimumRent, source);        
+
+            const versionedTX = await prepareTransaction(createStakeAccountTx.instructions, senderPublicKey, externalSigners);
+            return { result: { versionedTX, stakeAccount: stakeAccountPublicKey.toString() } };
     } catch (error) {
-        throw new Error(error);
+            throw new Error(error);
     }
 }
 
-async function prepareTransaction(instructions, payer) {
+async function createAccountTx(address, lamports) {
     const blockhash = await getBlockhash();
-    const messageV0 = new TransactionMessage({
-        payerKey: payer,
-        recentBlockhash: blockhash,
-        instructions
-    }).compileToV0Message();
-    return new VersionedTransaction(messageV0);
+    const stakeAccount = Keypair.generate();
+    let createStakeAccountTx = StakeProgram.createAccount({
+        authorized: new Authorized(address, address),
+        fromPubkey: address,
+        lamports: lamports,
+        stakePubkey: stakeAccount.publicKey,
+    });
+    createStakeAccountTx.recentBlockhash = blockhash;
+    createStakeAccountTx.sign(stakeAccount);
+
+    return [createStakeAccountTx, stakeAccount.publicKey, [stakeAccount]]
+}
+
+async function createWithSeedTx(authorityPublicKey, lamports, source) {
+    
+    // Format source to
+    seed = formatSource(source);
+   
+    const stakeAccountPubkey = await PublicKey.createWithSeed(
+        authorityPublicKey,
+        seed,
+        StakeProgram.programId,
+    );
+
+    const createStakeAccountTx = new Transaction().add(
+        StakeProgram.createAccountWithSeed({
+            authorized: new Authorized(authorityPublicKey, authorityPublicKey),
+            fromPubkey: authorityPublicKey,
+            basePubkey: authorityPublicKey,
+            stakePubkey: stakeAccountPubkey,
+
+            seed: seed,
+            lamports: lamports,
+    }));
+        
+    return [createStakeAccountTx, stakeAccountPubkey, []]
 }
 
 async function getBlockhash() {
@@ -108,9 +134,11 @@ async function delegate(token, address, lamports, stakeAccount) {
         delegateTx.instructions = delegateTx.instructions.map((instruction) => {
             return new TransactionInstruction(instruction)
         })
-
+        
         await SetStats(token, 'stake', lamports / LAMPORTS_PER_SOL, address, delegateTx, chain);
-        return {result: delegateTx};
+
+        const versionedTX = await prepareTransaction(delegateTx.instructions, publicKey, []);
+        return { result: versionedTX };
     } catch (error) {
         throw new Error(error);
     }
@@ -139,10 +167,22 @@ async function deactivate(address, stakeAccountPublicKey) {
             return new TransactionInstruction(instruction)
         })
 
-        return {result: deactivateTx};
+        const versionedTX = await prepareTransaction(deactivateTx.instructions, publicKey, []);
+        return {result: versionedTX};
     } catch (error) {
         throw new Error(error);
     }
+}
+
+function formatSource(source) {
+    if (typeof (source) !== 'string') {
+        throw new Error(wrongTypeMessage);
+    }
+    const timestamp = new Date().getTime();
+
+    source = `everstake ${source}:${timestamp}`;
+
+    return source;
 }
 
 /** deactivate - deactivate stake
@@ -172,7 +212,9 @@ async function withdraw(token, address, stakeAccountPublicKey, stakeBalance) {
         })
 
         await SetStats(token, 'unstake', stakeBalance / LAMPORTS_PER_SOL, address, withdrawTx, chain);
-        return {result: withdrawTx};
+        const versionedTX = await prepareTransaction(withdrawTx.instructions, publicKey, []);
+
+        return {result: versionedTX};
     } catch (error) {
         throw new Error(error);
     }
@@ -205,43 +247,66 @@ async function getDelegations(address) {
  * @param {string} token - auth API token
  * @param {string} sender - account blockchain address (staker)
  * @param {number} lamports - lamport amount
+ * @param {string | null} source - stake source
  * @returns {Promise<object>} Promise object with Versioned Tx
  */
-async function stake(token, sender, lamports) {
+async function stake(token, sender, lamports, source) {
     if (!await CheckToken(token)) {
         throw new Error(ERROR_TEXT);
     }
     try {
         await connect();
         const senderPublicKey = new PublicKey(sender);
-        const stakeAccount = Keypair.generate();
         const validatorPubkey = new PublicKey(VALIDATOR_ADDRESS);
 
         // Calculate how much we want to stake
         const minimumRent = await connection.getMinimumBalanceForRentExemption(StakeProgram.space);
 
+        const [createStakeAccountTx, stakeAccountPublicKey, externalSigners] = source === null 
+        ? await createAccountTx(senderPublicKey, lamports + minimumRent) 
+        : await createWithSeedTx(senderPublicKey, lamports + minimumRent, source);
+
         const tx = new Transaction().add(
             ComputeBudgetProgram.setComputeUnitPrice({microLamports: 50}),
-            StakeProgram.createAccount({
-                authorized: new Authorized(senderPublicKey, senderPublicKey),
-                fromPubkey: senderPublicKey,
-                lamports: lamports + minimumRent,
-                stakePubkey: stakeAccount.publicKey,
-            }),
+            createStakeAccountTx,
             StakeProgram.delegate({
-                stakePubkey: stakeAccount.publicKey,
+                stakePubkey: stakeAccountPublicKey,
                 authorizedPubkey: senderPublicKey,
                 votePubkey: validatorPubkey,
             })
         );
 
-        let versionedTX = await prepareTransaction(tx.instructions, senderPublicKey);
-        versionedTX.sign([stakeAccount]);
+        const versionedTX = await prepareTransaction(tx.instructions, senderPublicKey, externalSigners);
+
+        await SetStats(token, 'stake', lamports / LAMPORTS_PER_SOL, sender, versionedTX, chain);
 
         return {result: versionedTX};
     } catch (error) {
         throw new Error(error);
     }
+}
+
+async function prepareTransaction(instructions, payer, externalSigners) {
+    const blockhash = await getBlockhash();
+    const messageV0 = new TransactionMessage({
+        payerKey: payer,
+        recentBlockhash: blockhash,
+        instructions
+    }).compileToV0Message();
+
+    let tx = new VersionedTransaction(messageV0);
+
+    if (externalSigners.length > 0) {
+        tx.sign(externalSigners); 
+    }
+    
+    return tx;
+}
+
+async function getBlockhash(){
+    return await connection
+    .getLatestBlockhash({ commitment: 'max' })
+    .then((res) => res.blockhash);
 }
 
 module.exports = {
