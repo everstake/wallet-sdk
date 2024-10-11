@@ -35,7 +35,7 @@ async function connect() {
 /** createAccount - create account
  * @param {string} address - account blockchain address (staker)
  * @param {number} lamports - lamport amount
- * @param {string} source - stake source
+ * @param {string | null} source - stake source
  * @returns {Promise<object>} Promise object Tx
  */
 async function createAccount(address, lamports, source = '0') {
@@ -247,7 +247,7 @@ async function getDelegations(address) {
  * @param {string} token - auth API token
  * @param {string} sender - account blockchain address (staker)
  * @param {number} lamports - lamport amount
- * @param {string} source - stake source
+ * @param {string | null} source - stake source
  * @returns {Promise<object>} Promise object with Versioned Tx
  */
 async function stake(token, sender, lamports, source) {
