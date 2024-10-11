@@ -10,6 +10,7 @@ const {
     TransactionMessage,
     VersionedTransaction,
     LAMPORTS_PER_SOL,
+    TransactionInstruction
 } = require('@solana/web3.js');
 
 const {CheckToken, ERROR_TEXT, SetStats} = require("./utils/api");
@@ -128,6 +129,11 @@ async function delegate(token, address, lamports, stakeAccount) {
             authorizedPubkey: publicKey,
             votePubkey: selectedValidatorPubkey,
         });
+
+        // cast instructions to correct JSON Serialization
+        delegateTx.instructions = delegateTx.instructions.map((instruction) => {
+            return new TransactionInstruction(instruction)
+        })
         
         await SetStats(token, 'stake', lamports / LAMPORTS_PER_SOL, address, delegateTx, chain);
         return {result: delegateTx};
@@ -153,6 +159,11 @@ async function deactivate(address, stakeAccountPublicKey) {
             stakePubkey: stakeAccount,
             authorizedPubkey: publicKey,
         });
+
+        // cast instructions to correct JSON Serialization
+        deactivateTx.instructions = deactivateTx.instructions.map((instruction) => {
+            return new TransactionInstruction(instruction)
+        })
 
         return {result: deactivateTx};
     } catch (error) {
@@ -191,6 +202,11 @@ async function withdraw(token, address, stakeAccountPublicKey, stakeBalance) {
             toPubkey: publicKey,
             lamports: stakeBalance,
         });
+
+        // cast instructions to correct JSON Serialization
+        withdrawTx.instructions = withdrawTx.instructions.map((instruction) => {
+            return new TransactionInstruction(instruction)
+        })
 
         await SetStats(token, 'unstake', stakeBalance / LAMPORTS_PER_SOL, address, withdrawTx, chain);
         return {result: withdrawTx};
