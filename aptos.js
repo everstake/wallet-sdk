@@ -6,7 +6,7 @@ const {UnsetDecimal, SetDecimal} = require("./utils/decimals");
 const chain = 'aptos';
 
 const NODE_URL = "https://fullnode.mainnet.aptoslabs.com/v1";
-const client = new aptos.AptosClient(NODE_URL);
+let client = new aptos.AptosClient(NODE_URL);
 
 const VALIDATOR_ADDRESS = '0xdb5247f859ce63dbe8940cf8773be722a60dcc594a8be9aca4b76abceb251b8e';
 
@@ -277,6 +277,13 @@ async function createClient(NODE_URL) {
     }
 }
 
+
+// TODO refactor to class with constructor
+function setRPC(url) {
+    client = new aptos.AptosClient(NODE_URL);
+}
+
+
 module.exports = {
     // func
     getBalanceByAddress,
@@ -289,7 +296,8 @@ module.exports = {
     createClient,
     getMinAmountForStake,
     getLockupSecs,
-
+    setRPC,
+    
     // const
     NODE_URL,
     aptosCoin,
