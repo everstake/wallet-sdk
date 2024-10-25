@@ -13,6 +13,8 @@ const {
     TransactionInstruction
 } = require('@solana/web3.js');
 
+const BigNumber = require('bignumber.js');
+const {parsedAccountInfoToStakeAccount, isLockupInForce, stakeAccountState, StakeState} = require("./solana_stake_account.js");
 const {CheckToken, ERROR_TEXT, SetStats} = require("./utils/api");
 
 const chain = 'solana';
@@ -96,6 +98,47 @@ async function createWithSeedTx(authorityPublicKey, lamports, source) {
     return [createStakeAccountTx, stakeAccountPubkey, []]
 }
 
+async function split(authorityPublicKey, lamports, oldStakeAccountPubkey, source) {
+    // TODO add support of default split
+    // StakeProgram.split({
+    //     stakePubkey: stakeAccountPublicKey,
+    //     authorizedPubkey: senderPublicKey,
+    //     votePubkey: validatorPubkey,
+    // });
+        
+    // Format source to
+    seed = formatSource(source);
+   
+    const newStakeAccountPubkey = await PublicKey.createWithSeed(
+        authorityPublicKey,
+        seed,
+        StakeProgram.programId,
+    );
+
+    const splitStakeAccountTx = new Transaction().add(
+        StakeProgram.splitWithSeed({
+            stakePubkey: oldStakeAccountPubkey,
+            authorizedPubkey: authorityPublicKey,
+            splitStakePubkey: newStakeAccountPubkey,
+            basePubkey: authorityPublicKey,
+            seed: seed,
+            lamports: lamports
+        })
+       );
+        
+    return [splitStakeAccountTx, newStakeAccountPubkey, []]
+}
+
+async function merge(authorityPublicKey, stakeAccount1, stakeAccount2) {
+    const mergeStakeAccountTx = StakeProgram.merge({
+        stakePubkey: stakeAccount1,
+        sourceStakePubKey: stakeAccount2,
+        authorizedPubkey: authorityPublicKey
+    })
+
+    return [mergeStakeAccountTx]
+}
+
 async function getBlockhash() {
     return await connection
         .getLatestBlockhash({commitment: 'max'})
@@ -144,7 +187,7 @@ async function delegate(token, address, lamports, stakeAccount) {
     }
 }
 
-/** deactivate - deactivate stake
+/** deactivate - deactivate stake account
  * @param {string} address - account blockchain address (staker)
  * @param {string} stakeAccountPublicKey - public key
  * @returns {Promise<object>} Promise object deactivation Tx
@@ -243,6 +286,9 @@ async function getDelegations(address) {
     }
 }
 
+// TODO add summarised balances 
+async function stakeBalances(address) {}
+
 /** stake - list of delegations
  * @param {string} token - auth API token
  * @param {string} sender - account blockchain address (staker)
@@ -276,9 +322,170 @@ async function stake(token, sender, lamports, source) {
             })
         );
 
+        // cast instructions to correct JSON Serialization
+        tx.instructions = tx.instructions.map((instruction) => {
+            return new TransactionInstruction(instruction)
+        })
+
         const versionedTX = await prepareTransaction(tx.instructions, senderPublicKey, externalSigners);
 
         await SetStats(token, 'stake', lamports / LAMPORTS_PER_SOL, sender, versionedTX, chain);
+
+        return {result: versionedTX};
+    } catch (error) {
+        throw new Error(error);
+    }
+}
+
+
+/** unstake - unstake
+ * @param {string} token - auth API token
+ * @param {string} sender - account blockchain address (staker)
+ * @param {number} lamports - lamport amount
+ * @param {string} source - stake source
+ * @returns {Promise<object>} Promise object with Versioned Tx
+ */
+async function unstake(token, sender, lamports, source) {
+    // if (!await CheckToken(token)) {
+    //     throw new Error(ERROR_TEXT);
+    // }
+    
+    try {
+        const delegations = await getDelegations(sender);
+       
+        let stakeAccounts = delegations.result.map((delegationAcc) => {
+            return {pubkey: delegationAcc.pubkey, account: parsedAccountInfoToStakeAccount(delegationAcc.account)};
+        });
+
+        const epochInfo = await connection.getEpochInfo();
+        // Timestamp in seconds
+        const tm = Date.now() / 1000 | 0;
+
+        totalActiveStake = new BigNumber(0); 
+        let activeStakeAccounts = stakeAccounts.filter((acc) => {
+            let isActive = !(isLockupInForce(acc.account.data.info.meta,  epochInfo.epoch, tm) ||
+            stakeAccountState(acc.account.data, epochInfo.epoch) !== StakeState.Active);
+            if (isActive) totalActiveStake = totalActiveStake.plus(acc.account.data.info.stake.delegation.stake);
+            return isActive
+        });
+
+        let lamportsBN = new BigNumber(lamports)
+        if (totalActiveStake.lt(lamportsBN)) throw new Error('Active stake less than requested');
+
+        // Desc sorting 
+        activeStakeAccounts.sort(function(a, b){
+            if (a.account.data.info.stake.delegation.stake.lt(b.account.data.info.stake.delegation.stake)) {
+                return a;
+            }
+            
+            if (a.account.data.info.stake.delegation.stake.eq(b.account.data.info.stake.delegation.stake)) {
+                return a;
+            }
+
+            return b;
+        });
+
+        let accountsToDeactivate = [];
+        let accountsToSplit = [];
+        var i = 0;
+        while (lamportsBN.gt(new BigNumber(0)) && i < activeStakeAccounts.length) {
+            const lBN = new BigNumber(lamports)
+            const acc = activeStakeAccounts[i]; 
+            let stakeAmount = new BigNumber(acc.account.data.info.stake.delegation.stake);
+
+            // If reminder amount less than min stake amount stake account automatically become disabled
+            if (stakeAmount.comparedTo(lBN) <= 0 || stakeAmount.minus(lBN).lt(new BigNumber (minAmount))) {   
+                accountsToDeactivate.push(acc);
+                lamportsBN = lamportsBN.minus(stakeAmount);
+                i++;   
+                continue;
+            }
+            
+            accountsToSplit.push({account: acc, lamports: lamportsBN.toNumber()});
+            break;
+        }
+
+        const senderPublicKey = new PublicKey(sender);
+
+        var instructions = [ComputeBudgetProgram.setComputeUnitPrice({microLamports: 50})];
+        for (var j in accountsToSplit) {
+            const [tx, newStakeAccountPubkey] = await split(senderPublicKey, accountsToSplit[j].lamports, accountsToSplit[j].account.pubkey, source);
+        
+            const deactivateTx = StakeProgram.deactivate({
+                stakePubkey: newStakeAccountPubkey,
+                authorizedPubkey: senderPublicKey,
+            });
+
+            instructions.push(...tx.instructions, ...deactivateTx.instructions);
+        }
+
+        for (var j in accountsToDeactivate) {
+            const deactivateTx = StakeProgram.deactivate({
+                stakePubkey: accountsToDeactivate[j].pubkey,
+                authorizedPubkey: senderPublicKey,
+            });
+
+            instructions.push(...deactivateTx.instructions);
+        }
+
+        // cast instructions to correct JSON Serialization
+        instructions = instructions.map((instruction) => {
+            return new TransactionInstruction(instruction)
+        })
+        
+        const versionedTX = await prepareTransaction(instructions, senderPublicKey, []);
+
+        // await SetStats(token, 'unstake', lamports / LAMPORTS_PER_SOL, sender, versionedTX, chain);
+
+        return {result: versionedTX};
+    } catch (error) {
+        throw new Error(error);
+    }
+}
+
+async function claim(sender) {
+    try {
+        const delegations = await getDelegations(sender);
+       
+        let stakeAccounts = delegations.result.map((delegationAcc) => {
+            return {pubkey: delegationAcc.pubkey, account: parsedAccountInfoToStakeAccount(delegationAcc.account)};
+        });
+
+        const epochInfo = await connection.getEpochInfo();
+        // Timestamp in seconds
+        const tm = Date.now() / 1000 | 0;
+
+        totalClaimableStake = new BigNumber(0); 
+        let deactivatedStakeAccounts = stakeAccounts.filter((acc) => {
+            let isDeactivated = (!isLockupInForce(acc.account.data.info.meta,  epochInfo.epoch, tm) &&
+            stakeAccountState(acc.account.data, epochInfo.epoch) === StakeState.Deactivated);
+
+            if (isDeactivated) totalClaimableStake = totalClaimableStake.plus(acc.account.data.info.stake.delegation.stake);
+            return isDeactivated
+        });
+
+        if (deactivatedStakeAccounts.length === 0) throw new Error('Nothing to claim');
+
+        const senderPublicKey = new PublicKey(sender);
+        var instructions = [ComputeBudgetProgram.setComputeUnitPrice({microLamports: 50})];
+        for (var j in deactivatedStakeAccounts) {
+
+            const withdrawTx = StakeProgram.withdraw({
+                stakePubkey: deactivatedStakeAccounts[j].pubkey,
+                authorizedPubkey: senderPublicKey,
+                toPubkey: senderPublicKey,
+                lamports: deactivatedStakeAccounts[j].account.lamports,
+            });
+            instructions.push(...withdrawTx.instructions);
+        }
+
+        // cast instructions to correct JSON Serialization
+        instructions = instructions.map((instruction) => {
+            return new TransactionInstruction(instruction)
+        })
+     
+        // await SetStats(token, 'claim', stakeBalance / LAMPORTS_PER_SOL, address, withdrawTx, chain);
+        const versionedTX = await prepareTransaction(instructions, senderPublicKey, []);
 
         return {result: versionedTX};
     } catch (error) {
@@ -316,4 +523,6 @@ module.exports = {
     withdraw,
     getDelegations,
     stake,
+    unstake,
+    claim
 };
