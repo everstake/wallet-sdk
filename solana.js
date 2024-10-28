@@ -96,12 +96,6 @@ async function createWithSeedTx(authorityPublicKey, lamports, source) {
     return [createStakeAccountTx, stakeAccountPubkey, []]
 }
 
-async function getBlockhash() {
-    return await connection
-        .getLatestBlockhash({commitment: 'max'})
-        .then((res) => res.blockhash);
-}
-
 /** createAccount - create account
  * @param {string} token - auth API token
  * @param {string} address - account blockchain address (staker)
