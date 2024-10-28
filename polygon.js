@@ -1,4 +1,4 @@
-const Web3 = require('web3');
+const { Web3 } = require('web3');
 const { CheckToken, ERROR_TEXT, SetStats } = require("./utils/api");
 const BigNumber = require('bignumber.js');
 
