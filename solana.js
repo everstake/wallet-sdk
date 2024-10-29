@@ -17,8 +17,9 @@ const {CheckToken, ERROR_TEXT, SetStats} = require("./utils/api");
 
 const chain = 'solana';
 const minAmount = 10000000; // 0.01
-const VALIDATOR_ADDRESS = '9QU2QSxhb24FUX3Tu2FpczXjpK3VYrvRudywSZaM29mF';
-
+const MAINNET_VALIDATOR_ADDRESS = '9QU2QSxhb24FUX3Tu2FpczXjpK3VYrvRudywSZaM29mF';
+const DEVNET_VALIDATOR_ADDRESS = 'GkqYQysEGmuL6V2AJoNnWZUz2ZBGWhzQXsJiXm2CLKAN';
+let VALIDATOR_ADDRESS = MAINNET_VALIDATOR_ADDRESS;
 let connection = null;
 let rpcURL = clusterApiUrl("mainnet-beta");
 
@@ -304,8 +305,22 @@ async function getBlockhash(){
     .then((res) => res.blockhash);
 }
 
-function setRPC(url) {
-    rpcURL = url
+// TODO refactor to class with constructor
+function selectNetwork(network, url) {
+    switch (network) {
+        case 'mainnet-beta':
+            rpcURL = url || clusterApiUrl("mainnet-beta");
+            VALIDATOR_ADDRESS = MAINNET_VALIDATOR_ADDRESS;
+            break;
+        case 'devnet':
+            rpcURL = url || clusterApiUrl("devnet");
+            VALIDATOR_ADDRESS = DEVNET_VALIDATOR_ADDRESS;
+            break;
+        default:
+            throw new Error(`Unsupported network ${network}`);
+    }
+    
+    return;
 }
 
 module.exports = {
@@ -315,5 +330,5 @@ module.exports = {
     withdraw,
     getDelegations,
     stake,
-    setRPC
+    selectNetwork
 };
