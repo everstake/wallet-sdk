@@ -20,13 +20,14 @@ const minAmount = 10000000; // 0.01
 const VALIDATOR_ADDRESS = '9QU2QSxhb24FUX3Tu2FpczXjpK3VYrvRudywSZaM29mF';
 
 let connection = null;
+let rpcURL = clusterApiUrl("mainnet-beta");
 
 /** connect client
  * @returns {Promise<object>} Promise object - client connection
  */
 async function connect() {
     try {
-        connection = new Connection(clusterApiUrl("mainnet-beta"), "confirmed");
+        connection = new Connection(rpcURL, "confirmed");
     } catch (error) {
         throw new Error(error);
     }
@@ -303,6 +304,10 @@ async function getBlockhash(){
     .then((res) => res.blockhash);
 }
 
+function setRPC(url) {
+    rpcURL = url
+}
+
 module.exports = {
     createAccount,
     delegate,
@@ -310,4 +315,5 @@ module.exports = {
     withdraw,
     getDelegations,
     stake,
+    setRPC
 };

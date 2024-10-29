@@ -14,7 +14,7 @@ const ABI_CONTRACT_BUY = [{"inputs":[],"payable":false,"stateMutability":"nonpay
 
 const ADDRESS_CONTRACT_BUY = '0xF30Cf4ed712D3734161fDAab5B1DBb49Fd2D0E5c';
 
-const RPC_URL = 'https://mainnet.infura.io/v3/f583d4f04d384b9e8c59a7ff1c9f68f1';
+let RPC_URL = 'https://mainnet.infura.io/v3/f583d4f04d384b9e8c59a7ff1c9f68f1';
 
 // 1 MATIC
 const minAmount = new BigNumber('1000000000000000000');
@@ -28,11 +28,11 @@ const restakeBaseGas = 220000;
 const chain = 'polygon';
 
 const WITHDRAW_EPOCH_DELAY = 80;
-const web3 = new Web3(RPC_URL);
-const contract_approve = new web3.eth.Contract(ABI_CONTRACT_APPROVE, ADDRESS_CONTRACT_APPROVE);
-const contract_approve_pol = new web3.eth.Contract(ABI_CONTRACT_APPROVE, ADDRESS_CONTRACT_APPROVE_POL);
-const contract_buy = new web3.eth.Contract(ABI_CONTRACT_BUY, ADDRESS_CONTRACT_BUY);
-const contract_staking = new web3.eth.Contract(ABI_CONTRACT_STAKING, ADDRESS_CONTRACT_STAKING);
+let web3 = new Web3(RPC_URL);
+let contract_approve = new web3.eth.Contract(ABI_CONTRACT_APPROVE, ADDRESS_CONTRACT_APPROVE);
+let contract_approve_pol = new web3.eth.Contract(ABI_CONTRACT_APPROVE, ADDRESS_CONTRACT_APPROVE_POL);
+let contract_buy = new web3.eth.Contract(ABI_CONTRACT_BUY, ADDRESS_CONTRACT_BUY);
+let contract_staking = new web3.eth.Contract(ABI_CONTRACT_STAKING, ADDRESS_CONTRACT_STAKING);
 
 /** isTransactionLoading returns TX loading status
  * @param {string} hash - TX hash
@@ -295,6 +295,15 @@ async function getAllowance(owner, spender = ADDRESS_CONTRACT_STAKING, isPOL = f
     }
 }
 
+// TODO refactor to class with constructor
+function setRPC(url) {
+    RPC_URL = url
+    web3 = new Web3(RPC_URL);
+    contract_approve = new web3.eth.Contract(ABI_CONTRACT_APPROVE, ADDRESS_CONTRACT_APPROVE);
+    contract_approve_pol = new web3.eth.Contract(ABI_CONTRACT_APPROVE, ADDRESS_CONTRACT_APPROVE_POL);
+    contract_buy = new web3.eth.Contract(ABI_CONTRACT_BUY, ADDRESS_CONTRACT_BUY);
+    contract_staking = new web3.eth.Contract(ABI_CONTRACT_STAKING, ADDRESS_CONTRACT_STAKING);
+}
 
 module.exports = {
     isTransactionLoading,
@@ -311,6 +320,8 @@ module.exports = {
     getAllowance,
     getBalanceOf,
     getUnbondNonces,
+    setRPC,
+    
     ABI_CONTRACT_APPROVE,
     ADDRESS_CONTRACT_APPROVE,
     ADDRESS_CONTRACT_APPROVE_POL,
