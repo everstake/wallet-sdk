@@ -15,6 +15,11 @@ const {
 
 const {CheckToken, ERROR_TEXT, SetStats} = require("./utils/api");
 
+const NETWORKS = {
+	Mainnet: "mainnet-beta",
+	Devnet: "devnet"
+}
+
 const chain = 'solana';
 const minAmount = 10000000; // 0.01
 const MAINNET_VALIDATOR_ADDRESS = '9QU2QSxhb24FUX3Tu2FpczXjpK3VYrvRudywSZaM29mF';
@@ -306,14 +311,18 @@ async function getBlockhash(){
 }
 
 // TODO refactor to class with constructor
+/** selectNetwork - select Solana network
+ * @param {string} network - Network name
+ * @param {string} url - RPC Node Url
+ */
 function selectNetwork(network, url) {
     switch (network) {
-        case 'mainnet-beta':
-            rpcURL = url || clusterApiUrl("mainnet-beta");
+        case NETWORKS.Mainnet:
+            rpcURL = url || clusterApiUrl(NETWORKS.Mainnet);
             VALIDATOR_ADDRESS = MAINNET_VALIDATOR_ADDRESS;
             break;
-        case 'devnet':
-            rpcURL = url || clusterApiUrl("devnet");
+        case NETWORKS.Devnet:
+            rpcURL = url || clusterApiUrl(NETWORKS.Devnet);
             VALIDATOR_ADDRESS = DEVNET_VALIDATOR_ADDRESS;
             break;
         default:
@@ -330,5 +339,7 @@ module.exports = {
     withdraw,
     getDelegations,
     stake,
-    selectNetwork
+    selectNetwork,
+
+    NETWORKS
 };
