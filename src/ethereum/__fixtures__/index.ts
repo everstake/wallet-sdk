@@ -1,3 +1,5 @@
+import BigNumber from 'bignumber.js';
+
 export const selectNetworkSuccessFixture = [
   {
     description: 'should initialize "mainnet" network',
@@ -28,7 +30,7 @@ export const unstakePendingSuccessFixture = [
     description: 'should create a transaction for unstaking pending balance',
     args: {
       network: 'mainnet',
-      address: '0x0',
+      address: '0x69E0951Ae0efA1Cb4a8d6702bf064C98Fc8E9A6a',
       amount: 1,
     },
     mockPendingBalance: '5',
@@ -38,7 +40,7 @@ export const unstakePendingSuccessFixture = [
       encodeABI: 'MockedABI',
     },
     result: {
-      from: '0x0',
+      from: '0x69E0951Ae0efA1Cb4a8d6702bf064C98Fc8E9A6a',
       value: 0,
       to: '0xD523794C879D9eC028960a231F866758e405bE34',
       gasLimit: 221000,
@@ -50,10 +52,20 @@ export const unstakePendingSuccessFixture = [
 export const unstakePendingErrorFixture = [
   {
     description:
+      'should throw "ADDRESS_FORMAT_ERROR" if address is not correct',
+    args: {
+      network: 'mainnet',
+      address: 'invalid_address',
+      amount: 1,
+    },
+    error: 'Invalid Ethereum address format',
+  },
+  {
+    description:
       'should throw "ZERO_UNSTAKE_MESSAGE" if pending balance is zero',
     args: {
       network: 'mainnet',
-      address: '0x0',
+      address: '0x69E0951Ae0efA1Cb4a8d6702bf064C98Fc8E9A6a',
       amount: 1,
     },
     mockPendingBalance: '0',
@@ -64,7 +76,7 @@ export const unstakePendingErrorFixture = [
       'should throw "AMOUNT_GREATER_THAN_PENDING_BALANCE_ERROR" if amount is greater than pending balance',
     args: {
       network: 'mainnet',
-      address: '0x0',
+      address: '0x69E0951Ae0efA1Cb4a8d6702bf064C98Fc8E9A6a',
       amount: 2, // greater than pending balance
     },
     mockPendingBalance: '1',
@@ -75,7 +87,7 @@ export const unstakePendingErrorFixture = [
       'should throw "INSUFFICIENT_PENDING_BALANCE_ERROR" if pending balance is less than min stake after unstaking',
     args: {
       network: 'mainnet',
-      address: '0x0',
+      address: '0x69E0951Ae0efA1Cb4a8d6702bf064C98Fc8E9A6a',
       amount: 1,
     },
     mockPendingBalance: '3', // 3 - 1 less than min stake amount
@@ -87,7 +99,7 @@ export const unstakePendingErrorFixture = [
       'should throw "UNSTAKE_PENDING_ERROR" if pending balance or stake amount fails',
     args: {
       network: 'mainnet',
-      address: '0x0',
+      address: '0x69E0951Ae0efA1Cb4a8d6702bf064C98Fc8E9A6a',
       amount: 1,
     },
     mockPendingBalance: undefined,
@@ -116,10 +128,19 @@ export const claimWithdrawRequestSuccessFixture = [
 export const claimWithdrawRequestErrorFixture = [
   {
     description:
+      'should throw "ADDRESS_FORMAT_ERROR" if address is not correct',
+    args: {
+      network: 'mainnet',
+      address: 'invalid_address',
+    },
+    error: 'Invalid Ethereum address format',
+  },
+  {
+    description:
       'should throw "ZERO_UNSTAKE_ERROR" if requested rewards is zero',
     args: {
       network: 'mainnet',
-      address: '0x0',
+      address: '0x69E0951Ae0efA1Cb4a8d6702bf064C98Fc8E9A6a',
     },
     mockRewards: {
       requested: '0',
@@ -132,7 +153,7 @@ export const claimWithdrawRequestErrorFixture = [
       'should throw "NOT_FILLED_UNSTAKE_MESSAGE" if readyForClaim is not equal to requested',
     args: {
       network: 'mainnet',
-      address: '0x0',
+      address: '0x69E0951Ae0efA1Cb4a8d6702bf064C98Fc8E9A6a',
     },
     mockRewards: {
       requested: '2',
@@ -145,7 +166,7 @@ export const claimWithdrawRequestErrorFixture = [
       'should throw "CLAIM_WITHDRAW_REQUEST_ERROR" if an error occurs during the claimWithdrawRequest call',
     args: {
       network: 'mainnet',
-      address: '0x0',
+      address: '0x69E0951Ae0efA1Cb4a8d6702bf064C98Fc8E9A6a',
     },
     mockRewards: {
       requested: '1',
@@ -162,7 +183,7 @@ export const stakeSuccessFixture = [
     args: {
       network: 'holesky',
       address: '0x057f0F0ba2e2f818c6fD4CA4A235F068495B6654',
-      amount: '0.1',
+      amount: new BigNumber('100000000000000000'), // 0.1 ETH in wei
       source: '0',
     },
     result: {
@@ -170,7 +191,7 @@ export const stakeSuccessFixture = [
       expectedTx: {
         from: '0x057f0F0ba2e2f818c6fD4CA4A235F068495B6654',
         to: '0xAFA848357154a6a624686b348303EF9a13F63264',
-        value: 100000000000000000, // 0.1 ETH
+        value: new BigNumber('100000000000000000'), // 0.1 ETH in wei
         data: '0x3a29dbae0000000000000000000000000000000000000000000000000000000000000000',
       },
     },
@@ -179,11 +200,12 @@ export const stakeSuccessFixture = [
 
 export const stakeErrorFixture = [
   {
-    description: 'should throw "WRONG_TYPE_MESSAGE" if amount is not a string',
+    description:
+      'should throw "WRONG_TYPE_MESSAGE" if amount is not a BigNumber',
     args: {
       network: 'mainnet',
-      address: '0x0',
-      amount: 2, // is not string type
+      address: '0x69E0951Ae0efA1Cb4a8d6702bf064C98Fc8E9A6a',
+      amount: 2, // Not a BigNumber instance
       source: '0',
     },
     error: 'Wrong input type',
@@ -193,8 +215,8 @@ export const stakeErrorFixture = [
       'should throw "MIN_AMOUNT_ERROR" if amount is less than minAmount',
     args: {
       network: 'mainnet',
-      address: '0x0',
-      amount: '0',
+      address: '0x69E0951Ae0efA1Cb4a8d6702bf064C98Fc8E9A6a',
+      amount: new BigNumber('0'), // Less than minAmount
       source: '0',
     },
     error: 'Min Amount 100000000000000000 wei',
@@ -230,7 +252,7 @@ export const unstakeErrorFixture = [
     description: 'should throw "WRONG_TYPE_MESSAGE" if amount is not a string',
     args: {
       network: 'mainnet',
-      address: '0x0',
+      address: '0x69E0951Ae0efA1Cb4a8d6702bf064C98Fc8E9A6a',
       amount: 2,
       allowedInterchangeNum: 0,
       source: '0',
@@ -239,10 +261,22 @@ export const unstakeErrorFixture = [
   },
   {
     description:
+      'should throw "ADDRESS_FORMAT_ERROR" if address is not correct',
+    args: {
+      network: 'mainnet',
+      address: 'invalid_address',
+      amount: '1',
+      allowedInterchangeNum: 0,
+      source: '0',
+    },
+    error: 'Invalid Ethereum address format',
+  },
+  {
+    description:
       'should throw "MAX_AMOUNT_FOR_UNSTAKE_ERROR" if amount is greater than balance',
     args: {
       network: 'mainnet',
-      address: '0x0',
+      address: '0x69E0951Ae0efA1Cb4a8d6702bf064C98Fc8E9A6a',
       amount: '3',
       allowedInterchangeNum: 0,
       source: '0',
@@ -255,7 +289,7 @@ export const unstakeErrorFixture = [
       'should throw "UNSTAKE_ERROR" if something goes wrong during the unstake process',
     args: {
       network: 'mainnet',
-      address: '0x0',
+      address: '0x69E0951Ae0efA1Cb4a8d6702bf064C98Fc8E9A6a',
       amount: '3',
       allowedInterchangeNum: 0,
       source: '0',

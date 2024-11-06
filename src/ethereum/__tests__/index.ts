@@ -156,7 +156,7 @@ describe('stake', () => {
       const ethereum = new Ethereum(args.network as NetworkType);
 
       await expect(
-        ethereum.stake(args.address, args.amount as string, args.source),
+        ethereum.stake(args.address, args.amount as BigNumber, args.source),
       ).rejects.toThrow(error);
     });
   });

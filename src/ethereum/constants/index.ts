@@ -1,4 +1,5 @@
 import type { NetworkAddressesMap } from '../types';
+import BigNumber from 'bignumber.js';
 
 export const NETWORK_ADDRESSES: NetworkAddressesMap = {
   mainnet: {
@@ -17,8 +18,8 @@ export const NETWORK_ADDRESSES: NetworkAddressesMap = {
   },
 };
 
-export const GAS_RESERVE = 220000;
+export const GAS_RESERVE = new BigNumber(220000);
 
 export const UINT16_MAX = 65535 | 0; // asm type annotation
 
-export const MIN_AMOUNT = 100000000000000000;
+export const MIN_AMOUNT = new BigNumber('100000000000000000');

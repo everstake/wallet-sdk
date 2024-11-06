@@ -17,7 +17,14 @@ import {
 import { CheckToken, SetStats } from '../utils/api';
 import { Blockchain } from '../utils';
 import { ERROR_MESSAGES } from './constants/errors';
-import { MIN_AMOUNT, VALIDATOR_ADDRESS, CHAIN } from './constants';
+import {
+  MIN_AMOUNT,
+  VALIDATOR_ADDRESS,
+  CHAIN,
+  FILTER_DATA_SIZE,
+  FILTER_OFFSET,
+  STAKE_PUBLIC_KEY,
+} from './constants';
 import { ApiResponse, CreateAccountResponse, Delegation } from './types';
 
 /**
@@ -46,19 +53,21 @@ export class Solana extends Blockchain {
   /**
    * Creates a new stake account.
    *
-   * @param address - The public key of the account.
-   * @param amount  - The amount to stake in SOL.
-   * @throws  Throws an error if the amount is less than the minimum amount.
+   * @param address - The public key of the account as PublicKey.
+   * @param lamports  - The amount to stake in lamports.
+   *
+   * @throws  Throws an error if the lamports is less than the minimum amount.
    * @throws  Throws an error if there's an issue creating the stake account.
+   *
    * @returns Returns a promise that resolves with the versioned transaction of the stake account creation and the public key of the stake account.
    *
    */
   public async createAccount(
-    address: string,
-    amount: number,
+    address: PublicKey,
+    lamports: number,
   ): Promise<ApiResponse<CreateAccountResponse>> {
     // Check if the amount is greater than or equal to the minimum amount
-    if (amount < MIN_AMOUNT) {
+    if (lamports < MIN_AMOUNT * LAMPORTS_PER_SOL) {
       this.throwError('MIN_AMOUNT_ERROR', MIN_AMOUNT.toString());
     }
 
@@ -72,9 +81,7 @@ export class Solana extends Blockchain {
           StakeProgram.space,
         );
 
-      // Calculate the amount to stake
-      const amountUserWantsToStake = amount * LAMPORTS_PER_SOL;
-      const amountToStake = minimumRent + amountUserWantsToStake;
+      const amountToStake = minimumRent + lamports;
 
       // Create the stake account
       const createStakeAccountTx = new Transaction().add(
@@ -99,7 +106,7 @@ export class Solana extends Blockchain {
       return {
         result: {
           createStakeAccountVerTx,
-          stakeAccount: stakeAccount.publicKey.toString(),
+          stakeAccount: stakeAccount.publicKey,
         },
       };
     } catch (error) {
@@ -145,16 +152,18 @@ export class Solana extends Blockchain {
    *
    * @param token - The token to be used for the delegation.
    * @param address - The public key of the account.
-   * @param amount - The amount to be delegated.
+   * @param lamports - The amount in lamports to be delegated.
    * @param stakeAccount - The public key of the stake account.
+   *
    * @throws Throws an error if the token is invalid, the amount is less than the minimum amount, or if there's an issue during the delegation process.
+   *
    * @returns Returns a promise that resolves with the delegation transaction.
    *
    */
   public async delegate(
     token: string,
     address: string,
-    amount: number,
+    lamports: number,
     stakeAccount: string,
   ): Promise<ApiResponse<VersionedTransaction>> {
     const isTokenValid = await CheckToken(token);
@@ -162,7 +171,7 @@ export class Solana extends Blockchain {
       this.throwError('INVALID_TOKEN_ERROR');
     }
 
-    if (amount < MIN_AMOUNT) {
+    if (lamports < MIN_AMOUNT * LAMPORTS_PER_SOL) {
       this.throwError('MIN_AMOUNT_ERROR', MIN_AMOUNT.toString());
     }
 
@@ -187,7 +196,7 @@ export class Solana extends Blockchain {
       await SetStats({
         token,
         action: 'stake',
-        amount,
+        amount: lamports / LAMPORTS_PER_SOL,
         address,
         chain: CHAIN,
       });
@@ -240,8 +249,10 @@ export class Solana extends Blockchain {
    * @param token - The token to be used for the withdrawal.
    * @param address - The public key of the account.
    * @param stakeAccountPublicKey - The public key of the stake account.
-   * @param stakeBalance - The amount to be withdrawn from the stake account.
+   * @param stakeBalance - The amount in lamports to be withdrawn from the stake account.
+   *
    * @throws Throws an error if the token is invalid or if there's an issue during the withdrawal process.
+   *
    * @returns Returns a promise that resolves with the withdrawal transaction.
    *
    */
@@ -295,7 +306,9 @@ export class Solana extends Blockchain {
    * Fetches the delegations of a given account.
    *
    * @param address - The public key of the account.
+   *
    * @throws Throws an error if there's an issue fetching the delegations.
+   *
    * @returns Returns a promise that resolves with the delegations of the account.
    *
    */
@@ -304,14 +317,12 @@ export class Solana extends Blockchain {
   ): Promise<ApiResponse<Array<Delegation>>> {
     try {
       // Define the stake program address
-      const stakeProgramAddress = new PublicKey(
-        'Stake11111111111111111111111111111111111111',
-      );
+      const stakeProgramAddress = new PublicKey(STAKE_PUBLIC_KEY);
 
       // Define the filters for the getParsedProgramAccounts method
       const filters = [
-        { dataSize: 200 },
-        { memcmp: { offset: 44, bytes: address } },
+        { dataSize: FILTER_DATA_SIZE },
+        { memcmp: { offset: FILTER_OFFSET, bytes: address } },
       ];
 
       // Fetch the accounts

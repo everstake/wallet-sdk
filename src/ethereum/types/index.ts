@@ -20,3 +20,5 @@ export type Transaction = {
 };
 
 export type ValidatorStatus = 'unknown' | 'pending' | 'deposited';
+
+export type ValidatorCode = '0' | '1' | string;
