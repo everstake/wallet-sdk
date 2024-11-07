@@ -11,24 +11,38 @@ const {SetStats} = require("./utils/api");
 const chain = 'bitcoin';
 
 const signetNetwork = 'signet'
+const signetFinalityProvider = 'bf68df67066633cba986c13a14a1edc34171884533ccb27f3ed26c8c93da1e83'
+const signetStakingAPI = 'https://staking-api.staging.babylonchain.io'
+const signetMempoolAPI = 'https://mempool.signet.babylonchain.io/signet'
+
 const mainnetNetwork = 'mainnet'
+const mainnetFinalityProvider = '5f61c6a51d91a8cf09f0edfb3d539a8749a0cab2829d52f7c6f028fed7455278'
+const mainnetStakingAPI = 'https://staking-api.babylonlabs.io'
+const mainnetMempoolAPI = 'https://mempool.babylonlabs.io'
 
 const LOW_VALUE_UTXO_THRESHOLD = 10000;
+const stakeOutputsNumber = 2
 
 class Babylon {
+    /**
+     * @constructor
+     * @param {string} network  - network (signet, mainnet)
+     * @param {string} publicKey - user (staker) publicKey
+     * @param {string} authToken - Auth API token
+     */
     constructor(network, publicKey, authToken) {
         switch (network) {
             case signetNetwork:
                 this.network = networks.testnet
-                this.finalityProviderPK = "bf68df67066633cba986c13a14a1edc34171884533ccb27f3ed26c8c93da1e83"
-                this.stakingAPI = "https://staking-api.staging.babylonchain.io"
-                this.mempoolAPI = "https://mempool.signet.babylonchain.io/signet"
+                this.finalityProviderPK = signetFinalityProvider
+                this.stakingAPI = signetStakingAPI
+                this.mempoolAPI = signetMempoolAPI
                 break
             case mainnetNetwork:
                 this.network = networks.bitcoin
-                this.finalityProviderPK = "5f61c6a51d91a8cf09f0edfb3d539a8749a0cab2829d52f7c6f028fed7455278"
-                this.stakingAPI = "hhttps://staking-api.babylonlabs.io"
-                this.mempoolAPI = "https://mempool.babylonlabs.io"
+                this.finalityProviderPK = mainnetFinalityProvider
+                this.stakingAPI = mainnetStakingAPI
+                this.mempoolAPI = mainnetMempoolAPI
                 break
             default:
                 throw new Error('Unsupported network');
@@ -44,7 +58,7 @@ class Babylon {
 
     /** stake - make stake tx
      * @param {number} amount  - Amount of stake (sats)
-     * @param {number} feeRate - Fee rate
+     * @param {number} feeRate - Fee rate (optional param). This is used to incentivize miners and tx speed up
      * @returns {Promise<Object>} Promise with unsigned TX
      */
     async stake(amount, feeRate = 1) {
@@ -62,7 +76,7 @@ class Babylon {
         }
 
         const allUTXOs = await this.getUTXOsByAddress(this.address);
-        const utxos = this.selectUTXOs(allUTXOs, 2, amount, feeRate)
+        const utxos = this.selectUTXOs(allUTXOs, stakeOutputsNumber, amount, feeRate)
         const filteredUTXOs = utxos.map((utxo) => {
             return {
                 txid: utxo.txid,
@@ -91,10 +105,9 @@ class Babylon {
 
     /** unbonding - make unbonding tx
      * @param {string} stakingTxHash  - staking tx hash
-     * @param {number} feeRate - Fee rate
      * @returns {Promise<Object>} Promise with unsigned TX
      */
-    async unbonding(stakingTxHash, feeRate = 1) {
+    async unbonding(stakingTxHash) {
         const eligible = await this.getUnbondingEligibility(stakingTxHash)
         if (!eligible) {
             throw new Error('Unbonding not eligible');
@@ -137,7 +150,7 @@ class Babylon {
 
     /** withdrawEarlyUnbonded - make withdrawal tx
      * @param {string} stakingTxHash  - staking tx hash
-     * @param {number} feeRate - Fee rate
+     * @param {number} feeRate - Fee rate (optional param). This is used to incentivize miners and tx speed up
      * @returns {Promise<Object>} Promise with unsigned TX
      */
     async withdrawEarlyUnbonded(stakingTxHash, feeRate = 1) {
@@ -172,7 +185,7 @@ class Babylon {
 
     /** withdrawTimelockUnbonded - make withdrawal tx
      * @param {string} stakingTxHash  - staking tx hash
-     * @param {number} feeRate - Fee rate
+     * @param {number} feeRate - Fee rate (optional param). This is used to incentivize miners and tx speed up
      * @returns {Promise<Object>} Promise with unsigned TX
      */
     async withdrawTimelockUnbonded(stakingTxHash, feeRate = 1) {
