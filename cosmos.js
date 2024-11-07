@@ -3,7 +3,7 @@ const {UnsetDecimal} = require("./utils/decimals");
 const BigNumber = require('bignumber.js');
 const axios = require('axios');
 
-const API_URL = 'https://cosmos-rest.publicnode.com';
+let API_URL = 'https://cosmos-rest.publicnode.com';
 const VALIDATOR_ADDRESS = 'cosmosvaloper1tflk30mq5vgqjdly92kkhhq3raev2hnz6eete3';
 const decimals = 6;
 const minAmount = new BigNumber(0.01);
@@ -230,6 +230,12 @@ async function getUndelegations(address) {
     }
 }
 
+// TODO refactor to class with constructor
+function setRPC(url) {
+    API_URL = url
+}
+
+
 module.exports = {
     delegate,
     redelegate,
@@ -237,4 +243,5 @@ module.exports = {
     withdrawRewards,
     getDelegations,
     getUndelegations,
+    setRPC
 };
