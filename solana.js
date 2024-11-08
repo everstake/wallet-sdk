@@ -346,9 +346,9 @@ async function stake(token, sender, lamports, source) {
  * @returns {Promise<object>} Promise object with Versioned Tx
  */
 async function unstake(token, sender, lamports, source) {
-    // if (!await CheckToken(token)) {
-    //     throw new Error(ERROR_TEXT);
-    // }
+    if (!await CheckToken(token)) {
+        throw new Error(ERROR_TEXT);
+    }
     
     try {
         const delegations = await getDelegations(sender);
@@ -387,7 +387,7 @@ async function unstake(token, sender, lamports, source) {
 
         let accountsToDeactivate = [];
         let accountsToSplit = [];
-        var i = 0;
+        let i = 0;
         while (lamportsBN.gt(new BigNumber(0)) && i < activeStakeAccounts.length) {
             const lBN = new BigNumber(lamports)
             const acc = activeStakeAccounts[i]; 
@@ -435,7 +435,7 @@ async function unstake(token, sender, lamports, source) {
         
         const versionedTX = await prepareTransaction(instructions, senderPublicKey, []);
 
-        // await SetStats(token, 'unstake', lamports / LAMPORTS_PER_SOL, sender, versionedTX, chain);
+        await SetStats(token, 'unstake', lamports / LAMPORTS_PER_SOL, sender, versionedTX, chain);
 
         return {result: versionedTX};
     } catch (error) {
@@ -484,7 +484,6 @@ async function claim(sender) {
             return new TransactionInstruction(instruction)
         })
      
-        // await SetStats(token, 'claim', stakeBalance / LAMPORTS_PER_SOL, address, withdrawTx, chain);
         const versionedTX = await prepareTransaction(instructions, senderPublicKey, []);
 
         return {result: versionedTX};
