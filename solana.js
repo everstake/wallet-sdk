@@ -381,11 +381,7 @@ async function unstake(token, sender, lamports, source) {
 
         // Desc sorting 
         activeStakeAccounts.sort(function(a, b){
-            if (a.account.data.info.stake.delegation.stake.lt(b.account.data.info.stake.delegation.stake)) {
-                return a;
-            }
-            
-            if (a.account.data.info.stake.delegation.stake.eq(b.account.data.info.stake.delegation.stake)) {
+            if (a.account.data.info.stake.delegation.stake.lte(b.account.data.info.stake.delegation.stake)) {
                 return a;
             }
 
