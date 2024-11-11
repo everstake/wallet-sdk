@@ -1,9 +1,6 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 
-const API_URL = 'https://wallet-sdk-api.everstake.one';
-const ASSETS_API = 'https://dashboard-api.everstake.one';
-
-const ERROR_TEXT = 'Please create or use correct token';
+import { API_URL, ASSETS_API } from './constants';
 
 const apiInstance: AxiosInstance = axios.create({
   baseURL: API_URL,
@@ -63,4 +60,4 @@ async function GetAssets(chain: string) {
   return response.data;
 }
 
-export { CheckToken, SetStats, CreateToken, GetAssets, ERROR_TEXT };
+export { CheckToken, SetStats, CreateToken, GetAssets };

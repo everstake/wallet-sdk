@@ -12,12 +12,8 @@ import {
 import { ABI_CONTRACT_ACCOUNTING, ABI_CONTRACT_POOL } from './abi';
 
 import { ERROR_MESSAGES, ORIGINAL_ERROR_MESSAGES } from './constants/errors';
-import type {
-  NetworkType,
-  Transaction,
-  ValidatorStatus,
-  ValidatorCode,
-} from './types';
+import type { NetworkType, Transaction } from './types';
+import { ValidatorStatus } from './types';
 import { Blockchain } from '../utils';
 
 /**
@@ -482,35 +478,37 @@ export class Ethereum extends Blockchain {
    * Stakes funds into pool.
    *
    * @param address - Sender address.
-   * @param amount - Stake amount in wei as a BigNumber.
+   * @param amount - Stake amount in ETH
    * @param source - Stake source. Default is '0'.
    *
    * @returns A Promise that resolves to the unsigned ETH transaction object.
    *
-   * @throws Will throw an Error if the amount is not a BigNumber, the amount is less than the minimum, or the contract call fails.
+   * @throws Will throw an Error if the amount is not a valid, the amount is less than the minimum, or the contract call fails.
    */
 
   public async stake(
     address: string,
-    amount: BigNumber,
+    amount: string,
     source: string = '0',
   ): Promise<Transaction> {
     if (!this.isAddress(address)) {
       this.throwError('ADDRESS_FORMAT_ERROR');
     }
 
-    if (!BigNumber.isBigNumber(amount)) {
+    if (typeof amount !== 'string') {
       this.throwError('WRONG_TYPE_MESSAGE');
     }
 
-    if (amount.lt(this.minAmount)) {
+    const amountWei = this.web3.utils.toWei(amount, 'ether');
+
+    if (this.minAmount.lt(amountWei)) {
       this.throwError('MIN_AMOUNT_ERROR', this.minAmount.toString());
     }
 
     try {
       const gasConsumption = await this.contractPool.methods
         .stake(source)
-        .estimateGas({ from: address, value: amount.toString() });
+        .estimateGas({ from: address, value: amountWei });
 
       // Create the transaction
       return {
@@ -796,13 +794,13 @@ export class Ethereum extends Blockchain {
    */
   public async getValidator(
     index: number,
-  ): Promise<{ pubkey: string; status: ValidatorStatus }> {
+  ): Promise<{ pubkey: string; status: string }> {
     try {
       const result = await this.contractPool.methods.getValidator(index).call();
 
       return {
         pubkey: result[0].toString(),
-        status: this.getStatusFromCode(result[1].toString()),
+        status: this.getStatusFromCode(Number(result[1])),
       };
     } catch (error) {
       throw this.handleError('GET_VALIDATOR_ERROR', error);
@@ -886,15 +884,10 @@ export class Ethereum extends Blockchain {
    *
    * @returns The human-readable status corresponding to the given code.
    */
-  private getStatusFromCode(code: ValidatorCode): ValidatorStatus {
-    switch (code) {
-      case '0':
-        return 'unknown';
-      case '1':
-        return 'pending';
-    }
-
-    return 'deposited';
+  public getStatusFromCode(code: ValidatorStatus): string {
+    return ValidatorStatus[code]
+      ? ValidatorStatus[code].toLowerCase()
+      : 'invalid status';
   }
 
   /**
