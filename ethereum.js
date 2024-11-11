@@ -278,6 +278,7 @@ async function aggregatedUserBalances(address) {
         'pendingDepositedBalanceOf',
         'pendingRestakedRewardOf',
         'autocompoundBalanceOf',
+        'depositedBalanceOf',
     ]
     const multicall = new Multicall({
         multicallCustomContractAddress: MULTICALL_CONTRACT_ADDRESS,
