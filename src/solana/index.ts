@@ -7,6 +7,7 @@ import {
   Keypair,
   LAMPORTS_PER_SOL,
   PublicKey,
+  Signer,
   StakeProgram,
   Transaction,
   TransactionInstruction,
@@ -19,7 +20,8 @@ import { Blockchain } from '../utils';
 import { ERROR_MESSAGES } from './constants/errors';
 import {
   MIN_AMOUNT,
-  VALIDATOR_ADDRESS,
+  MAINNET_VALIDATOR_ADDRESS,
+  DEVNET_VALIDATOR_ADDRESS,
   CHAIN,
   FILTER_DATA_SIZE,
   FILTER_OFFSET,
@@ -38,6 +40,7 @@ import { ApiResponse, CreateAccountResponse, Delegation } from './types';
  */
 export class Solana extends Blockchain {
   private connection!: Connection;
+  private validator: string;
   protected ERROR_MESSAGES = ERROR_MESSAGES;
   protected ORIGINAL_ERROR_MESSAGES = {};
 
@@ -48,6 +51,16 @@ export class Solana extends Blockchain {
     } catch (error) {
       throw this.handleError('CONNECTION_ERROR', error);
     }
+    switch (cluster) {
+      case 'mainnet-beta':
+        this.validator = MAINNET_VALIDATOR_ADDRESS;
+        break;
+      case 'devnet':
+        this.validator = DEVNET_VALIDATOR_ADDRESS;
+        break;
+      default:
+        throw new Error(`Unsupported network ${cluster}`);
+    }
   }
 
   /**
@@ -55,6 +68,7 @@ export class Solana extends Blockchain {
    *
    * @param address - The public key of the account as PublicKey.
    * @param lamports  - The amount to stake in lamports.
+   * @param source  - stake source
    *
    * @throws  Throws an error if the lamports is less than the minimum amount.
    * @throws  Throws an error if there's an issue creating the stake account.
@@ -65,15 +79,15 @@ export class Solana extends Blockchain {
   public async createAccount(
     address: PublicKey,
     lamports: number,
+    source: string | null,
   ): Promise<ApiResponse<CreateAccountResponse>> {
     // Check if the amount is greater than or equal to the minimum amount
-    if (lamports < MIN_AMOUNT * LAMPORTS_PER_SOL) {
+    if (lamports < MIN_AMOUNT) {
       this.throwError('MIN_AMOUNT_ERROR', MIN_AMOUNT.toString());
     }
 
     try {
       const publicKey = new PublicKey(address);
-      const stakeAccount = Keypair.generate();
 
       // Get the minimum balance for rent exemption
       const minimumRent =
@@ -81,32 +95,25 @@ export class Solana extends Blockchain {
           StakeProgram.space,
         );
 
-      const amountToStake = minimumRent + lamports;
+      const [createStakeAccountTx, stakeAccountPublicKey, externalSigners] =
+        source === null
+          ? await this.createAccountTx(publicKey, lamports + minimumRent)
+          : await this.createAccountWithSeedTx(
+              publicKey,
+              lamports + minimumRent,
+              source,
+            );
 
-      // Create the stake account
-      const createStakeAccountTx = new Transaction().add(
-        StakeProgram.createAccount({
-          authorized: new Authorized(publicKey, publicKey),
-          fromPubkey: publicKey,
-          lamports: amountToStake,
-          stakePubkey: stakeAccount.publicKey,
-        }),
-      );
-
-      const blockhash = await this.getBlockhash();
-      createStakeAccountTx.recentBlockhash = blockhash;
-
-      const createStakeAccountVerTx = await this.prepareTransaction(
+      const versionedTX = await this.prepareTransaction(
         createStakeAccountTx.instructions,
         publicKey,
+        externalSigners,
       );
-
-      createStakeAccountVerTx.sign([stakeAccount]);
 
       return {
         result: {
-          createStakeAccountVerTx,
-          stakeAccount: stakeAccount.publicKey,
+          createStakeAccountVerTx: versionedTX,
+          stakeAccount: stakeAccountPublicKey,
         },
       };
     } catch (error) {
@@ -118,12 +125,13 @@ export class Solana extends Blockchain {
    *
    * @param instructions - An array of TransactionInstruction objects.
    * @param payer - The public key of the payer.
-   *
+   * @param externalSigners - an array of external signers.
    * @returns A promise that resolves to a VersionedTransaction object.
    */
   public async prepareTransaction(
     instructions: TransactionInstruction[],
     payer: PublicKey,
+    externalSigners: Signer[],
   ): Promise<VersionedTransaction> {
     const blockhash = await this.getBlockhash();
     const messageV0 = new TransactionMessage({
@@ -132,7 +140,13 @@ export class Solana extends Blockchain {
       instructions,
     }).compileToV0Message();
 
-    return new VersionedTransaction(messageV0);
+    const tx = new VersionedTransaction(messageV0);
+
+    if (externalSigners.length > 0) {
+      tx.sign(externalSigners);
+    }
+
+    return tx;
   }
   /**
    * Retrieves the latest blockhash.
@@ -171,14 +185,14 @@ export class Solana extends Blockchain {
       this.throwError('INVALID_TOKEN_ERROR');
     }
 
-    if (lamports < MIN_AMOUNT * LAMPORTS_PER_SOL) {
+    if (lamports < MIN_AMOUNT) {
       this.throwError('MIN_AMOUNT_ERROR', MIN_AMOUNT.toString());
     }
 
     try {
       const publicKey = new PublicKey(address);
       const stakeAccountPublicKey = new PublicKey(stakeAccount);
-      const selectedValidatorPubkey = new PublicKey(VALIDATOR_ADDRESS);
+      const selectedValidatorPubkey = new PublicKey(this.validator);
 
       const delegateTx = new Transaction().add(
         StakeProgram.delegate({
@@ -191,6 +205,7 @@ export class Solana extends Blockchain {
       const delegateVerTx = await this.prepareTransaction(
         delegateTx.instructions,
         publicKey,
+        [],
       );
 
       await SetStats({
@@ -235,6 +250,7 @@ export class Solana extends Blockchain {
       const deactivateVerTx = await this.prepareTransaction(
         deactivateTx.instructions,
         publicKey,
+        [],
       );
 
       return { result: deactivateVerTx };
@@ -294,6 +310,7 @@ export class Solana extends Blockchain {
       const withdrawVerTx = await this.prepareTransaction(
         withdrawTx.instructions,
         publicKey,
+        [],
       );
 
       return { result: withdrawVerTx };
@@ -340,19 +357,21 @@ export class Solana extends Blockchain {
   /**
    * Stakes a certain amount of lamports.
    *
+   * @param token - The token to be used for the delegation.
    * @param sender - The public key of the sender.
    * @param lamports - The number of lamports to stake.
-   *
+   * @param source  - stake source
    * @returns A promise that resolves to a VersionedTransaction object.
    */
   async stake(
+    token: string,
     sender: string,
     lamports: number,
+    source: string | null,
   ): Promise<ApiResponse<VersionedTransaction>> {
     try {
       const senderPublicKey = new PublicKey(sender);
-      const stakeAccount = Keypair.generate();
-      const validatorPubkey = new PublicKey(VALIDATOR_ADDRESS);
+      const validatorPubkey = new PublicKey(this.validator);
 
       // Calculate how much we want to stake
       const minimumRent =
@@ -360,16 +379,20 @@ export class Solana extends Blockchain {
           StakeProgram.space,
         );
 
+      const [createStakeAccountTx, stakeAccountPublicKey, externalSigners] =
+        source === null
+          ? await this.createAccountTx(senderPublicKey, lamports + minimumRent)
+          : await this.createAccountWithSeedTx(
+              senderPublicKey,
+              lamports + minimumRent,
+              source,
+            );
+
       const stakeTx = new Transaction().add(
         ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50 }),
-        StakeProgram.createAccount({
-          authorized: new Authorized(senderPublicKey, senderPublicKey),
-          fromPubkey: senderPublicKey,
-          lamports: lamports + minimumRent,
-          stakePubkey: stakeAccount.publicKey,
-        }),
+        createStakeAccountTx,
         StakeProgram.delegate({
-          stakePubkey: stakeAccount.publicKey,
+          stakePubkey: stakeAccountPublicKey,
           authorizedPubkey: senderPublicKey,
           votePubkey: validatorPubkey,
         }),
@@ -378,12 +401,75 @@ export class Solana extends Blockchain {
       const stakeVerTx = await this.prepareTransaction(
         stakeTx.instructions,
         senderPublicKey,
+        externalSigners,
       );
-      stakeVerTx.sign([stakeAccount]);
+
+      // Update the stats
+      await SetStats({
+        token,
+        action: 'stake',
+        amount: lamports / LAMPORTS_PER_SOL,
+        address: sender,
+        chain: CHAIN,
+      });
 
       return { result: stakeVerTx };
     } catch (error) {
       throw this.handleError('STAKE_ERROR', error);
     }
+  }
+
+  private async createAccountTx(
+    address: PublicKey,
+    lamports: number,
+  ): Promise<[Transaction, PublicKey, Keypair[]]> {
+    const blockhash = await this.getBlockhash();
+    const stakeAccount = Keypair.generate();
+    const createStakeAccountTx = StakeProgram.createAccount({
+      authorized: new Authorized(address, address),
+      fromPubkey: address,
+      lamports: lamports,
+      stakePubkey: stakeAccount.publicKey,
+    });
+    createStakeAccountTx.recentBlockhash = blockhash;
+    createStakeAccountTx.sign(stakeAccount);
+
+    return [createStakeAccountTx, stakeAccount.publicKey, [stakeAccount]];
+  }
+
+  private async createAccountWithSeedTx(
+    authorityPublicKey: PublicKey,
+    lamports: number,
+    source: string,
+  ): Promise<[Transaction, PublicKey, Keypair[]]> {
+    // Format source to
+    const seed = this.formatSource(source);
+
+    const stakeAccountPubkey = await PublicKey.createWithSeed(
+      authorityPublicKey,
+      seed,
+      StakeProgram.programId,
+    );
+
+    const createStakeAccountTx = new Transaction().add(
+      StakeProgram.createAccountWithSeed({
+        authorized: new Authorized(authorityPublicKey, authorityPublicKey),
+        fromPubkey: authorityPublicKey,
+        basePubkey: authorityPublicKey,
+        stakePubkey: stakeAccountPubkey,
+
+        seed: seed,
+        lamports: lamports,
+      }),
+    );
+
+    return [createStakeAccountTx, stakeAccountPubkey, []];
+  }
+
+  private formatSource(source: string): string {
+    const timestamp = new Date().getTime();
+    source = `everstake ${source}:${timestamp}`;
+
+    return source;
   }
 }
