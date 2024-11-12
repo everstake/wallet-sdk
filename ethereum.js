@@ -241,8 +241,8 @@ async function closeValidatorsStat() {
     }
 }
 
-// aggregatedBalances method returns object with aggregated balances using multicall contract
-async function aggregatedBalances() {
+// poolBalances method returns object with aggregated balances using multicall contract
+async function poolBalances() {
     const methods = [
         'balance',
         'pendingBalance',
@@ -271,8 +271,8 @@ async function aggregatedBalances() {
     return aggResult;
 }
 
-// aggregatedUserBalances method returns object with aggregated user balances using multicall contract
-async function aggregatedUserBalances(address) {
+// userBalances method returns object with aggregated user balances using multicall contract
+async function userBalances(address) {
     const methods = [
         'pendingBalanceOf',
         'pendingDepositedBalanceOf',
