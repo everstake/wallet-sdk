@@ -548,7 +548,7 @@ module.exports = {
     getDelegations,
     stake,
     unstake,
-    claim
+    claim,
     selectNetwork,
 
     NETWORKS
