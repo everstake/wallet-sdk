@@ -6,6 +6,7 @@ const {
     Keypair,
     PublicKey,
     StakeProgram,
+    Lockup,
     Transaction,
     TransactionMessage,
     VersionedTransaction,
@@ -47,7 +48,7 @@ async function connect() {
  * @param {string | null} source - stake source
  * @returns {Promise<object>} Promise object Tx
  */
-async function createAccount(address, lamports, source = '0') {
+async function createAccount(address, lamports, source = '0', lockupParams = Lockup.default) {
     try {
             await connect();
             const senderPublicKey = new PublicKey(address);
@@ -55,8 +56,8 @@ async function createAccount(address, lamports, source = '0') {
             const minimumRent = await connection.getMinimumBalanceForRentExemption(StakeProgram.space);
 
             const [createStakeAccountTx, stakeAccountPublicKey, externalSigners] = source === null 
-            ? await createAccountTx(senderPublicKey, lamports + minimumRent) 
-            : await createWithSeedTx(senderPublicKey, lamports + minimumRent, source);        
+            ? await createAccountTx(senderPublicKey, lamports + minimumRent, lockupParams) 
+            : await createWithSeedTx(senderPublicKey, lamports + minimumRent, source, lockupParams);        
 
             const versionedTX = await prepareTransaction(createStakeAccountTx.instructions, senderPublicKey, externalSigners);
             return { result: { versionedTX, stakeAccount: stakeAccountPublicKey.toString() } };
@@ -65,7 +66,7 @@ async function createAccount(address, lamports, source = '0') {
     }
 }
 
-async function createAccountTx(address, lamports) {
+async function createAccountTx(address, lamports, {unixTimestamp, epoch}) {
     const blockhash = await getBlockhash();
     const stakeAccount = Keypair.generate();
     let createStakeAccountTx = StakeProgram.createAccount({
@@ -73,6 +74,8 @@ async function createAccountTx(address, lamports) {
         fromPubkey: address,
         lamports: lamports,
         stakePubkey: stakeAccount.publicKey,
+        // SDK don't support custodian lockups
+        lockup: new Lockup(unixTimestamp, epoch, PublicKey.default)
     });
     createStakeAccountTx.recentBlockhash = blockhash;
     createStakeAccountTx.sign(stakeAccount);
@@ -80,8 +83,7 @@ async function createAccountTx(address, lamports) {
     return [createStakeAccountTx, stakeAccount.publicKey, [stakeAccount]]
 }
 
-async function createWithSeedTx(authorityPublicKey, lamports, source) {
-    
+async function createWithSeedTx(authorityPublicKey, lamports, source, {unixTimestamp, epoch}) {
     // Format source to
     seed = formatSource(source);
    
@@ -97,6 +99,9 @@ async function createWithSeedTx(authorityPublicKey, lamports, source) {
             fromPubkey: authorityPublicKey,
             basePubkey: authorityPublicKey,
             stakePubkey: stakeAccountPubkey,
+
+            // SDK don't support custodian lockups
+            lockup: new Lockup(unixTimestamp, epoch, PublicKey.default),
 
             seed: seed,
             lamports: lamports,
@@ -280,7 +285,7 @@ async function getDelegations(address) {
 
         let accounts = [];
 
-        accounts = await connection.getParsedProgramAccounts(new PublicKey("Stake11111111111111111111111111111111111111"), {
+        accounts = await connection.getParsedProgramAccounts(StakeProgram.programId, {
             filters: [
                 {dataSize: 200},
                 {memcmp: {offset: 44, bytes: address}},
@@ -303,7 +308,7 @@ async function stakeBalances(address) {}
  * @param {string | null} source - stake source
  * @returns {Promise<object>} Promise object with Versioned Tx
  */
-async function stake(token, sender, lamports, source) {
+async function stake(token, sender, lamports, source, lockupParams = Lockup.default) {
     if (!await CheckToken(token)) {
         throw new Error(ERROR_TEXT);
     }
@@ -316,8 +321,8 @@ async function stake(token, sender, lamports, source) {
         const minimumRent = await connection.getMinimumBalanceForRentExemption(StakeProgram.space);
 
         const [createStakeAccountTx, stakeAccountPublicKey, externalSigners] = source === null 
-        ? await createAccountTx(senderPublicKey, lamports + minimumRent) 
-        : await createWithSeedTx(senderPublicKey, lamports + minimumRent, source);
+        ? await createAccountTx(senderPublicKey, lamports + minimumRent, lockupParams) 
+        : await createWithSeedTx(senderPublicKey, lamports + minimumRent, source, lockupParams);
 
         const tx = new Transaction().add(
             ComputeBudgetProgram.setComputeUnitPrice({microLamports: 50}),
