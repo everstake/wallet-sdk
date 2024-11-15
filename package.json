@@ -41,6 +41,7 @@
     "bitcoinjs-lib": "^6.1.5",
     "bs58": "^5.0.0",
     "web3": "^4.14.0",
-    "btc-staking-ts": "^0.2.10"
+    "btc-staking-ts": "^0.2.10",
+    "ethereum-multicall": "^2.26.0"
   }
 }
