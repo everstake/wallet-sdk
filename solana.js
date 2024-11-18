@@ -46,6 +46,7 @@ async function connect() {
  * @param {string} address - account blockchain address (staker)
  * @param {number} lamports - lamport amount
  * @param {string | null} source - stake source
+ * @param {object | null} lockupParams - stake account lockup params
  * @returns {Promise<object>} Promise object Tx
  */
 async function createAccount(address, lamports, source = '0', lockupParams = Lockup.default) {
@@ -54,7 +55,7 @@ async function createAccount(address, lamports, source = '0', lockupParams = Loc
             const senderPublicKey = new PublicKey(address);
 
             const minimumRent = await connection.getMinimumBalanceForRentExemption(StakeProgram.space);
-
+            lockupParams = lockupParams === null ? Lockup.default : lockupParams;
             const [createStakeAccountTx, stakeAccountPublicKey, externalSigners] = source === null 
             ? await createAccountTx(senderPublicKey, lamports + minimumRent, lockupParams) 
             : await createWithSeedTx(senderPublicKey, lamports + minimumRent, source, lockupParams);        
@@ -306,6 +307,7 @@ async function stakeBalances(address) {}
  * @param {string} sender - account blockchain address (staker)
  * @param {number} lamports - lamport amount
  * @param {string | null} source - stake source
+ * @param {object | null} lockupParams - stake account lockup params
  * @returns {Promise<object>} Promise object with Versioned Tx
  */
 async function stake(token, sender, lamports, source, lockupParams = Lockup.default) {
@@ -319,7 +321,7 @@ async function stake(token, sender, lamports, source, lockupParams = Lockup.defa
 
         // Calculate how much we want to stake
         const minimumRent = await connection.getMinimumBalanceForRentExemption(StakeProgram.space);
-
+        lockupParams = lockupParams === null ? Lockup.default : lockupParams;
         const [createStakeAccountTx, stakeAccountPublicKey, externalSigners] = source === null 
         ? await createAccountTx(senderPublicKey, lamports + minimumRent, lockupParams) 
         : await createWithSeedTx(senderPublicKey, lamports + minimumRent, source, lockupParams);
