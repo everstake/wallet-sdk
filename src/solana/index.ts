@@ -23,7 +23,6 @@ import {
   CHAIN,
   FILTER_DATA_SIZE,
   FILTER_OFFSET,
-  STAKE_PUBLIC_KEY,
 } from './constants';
 import { ApiResponse, CreateAccountResponse, Delegation } from './types';
 
@@ -317,7 +316,7 @@ export class Solana extends Blockchain {
   ): Promise<ApiResponse<Array<Delegation>>> {
     try {
       // Define the stake program address
-      const stakeProgramAddress = new PublicKey(STAKE_PUBLIC_KEY);
+      const stakeProgramAddress = new PublicKey(StakeProgram.programId);
 
       // Define the filters for the getParsedProgramAccounts method
       const filters = [
