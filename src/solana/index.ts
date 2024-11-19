@@ -26,7 +26,6 @@ import {
   CHAIN,
   FILTER_DATA_SIZE,
   FILTER_OFFSET,
-  STAKE_PUBLIC_KEY,
 } from './constants';
 import { ApiResponse, CreateAccountResponse, Delegation } from './types';
 import BigNumber from 'bignumber.js';
@@ -104,6 +103,7 @@ export class Solana extends Blockchain {
         await this.connection.getMinimumBalanceForRentExemption(
           StakeProgram.space,
         );
+      lockup = lockup === null ? Lockup.default : lockup;
 
       const [createStakeAccountTx, stakeAccountPublicKey, externalSigners] =
         source === null
@@ -348,9 +348,6 @@ export class Solana extends Blockchain {
     address: string,
   ): Promise<ApiResponse<Array<Delegation>>> {
     try {
-      // Define the stake program address
-      const stakeProgramAddress = new PublicKey(STAKE_PUBLIC_KEY);
-
       // Define the filters for the getParsedProgramAccounts method
       const filters = [
         { dataSize: FILTER_DATA_SIZE },
@@ -359,7 +356,7 @@ export class Solana extends Blockchain {
 
       // Fetch the accounts
       const accounts = await this.connection.getParsedProgramAccounts(
-        stakeProgramAddress,
+        StakeProgram.programId,
         { filters },
       );
 
@@ -395,6 +392,7 @@ export class Solana extends Blockchain {
         await this.connection.getMinimumBalanceForRentExemption(
           StakeProgram.space,
         );
+      lockup = lockup === null ? Lockup.default : lockup;
 
       const [createStakeAccountTx, stakeAccountPublicKey, externalSigners] =
         source === null
