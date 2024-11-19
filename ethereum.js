@@ -550,8 +550,8 @@ module.exports = {
     withdrawRequest,
     claimWithdrawRequest,
     closeValidatorsStat,
-    aggregatedBalances,
-    aggregatedUserBalances,
+    poolBalances,
+    userBalances,
 
     // pool
     stake,
