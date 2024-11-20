@@ -1,15 +1,14 @@
 import {
   Authorized,
-  Cluster,
   clusterApiUrl,
   ComputeBudgetProgram,
   Connection,
   Keypair,
   LAMPORTS_PER_SOL,
+  Lockup,
   PublicKey,
   Signer,
   StakeProgram,
-  Lockup,
   Transaction,
   TransactionInstruction,
   TransactionMessage,
@@ -20,14 +19,19 @@ import { CheckToken, SetStats } from '../utils/api';
 import { Blockchain } from '../utils';
 import { ERROR_MESSAGES } from './constants/errors';
 import {
-  MIN_AMOUNT,
-  MAINNET_VALIDATOR_ADDRESS,
-  DEVNET_VALIDATOR_ADDRESS,
   CHAIN,
+  DEVNET_VALIDATOR_ADDRESS,
   FILTER_DATA_SIZE,
   FILTER_OFFSET,
+  MAINNET_VALIDATOR_ADDRESS,
+  MIN_AMOUNT,
 } from './constants';
-import { ApiResponse, CreateAccountResponse, Delegation } from './types';
+import {
+  ApiResponse,
+  CreateAccountResponse,
+  Delegation,
+  Network,
+} from './types';
 import BigNumber from 'bignumber.js';
 import {
   isLockupInForce,
@@ -47,26 +51,30 @@ import {
  */
 export class Solana extends Blockchain {
   private connection!: Connection;
-  private validator: string;
+  private validator: PublicKey;
   protected ERROR_MESSAGES = ERROR_MESSAGES;
   protected ORIGINAL_ERROR_MESSAGES = {};
 
-  constructor(cluster: Cluster = 'mainnet-beta') {
+  constructor(network: Network = Network.Mainnet, rpc: string | null = null) {
     super();
+    if (rpc !== null && !this.isValidURL(rpc)) {
+      throw this.throwError('INVALID_RPC_ERROR');
+    }
+    rpc = rpc === null ? clusterApiUrl(network) : rpc;
     try {
-      this.connection = new Connection(clusterApiUrl(cluster), 'confirmed');
+      this.connection = new Connection(rpc, 'confirmed');
     } catch (error) {
       throw this.handleError('CONNECTION_ERROR', error);
     }
-    switch (cluster) {
-      case 'mainnet-beta':
+    switch (network) {
+      case Network.Mainnet:
         this.validator = MAINNET_VALIDATOR_ADDRESS;
         break;
-      case 'devnet':
+      case Network.Devnet:
         this.validator = DEVNET_VALIDATOR_ADDRESS;
         break;
       default:
-        throw new Error(`Unsupported network ${cluster}`);
+        throw this.throwError('UNSUPPORTED_NETWORK_ERROR');
     }
   }
 
@@ -88,7 +96,7 @@ export class Solana extends Blockchain {
     address: PublicKey,
     lamports: number,
     source: string | null,
-    lockup: Lockup = Lockup.default,
+    lockup: Lockup | null = Lockup.default,
   ): Promise<ApiResponse<CreateAccountResponse>> {
     // Check if the amount is greater than or equal to the minimum amount
     if (lamports < MIN_AMOUNT) {
@@ -207,13 +215,12 @@ export class Solana extends Blockchain {
     try {
       const publicKey = new PublicKey(address);
       const stakeAccountPublicKey = new PublicKey(stakeAccount);
-      const selectedValidatorPubkey = new PublicKey(this.validator);
 
       const delegateTx = new Transaction().add(
         StakeProgram.delegate({
           stakePubkey: stakeAccountPublicKey,
           authorizedPubkey: publicKey,
-          votePubkey: selectedValidatorPubkey,
+          votePubkey: this.validator,
         }),
       );
 
@@ -381,11 +388,10 @@ export class Solana extends Blockchain {
     sender: string,
     lamports: number,
     source: string | null,
-    lockup: Lockup = Lockup.default,
+    lockup: Lockup | null = Lockup.default,
   ): Promise<ApiResponse<VersionedTransaction>> {
     try {
       const senderPublicKey = new PublicKey(sender);
-      const validatorPubkey = new PublicKey(this.validator);
 
       // Calculate how much we want to stake
       const minimumRent =
@@ -414,7 +420,7 @@ export class Solana extends Blockchain {
         StakeProgram.delegate({
           stakePubkey: stakeAccountPublicKey,
           authorizedPubkey: senderPublicKey,
-          votePubkey: validatorPubkey,
+          votePubkey: this.validator,
         }),
       );
 
@@ -520,8 +526,7 @@ export class Solana extends Blockchain {
       });
 
       const epochInfo = await this.connection.getEpochInfo();
-      // Timestamp in seconds
-      const tm = (Date.now() / 1000) | 0;
+      const tm = this.timestampInSec();
 
       let totalActiveStake = new BigNumber(0);
       const activeStakeAccounts = stakeAccounts.filter((acc) => {
@@ -541,7 +546,7 @@ export class Solana extends Blockchain {
 
       let lamportsBN = new BigNumber(lamports);
       if (totalActiveStake.lt(lamportsBN))
-        throw new Error('Active stake less than requested');
+        throw this.throwError('NOT_ENOUGH_ACTIVE_STAKE_ERROR');
 
       // Desc sorting
       activeStakeAccounts.sort((a, b): number => {
@@ -576,9 +581,7 @@ export class Solana extends Blockchain {
           i++;
           continue;
         }
-        const stakeAmount = new BigNumber(
-          acc.account.data.info.stake.delegation.stake,
-        );
+        const stakeAmount = acc.account.data.info.stake.delegation.stake;
 
         // If reminder amount less than min stake amount stake account automatically become disabled
         if (
@@ -693,8 +696,7 @@ export class Solana extends Blockchain {
       });
 
       const epochInfo = await this.connection.getEpochInfo();
-      // Timestamp in seconds
-      const tm = (Date.now() / 1000) | 0;
+      const tm = this.timestampInSec();
 
       let totalClaimableStake = new BigNumber(0);
       const deactivatedStakeAccounts = stakeAccounts.filter((acc) => {
@@ -713,7 +715,7 @@ export class Solana extends Blockchain {
       });
 
       if (deactivatedStakeAccounts.length === 0)
-        throw new Error('Nothing to claim');
+        throw this.throwError('NOTHING_TO_CLAIM_ERROR');
 
       const senderPublicKey = new PublicKey(sender);
       let instructions = [
@@ -765,5 +767,9 @@ export class Solana extends Blockchain {
     source = `everstake ${source}:${timestamp}`;
 
     return source;
+  }
+
+  private timestampInSec(): number {
+    return (Date.now() / 1000) | 0;
   }
 }

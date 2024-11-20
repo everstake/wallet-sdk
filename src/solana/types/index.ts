@@ -18,3 +18,8 @@ export type CreateAccountResponse = {
   createStakeAccountVerTx: VersionedTransaction;
   stakeAccount: PublicKey;
 };
+
+export enum Network {
+  Mainnet = 'mainnet-beta',
+  Devnet = 'devnet',
+}
