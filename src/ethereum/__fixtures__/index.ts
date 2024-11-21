@@ -1,5 +1,3 @@
-import BigNumber from 'bignumber.js';
-
 export const selectNetworkSuccessFixture = [
   {
     description: 'should initialize "mainnet" network',
@@ -183,7 +181,7 @@ export const stakeSuccessFixture = [
     args: {
       network: 'holesky',
       address: '0x057f0F0ba2e2f818c6fD4CA4A235F068495B6654',
-      amount: new BigNumber('100000000000000000'), // 0.1 ETH in wei
+      amount: '0.1',
       source: '0',
     },
     result: {
@@ -191,7 +189,7 @@ export const stakeSuccessFixture = [
       expectedTx: {
         from: '0x057f0F0ba2e2f818c6fD4CA4A235F068495B6654',
         to: '0xAFA848357154a6a624686b348303EF9a13F63264',
-        value: new BigNumber('100000000000000000'), // 0.1 ETH in wei
+        value: 0.1,
         data: '0x3a29dbae0000000000000000000000000000000000000000000000000000000000000000',
       },
     },
@@ -200,12 +198,11 @@ export const stakeSuccessFixture = [
 
 export const stakeErrorFixture = [
   {
-    description:
-      'should throw "WRONG_TYPE_MESSAGE" if amount is not a BigNumber',
+    description: 'should throw "WRONG_TYPE_MESSAGE" if amount is not a string',
     args: {
       network: 'mainnet',
       address: '0x69E0951Ae0efA1Cb4a8d6702bf064C98Fc8E9A6a',
-      amount: 2, // Not a BigNumber instance
+      amount: 0.1,
       source: '0',
     },
     error: 'Wrong input type',
@@ -216,7 +213,7 @@ export const stakeErrorFixture = [
     args: {
       network: 'mainnet',
       address: '0x69E0951Ae0efA1Cb4a8d6702bf064C98Fc8E9A6a',
-      amount: new BigNumber('0'), // Less than minAmount
+      amount: '1', // Less than minAmount
       source: '0',
     },
     error: 'Min Amount 100000000000000000 wei',

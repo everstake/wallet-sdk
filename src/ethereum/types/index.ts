@@ -19,6 +19,8 @@ export type Transaction = {
   data: string;
 };
 
-export type ValidatorStatus = 'unknown' | 'pending' | 'deposited';
-
-export type ValidatorCode = '0' | '1' | string;
+export enum ValidatorStatus {
+  Unknown = 0,
+  Pending = 1,
+  Deposited = 2,
+}

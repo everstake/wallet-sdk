@@ -1,4 +1,4 @@
-import { COMMON_ERROR_MESSAGES } from './errors';
+import { COMMON_ERROR_MESSAGES } from './constants/errors';
 
 /**
  * `WalletSDKError` is a custom error class that extends the built-in `Error` class.
