@@ -143,7 +143,7 @@ export function stakeAccountState(
   currentEpoch: number,
 ): string {
   if (type !== 'delegated' || stake === null) {
-    return 'inactive';
+    return StakeState.Inactive;
   }
   const currentEpochBN = new BigNumber(currentEpoch);
 
@@ -151,20 +151,20 @@ export function stakeAccountState(
   const deactivationEpoch = new BigNumber(stake.delegation.deactivationEpoch);
 
   if (activationEpoch.gt(currentEpochBN)) {
-    return 'inactive';
+    return StakeState.Inactive;
   }
   if (activationEpoch.eq(currentEpochBN)) {
     // if you activate then deactivate in the same epoch,
     // deactivationEpoch === activationEpoch.
     // if you deactivate then activate again in the same epoch,
     // the deactivationEpoch will be reset to EPOCH_MAX
-    if (deactivationEpoch.eq(activationEpoch)) return 'inactive';
+    if (deactivationEpoch.eq(activationEpoch)) return StakeState.Inactive;
 
-    return 'activating';
+    return StakeState.Activating;
   }
   // activationEpoch < currentEpochBN
-  if (deactivationEpoch.gt(currentEpochBN)) return 'active';
-  if (deactivationEpoch.eq(currentEpochBN)) return 'deactivating';
+  if (deactivationEpoch.gt(currentEpochBN)) return StakeState.Active;
+  if (deactivationEpoch.eq(currentEpochBN)) return StakeState.Deactivating;
 
-  return 'inactive';
+  return StakeState.Deactivated;
 }
