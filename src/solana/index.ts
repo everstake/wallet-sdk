@@ -38,7 +38,7 @@ import {
   parsedAccountInfoToStakeAccount,
   stakeAccountState,
   StakeState,
-} from './stake_account';
+} from './stakeAccount';
 
 /**
  * The `Solana` class extends the `Blockchain` class and provides methods for interacting with the Solana blockchain.
@@ -57,10 +57,10 @@ export class Solana extends Blockchain {
 
   constructor(network: Network = Network.Mainnet, rpc: string | null = null) {
     super();
-    if (rpc !== null && !this.isValidURL(rpc)) {
+    if (rpc && !this.isValidURL(rpc)) {
       throw this.throwError('INVALID_RPC_ERROR');
     }
-    rpc = rpc === null ? clusterApiUrl(network) : rpc;
+    rpc = rpc || clusterApiUrl(network);
     try {
       this.connection = new Connection(rpc, 'confirmed');
     } catch (error) {
@@ -111,7 +111,7 @@ export class Solana extends Blockchain {
         await this.connection.getMinimumBalanceForRentExemption(
           StakeProgram.space,
         );
-      lockup = lockup === null ? Lockup.default : lockup;
+      lockup = lockup || Lockup.default;
 
       const [createStakeAccountTx, stakeAccountPublicKey, externalSigners] =
         source === null
@@ -398,7 +398,7 @@ export class Solana extends Blockchain {
         await this.connection.getMinimumBalanceForRentExemption(
           StakeProgram.space,
         );
-      lockup = lockup === null ? Lockup.default : lockup;
+      lockup = lockup || Lockup.default;
 
       const [createStakeAccountTx, stakeAccountPublicKey, externalSigners] =
         source === null
@@ -445,6 +445,18 @@ export class Solana extends Blockchain {
     }
   }
 
+  /**
+   * Create account Tx, public key and array of keypair.
+   *
+   * @param address - The public key of the account.
+   * @param lamports - The number of lamports to stake.
+   * @param lockup - The stake account lockup
+   *
+   * @throws Throws an error if there's an issue creating an account.
+   *
+   * @returns Returns a promise that resolves with the Transaction, PublicKey and array of Keypair.
+   *
+   */
   private async createAccountTx(
     address: PublicKey,
     lamports: number,
@@ -465,6 +477,19 @@ export class Solana extends Blockchain {
     return [createStakeAccountTx, stakeAccount.publicKey, [stakeAccount]];
   }
 
+  /**
+   * Create account Tx, public key and array of keypair using seed.
+   *
+   * @param authorityPublicKey - The public key of the account.
+   * @param lamports - The number of lamports to stake.
+   * @param source - The stake source
+   * @param lockup - The stake account lockup
+   *
+   * @throws Throws an error if there's an issue creating an account.
+   *
+   * @returns Returns a promise that resolves with the Transaction, PublicKey and array of Keypair.
+   *
+   */
   private async createAccountWithSeedTx(
     authorityPublicKey: PublicKey,
     lamports: number,
@@ -487,7 +512,6 @@ export class Solana extends Blockchain {
         basePubkey: authorityPublicKey,
         stakePubkey: stakeAccountPubkey,
         lockup: lockup,
-
         seed: seed,
         lamports: lamports,
       }),
@@ -535,7 +559,7 @@ export class Solana extends Blockchain {
           stakeAccountState(acc.account.data, epochInfo.epoch) !==
             StakeState.Active
         );
-        if (isActive && acc.account.data.info.stake !== null) {
+        if (isActive && acc.account.data.info.stake) {
           totalActiveStake = totalActiveStake.plus(
             acc.account.data.info.stake.delegation.stake,
           );
@@ -550,22 +574,11 @@ export class Solana extends Blockchain {
 
       // Desc sorting
       activeStakeAccounts.sort((a, b): number => {
-        if (
-          a.account.data.info.stake === null ||
-          b.account.data.info.stake === null
-        ) {
-          return 0;
-        }
+        const stakeA = a.account.data.info.stake?.delegation.stake;
+        const stakeB = b.account.data.info.stake?.delegation.stake;
+        if (!stakeA || !stakeB) return 0;
 
-        if (
-          a.account.data.info.stake.delegation.stake.lte(
-            b.account.data.info.stake.delegation.stake,
-          )
-        ) {
-          return 1;
-        }
-
-        return -1;
+        return stakeB.minus(stakeA).toNumber();
       });
 
       const accountsToDeactivate = [];
@@ -575,7 +588,6 @@ export class Solana extends Blockchain {
         lamportsBN.gt(new BigNumber(0)) &&
         i < activeStakeAccounts.length
       ) {
-        const lBN = new BigNumber(lamports);
         const acc = activeStakeAccounts[i];
         if (acc === undefined || acc.account.data.info.stake === null) {
           i++;
@@ -584,10 +596,10 @@ export class Solana extends Blockchain {
         const stakeAmount = acc.account.data.info.stake.delegation.stake;
 
         // If reminder amount less than min stake amount stake account automatically become disabled
-        if (
-          stakeAmount.comparedTo(lBN) <= 0 ||
-          stakeAmount.minus(lBN).lt(new BigNumber(MIN_AMOUNT))
-        ) {
+        const isBelowThreshold =
+          stakeAmount.lte(lamportsBN) ||
+          stakeAmount.minus(lamportsBN).lt(MIN_AMOUNT);
+        if (isBelowThreshold) {
           accountsToDeactivate.push(acc);
           lamportsBN = lamportsBN.minus(stakeAmount);
           i++;
@@ -653,6 +665,19 @@ export class Solana extends Blockchain {
     }
   }
 
+  /**
+   * Split existing account to create a new one
+   *
+   * @param authorityPublicKey - The public key of the account.
+   * @param lamports - The number of lamports to stake.
+   * @param oldStakeAccountPubkey -The public key of the old account.
+   * @param source - The stake source
+   *
+   * @throws Throws an error if there's an issue splitting an account.
+   *
+   * @returns Returns a promise that resolves with the Transaction, PublicKey and array of Keypair.
+   *
+   */
   private async split(
     authorityPublicKey: PublicKey,
     lamports: number,
@@ -682,6 +707,16 @@ export class Solana extends Blockchain {
     return [splitStakeAccountTx, newStakeAccountPubkey, []];
   }
 
+  /**
+   * Claim makes withdrawal from all sender's deactivated accounts.
+   *
+   * @param sender - The sender solana address.
+   *
+   * @throws Throws an error if there's an issue while claiming a stake.
+   *
+   * @returns Returns a promise that resolves with a Versioned Transaction.
+   *
+   */
   public async claim(
     sender: string,
   ): Promise<ApiResponse<VersionedTransaction>> {
@@ -700,14 +735,14 @@ export class Solana extends Blockchain {
 
       let totalClaimableStake = new BigNumber(0);
       const deactivatedStakeAccounts = stakeAccounts.filter((acc) => {
+        const { data } = acc.account;
+        const { info } = data;
         const isDeactivated =
-          !isLockupInForce(acc.account.data.info.meta, epochInfo.epoch, tm) &&
-          stakeAccountState(acc.account.data, epochInfo.epoch) ===
-            StakeState.Deactivated;
-
-        if (acc.account.data.info.stake != null && isDeactivated) {
+          !isLockupInForce(info.meta, epochInfo.epoch, tm) &&
+          stakeAccountState(data, epochInfo.epoch) === StakeState.Deactivated;
+        if (info.stake && isDeactivated) {
           totalClaimableStake = totalClaimableStake.plus(
-            acc.account.data.info.stake.delegation.stake,
+            info.stake.delegation.stake,
           );
         }
 
@@ -748,6 +783,18 @@ export class Solana extends Blockchain {
     }
   }
 
+  /**
+   * Merge two accounts into a new one
+   *
+   * @param authorityPublicKey - The public key of the account.
+   * @param stakeAccount1 - The public key of the first account.
+   * @param stakeAccount2 - The public key of the second account.
+   *
+   * @throws Throws an error if there's an issue while merging an account.
+   *
+   * @returns Returns a promise that resolves with the Transaction, PublicKey and array of Keypair.
+   *
+   */
   private async merge(
     authorityPublicKey: PublicKey,
     stakeAccount1: PublicKey,
@@ -762,6 +809,14 @@ export class Solana extends Blockchain {
     return [mergeStakeAccountTx];
   }
 
+  /**
+   * Generate a unique source for crating an account.
+   *
+   * @param source - source ID.
+   *
+   * @returns Returns a unique source for an account.
+   *
+   */
   private formatSource(source: string): string {
     const timestamp = new Date().getTime();
     source = `everstake ${source}:${timestamp}`;
@@ -769,6 +824,12 @@ export class Solana extends Blockchain {
     return source;
   }
 
+  /**
+   * Generate timestamp in seconds.
+   *
+   * @returns Returns a timestamp in seconds.
+   *
+   */
   private timestampInSec(): number {
     return (Date.now() / 1000) | 0;
   }

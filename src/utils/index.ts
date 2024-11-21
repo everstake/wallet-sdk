@@ -115,6 +115,13 @@ export abstract class Blockchain {
     throw new WalletSDKError(message, String(code));
   }
 
+  /**
+   * Check if the URL is valid
+   *
+   * @param {string} url - URL
+   * @returns a bool type result.
+   *
+   */
   protected isValidURL(url: string): boolean {
     const pattern = new RegExp(
       '^(https?:\\/\\/)?' +

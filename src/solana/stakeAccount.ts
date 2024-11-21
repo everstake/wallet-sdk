@@ -59,7 +59,6 @@ export const StakeMeta = type({
   }),
 });
 
-export type StakeAccountInfo = Infer<typeof StakeAccountInfo>;
 export const StakeAccountInfo = type({
   meta: StakeMeta,
   stake: nullable(
@@ -101,11 +100,13 @@ export function parsedAccountInfoToStakeAccount({
     );
   }
   try {
+    const parsedData = create(data.parsed, StakeAccount);
+
     return {
       executable,
       owner,
       lamports,
-      data: create(data.parsed, StakeAccount),
+      data: parsedData,
       rentEpoch,
     };
   } catch (e) {
@@ -113,6 +114,13 @@ export function parsedAccountInfoToStakeAccount({
   }
 }
 
+/**
+ * Check if lockup is in force
+ * @param meta stake meta params.
+ * @param currEpoch current epoch.
+ * @param currUnixTimestamp current unix timetamp.
+ * @returns a bool type result.
+ */
 export function isLockupInForce(
   meta: StakeMeta,
   currEpoch: number,
