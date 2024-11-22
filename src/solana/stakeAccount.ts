@@ -8,9 +8,9 @@ import BigNumber from 'bignumber.js';
 export class ParseStakeAccountError extends Error {}
 
 /**
- * Converts an `AccountInfo<ParsedAccountData>` to an `AccountInfo<StakeAccount>`
- * @param account raw accountinfo returned by getParsedProgramAccounts or getParsedAccountInfo
- * @returns the parsed StakeAccount
+ * The `StakeAccount` provides methods for interacting with the parsed Solana stake account.
+ *
+ * @property account - Parser account infop AccountInfo<Account>.
  * @throws ParseStakeAccountError if `account` is AccountInfo<Buffer> or if unable to parse account data
  */
 export class StakeAccount {
