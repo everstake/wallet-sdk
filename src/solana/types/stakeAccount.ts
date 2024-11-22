@@ -2,7 +2,6 @@
 import { PublicKey } from '@solana/web3.js';
 import {
   coerce,
-  enums,
   Infer,
   instance,
   nullable,
@@ -11,14 +10,7 @@ import {
   type,
 } from 'superstruct';
 import BigNumber from 'bignumber.js';
-
-export const StakeAccountType = enums([
-  'uninitialized',
-  'initialized',
-  'delegated',
-  'rewardsPool',
-]);
-
+import { StakeAccountType } from '../constants';
 export const BigNumFromString = coerce(
   instance(BigNumber),
   string(),

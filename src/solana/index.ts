@@ -26,15 +26,11 @@ import {
   MAINNET_VALIDATOR_ADDRESS,
   MIN_AMOUNT,
   Network,
+  StakeState,
 } from './constants';
 import { ApiResponse, CreateAccountResponse, Delegation } from './types';
 import BigNumber from 'bignumber.js';
-import {
-  isLockupInForce,
-  parsedAccountInfoToStakeAccount,
-  stakeAccountState,
-  StakeState,
-} from './stakeAccount';
+import { StakeAccount } from './stakeAccount';
 
 /**
  * The `Solana` class extends the `Blockchain` class and provides methods for interacting with the Solana blockchain.
@@ -541,7 +537,7 @@ export class Solana extends Blockchain {
       const stakeAccounts = delegations.result.map((delegationAcc) => {
         return {
           pubkey: delegationAcc.pubkey,
-          account: parsedAccountInfoToStakeAccount(delegationAcc.account),
+          account: new StakeAccount(delegationAcc.account),
         };
       });
 
@@ -551,13 +547,12 @@ export class Solana extends Blockchain {
       let totalActiveStake = new BigNumber(0);
       const activeStakeAccounts = stakeAccounts.filter((acc) => {
         const isActive = !(
-          isLockupInForce(acc.account.data.info.meta, epochInfo.epoch, tm) ||
-          stakeAccountState(acc.account.data, epochInfo.epoch) !==
-            StakeState.Active
+          acc.account.isLockupInForce(epochInfo.epoch, tm) ||
+          acc.account.stakeAccountState(epochInfo.epoch) !== StakeState.Active
         );
-        if (isActive && acc.account.data.info.stake) {
+        if (isActive && acc.account.account.data.info.stake) {
           totalActiveStake = totalActiveStake.plus(
-            acc.account.data.info.stake.delegation.stake,
+            acc.account.account.data.info.stake.delegation.stake,
           );
         }
 
@@ -570,8 +565,8 @@ export class Solana extends Blockchain {
 
       // Desc sorting
       activeStakeAccounts.sort((a, b): number => {
-        const stakeA = a.account.data.info.stake?.delegation.stake;
-        const stakeB = b.account.data.info.stake?.delegation.stake;
+        const stakeA = a.account.account.data.info.stake?.delegation.stake;
+        const stakeB = b.account.account.data.info.stake?.delegation.stake;
         if (!stakeA || !stakeB) return 0;
 
         return stakeB.minus(stakeA).toNumber();
@@ -585,11 +580,12 @@ export class Solana extends Blockchain {
         i < activeStakeAccounts.length
       ) {
         const acc = activeStakeAccounts[i];
-        if (acc === undefined || acc.account.data.info.stake === null) {
+        if (acc === undefined || acc.account.account.data.info.stake === null) {
           i++;
           continue;
         }
-        const stakeAmount = acc.account.data.info.stake.delegation.stake;
+        const stakeAmount =
+          acc.account.account.data.info.stake.delegation.stake;
 
         // If reminder amount less than min stake amount stake account automatically become disabled
         const isBelowThreshold =
@@ -722,7 +718,7 @@ export class Solana extends Blockchain {
       const stakeAccounts = delegations.result.map((delegationAcc) => {
         return {
           pubkey: delegationAcc.pubkey,
-          account: parsedAccountInfoToStakeAccount(delegationAcc.account),
+          account: new StakeAccount(delegationAcc.account),
         };
       });
 
@@ -731,11 +727,12 @@ export class Solana extends Blockchain {
 
       let totalClaimableStake = new BigNumber(0);
       const deactivatedStakeAccounts = stakeAccounts.filter((acc) => {
-        const { data } = acc.account;
+        const { data } = acc.account.account;
         const { info } = data;
         const isDeactivated =
-          !isLockupInForce(info.meta, epochInfo.epoch, tm) &&
-          stakeAccountState(data, epochInfo.epoch) === StakeState.Deactivated;
+          !acc.account.isLockupInForce(epochInfo.epoch, tm) &&
+          acc.account.stakeAccountState(epochInfo.epoch) ===
+            StakeState.Deactivated;
         if (info.stake && isDeactivated) {
           totalClaimableStake = totalClaimableStake.plus(
             info.stake.delegation.stake,
@@ -757,7 +754,7 @@ export class Solana extends Blockchain {
           stakePubkey: acc.pubkey,
           authorizedPubkey: senderPublicKey,
           toPubkey: senderPublicKey,
-          lamports: acc.account.lamports,
+          lamports: acc.account.account.lamports,
         });
         instructions.push(...withdrawTx.instructions);
       }
