@@ -25,13 +25,9 @@ import {
   FILTER_OFFSET,
   MAINNET_VALIDATOR_ADDRESS,
   MIN_AMOUNT,
-} from './constants';
-import {
-  ApiResponse,
-  CreateAccountResponse,
-  Delegation,
   Network,
-} from './types';
+} from './constants';
+import { ApiResponse, CreateAccountResponse, Delegation } from './types';
 import BigNumber from 'bignumber.js';
 import {
   isLockupInForce,

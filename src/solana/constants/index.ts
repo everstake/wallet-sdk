@@ -10,3 +10,8 @@ export const DEVNET_VALIDATOR_ADDRESS = new PublicKey(
 );
 export const FILTER_DATA_SIZE = 200;
 export const FILTER_OFFSET = 44;
+
+export enum Network {
+  Mainnet = 'mainnet-beta',
+  Devnet = 'devnet',
+}

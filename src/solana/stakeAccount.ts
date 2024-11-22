@@ -1,23 +1,8 @@
 // Copied from https://github.com/igneous-labs/solana-stake-sdk
-import { AccountInfo, PublicKey, ParsedAccountData } from '@solana/web3.js';
-import {
-  coerce,
-  create,
-  enums,
-  Infer,
-  instance,
-  nullable,
-  number,
-  string,
-  type,
-} from 'superstruct';
+import { AccountInfo, ParsedAccountData } from '@solana/web3.js';
+import { StakeAccount, StakeMeta } from './types/stakeAccount';
+import { create, enums } from 'superstruct';
 import BigNumber from 'bignumber.js';
-
-export const PublicKeyFromString = coerce(
-  instance(PublicKey),
-  string(),
-  (value) => new PublicKey(value),
-);
 
 export class ParseStakeAccountError extends Error {}
 
@@ -35,51 +20,6 @@ export const StakeAccountType = enums([
   'delegated',
   'rewardsPool',
 ]);
-
-export const BigNumFromString = coerce(
-  instance(BigNumber),
-  string(),
-  (value) => {
-    if (typeof value === 'string') return new BigNumber(value, 10);
-    throw new Error('invalid big num');
-  },
-);
-
-export type StakeMeta = Infer<typeof StakeMeta>;
-export const StakeMeta = type({
-  rentExemptReserve: BigNumFromString,
-  authorized: type({
-    staker: PublicKeyFromString,
-    withdrawer: PublicKeyFromString,
-  }),
-  lockup: type({
-    unixTimestamp: number(),
-    epoch: number(),
-    custodian: PublicKeyFromString,
-  }),
-});
-
-export const StakeAccountInfo = type({
-  meta: StakeMeta,
-  stake: nullable(
-    type({
-      delegation: type({
-        voter: PublicKeyFromString,
-        stake: BigNumFromString,
-        activationEpoch: BigNumFromString,
-        deactivationEpoch: BigNumFromString,
-        warmupCooldownRate: number(),
-      }),
-      creditsObserved: number(),
-    }),
-  ),
-});
-
-export type StakeAccount = Infer<typeof StakeAccount>;
-export const StakeAccount = type({
-  type: StakeAccountType,
-  info: StakeAccountInfo,
-});
 
 /**
  * Converts an `AccountInfo<ParsedAccountData>` to an `AccountInfo<StakeAccount>`
