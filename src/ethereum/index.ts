@@ -12,7 +12,8 @@ import {
 import { ABI_CONTRACT_ACCOUNTING, ABI_CONTRACT_POOL } from './abi';
 
 import { ERROR_MESSAGES, ORIGINAL_ERROR_MESSAGES } from './constants/errors';
-import type { NetworkType, Transaction, ValidatorStatus } from './types';
+import type { NetworkType, Transaction } from './types';
+import { ValidatorStatus } from './types';
 import { Blockchain } from '../utils';
 
 /**
@@ -156,10 +157,13 @@ export class Ethereum extends Blockchain {
    *
    * @returns A Promise that resolves to the pending balance in ether.
    *
-   * @throws Will throw an Error if the contract call fails.
+   * @throws Will throw an Error if the contract call fails or address is not valid.
    */
   public async pendingBalanceOf(address: string): Promise<BigNumber> {
     try {
+      if (!this.isAddress(address)) {
+        this.throwError('ADDRESS_FORMAT_ERROR');
+      }
       const result = await this.contractAccounting.methods
         .pendingBalanceOf(address)
         .call();
@@ -182,6 +186,9 @@ export class Ethereum extends Blockchain {
    */
   public async pendingDepositedBalanceOf(address: string): Promise<BigNumber> {
     try {
+      if (!this.isAddress(address)) {
+        this.throwError('ADDRESS_FORMAT_ERROR');
+      }
       const result = await this.contractAccounting.methods
         .pendingDepositedBalanceOf(address)
         .call();
@@ -203,6 +210,9 @@ export class Ethereum extends Blockchain {
    */
   public async depositedBalanceOf(address: string): Promise<BigNumber> {
     try {
+      if (!this.isAddress(address)) {
+        this.throwError('ADDRESS_FORMAT_ERROR');
+      }
       const result = await this.contractAccounting.methods
         .depositedBalanceOf(address)
         .call();
@@ -224,6 +234,9 @@ export class Ethereum extends Blockchain {
    */
   public async pendingRestakedRewardOf(address: string): Promise<BigNumber> {
     try {
+      if (!this.isAddress(address)) {
+        this.throwError('ADDRESS_FORMAT_ERROR');
+      }
       const result = await this.contractAccounting.methods
         .pendingRestakedRewardOf(address)
         .call();
@@ -245,6 +258,9 @@ export class Ethereum extends Blockchain {
    */
   public async restakedRewardOf(address: string): Promise<BigNumber> {
     try {
+      if (!this.isAddress(address)) {
+        this.throwError('ADDRESS_FORMAT_ERROR');
+      }
       const result = await this.contractAccounting.methods
         .restakedRewardOf(address)
         .call();
@@ -286,11 +302,14 @@ export class Ethereum extends Blockchain {
    */
   public async autocompound(address: string): Promise<Transaction> {
     try {
+      if (!this.isAddress(address)) {
+        this.throwError('ADDRESS_FORMAT_ERROR');
+      }
       const rewards = await this.readyforAutocompoundRewardsAmount();
+      if (rewards.isZero()) this.throwError('NO_REWARDS_MESSAGE');
       const gasConsumption = await this.contractAccounting.methods
         .autocompound()
         .estimateGas({ from: address });
-      if (rewards.isZero()) this.throwError('NO_REWARDS_MESSAGE');
 
       return {
         from: address,
@@ -315,6 +334,9 @@ export class Ethereum extends Blockchain {
    */
   public async autocompoundBalanceOf(address: string): Promise<BigNumber> {
     try {
+      if (!this.isAddress(address)) {
+        this.throwError('ADDRESS_FORMAT_ERROR');
+      }
       const result = await this.contractAccounting.methods
         .autocompoundBalanceOf(address)
         .call();
@@ -375,6 +397,9 @@ export class Ethereum extends Blockchain {
     address: string,
   ): Promise<{ requested: BigNumber; readyForClaim: BigNumber }> {
     try {
+      if (!this.isAddress(address)) {
+        this.throwError('ADDRESS_FORMAT_ERROR');
+      }
       const result = await this.contractAccounting.methods
         .withdrawRequest(address)
         .call();
@@ -399,6 +424,9 @@ export class Ethereum extends Blockchain {
    */
   public async claimWithdrawRequest(address: string): Promise<Transaction> {
     try {
+      if (!this.isAddress(address)) {
+        this.throwError('ADDRESS_FORMAT_ERROR');
+      }
       const rewards = await this.withdrawRequest(address);
 
       if (rewards.requested.isZero()) {
@@ -450,12 +478,12 @@ export class Ethereum extends Blockchain {
    * Stakes funds into pool.
    *
    * @param address - Sender address.
-   * @param amount - Stake amount in ETH.
+   * @param amount - Stake amount in ETH
    * @param source - Stake source. Default is '0'.
    *
    * @returns A Promise that resolves to the unsigned ETH transaction object.
    *
-   * @throws Will throw an Error if the amount is not a string, the amount is less than the minimum, or the contract call fails.
+   * @throws Will throw an Error if the amount is not a valid, the amount is less than the minimum, or the contract call fails.
    */
 
   public async stake(
@@ -463,13 +491,17 @@ export class Ethereum extends Blockchain {
     amount: string,
     source: string = '0',
   ): Promise<Transaction> {
+    if (!this.isAddress(address)) {
+      this.throwError('ADDRESS_FORMAT_ERROR');
+    }
+
     if (typeof amount !== 'string') {
       this.throwError('WRONG_TYPE_MESSAGE');
     }
 
     const amountWei = this.web3.utils.toWei(amount, 'ether');
 
-    if (new BigNumber(amountWei).lt(this.minAmount)) {
+    if (this.minAmount.lt(amountWei)) {
       this.throwError('MIN_AMOUNT_ERROR', this.minAmount.toString());
     }
 
@@ -482,7 +514,7 @@ export class Ethereum extends Blockchain {
       return {
         from: address,
         to: this.addressContractPool,
-        value: Number(amountWei),
+        value: Number(amount),
         gasLimit: this.calculateGasLimit(gasConsumption),
         data: this.contractPool.methods.stake(source).encodeABI(),
       };
@@ -512,6 +544,10 @@ export class Ethereum extends Blockchain {
     allowedInterchangeNum: number = 0,
     source: string = '0',
   ): Promise<Transaction> {
+    if (!this.isAddress(address)) {
+      this.throwError('ADDRESS_FORMAT_ERROR');
+    }
+
     if (typeof amount !== 'string') {
       this.throwError('WRONG_TYPE_MESSAGE');
     }
@@ -567,13 +603,17 @@ export class Ethereum extends Blockchain {
     source: string = '0',
   ): Promise<BigNumber> {
     try {
+      if (!this.isAddress(address)) {
+        this.throwError('ADDRESS_FORMAT_ERROR');
+      }
+
       const balance = await this.autocompoundBalanceOf(address);
       // Check for type overflow
       if (allowedInterchangeNum > UINT16_MAX) {
         allowedInterchangeNum = UINT16_MAX;
       }
       // Balance greater than or equal to amount
-      if (balance.lt(new BigNumber(amount))) {
+      if (balance.lt(amount)) {
         this.throwError('MAX_AMOUNT_FOR_UNSTAKE_ERROR', balance.toString());
       }
       const amountWei = this.web3.utils.toWei(amount, 'ether');
@@ -603,6 +643,10 @@ export class Ethereum extends Blockchain {
     address: string,
     amount: number,
   ): Promise<Transaction> {
+    if (!this.isAddress(address)) {
+      this.throwError('ADDRESS_FORMAT_ERROR');
+    }
+
     let pendingBalance = await this.pendingBalanceOf(address);
     if (pendingBalance.isZero()) {
       this.throwError('ZERO_UNSTAKE_MESSAGE');
@@ -657,6 +701,10 @@ export class Ethereum extends Blockchain {
    */
   public async activateStake(address: string): Promise<Transaction> {
     try {
+      if (!this.isAddress(address)) {
+        this.throwError('ADDRESS_FORMAT_ERROR');
+      }
+
       const gasAmount = await this.contractPool.methods
         .activateStake()
         .estimateGas({ from: address });
@@ -746,13 +794,13 @@ export class Ethereum extends Blockchain {
    */
   public async getValidator(
     index: number,
-  ): Promise<{ pubkey: string; status: ValidatorStatus }> {
+  ): Promise<{ pubkey: string; status: string }> {
     try {
       const result = await this.contractPool.methods.getValidator(index).call();
 
       return {
         pubkey: result[0].toString(),
-        status: this.getStatusFromCode(result[1].toString()),
+        status: this.getStatusFromCode(Number(result[1])),
       };
     } catch (error) {
       throw this.handleError('GET_VALIDATOR_ERROR', error);
@@ -810,7 +858,7 @@ export class Ethereum extends Blockchain {
     if (!networkAddresses) {
       this.throwError('NETWORK_NOT_SUPPORTED', network);
     }
-    const providerUrl = url || networkAddresses.rpcUrl;
+    const providerUrl = url ?? networkAddresses.rpcUrl;
     this.rpcUrl = new HttpProvider(providerUrl);
     this.addressContractAccounting = networkAddresses.addressContractAccounting;
     this.addressContractPool = networkAddresses.addressContractPool;
@@ -836,15 +884,10 @@ export class Ethereum extends Blockchain {
    *
    * @returns The human-readable status corresponding to the given code.
    */
-  private getStatusFromCode(code: string): ValidatorStatus {
-    switch (code) {
-      case '0':
-        return 'unknown';
-      case '1':
-        return 'pending';
-      default:
-        return 'deposited';
-    }
+  public getStatusFromCode(code: ValidatorStatus): string {
+    return ValidatorStatus[code]
+      ? ValidatorStatus[code].toLowerCase()
+      : 'invalid status';
   }
 
   /**
@@ -861,11 +904,23 @@ export class Ethereum extends Blockchain {
    * Calculates the gas limit by adding a predefined GAS_RESERVE to the given gas consumption.
    *
    * @param gasConsumption - The amount of gas consumed.
+   *
    * @returns The calculated gas limit as a number.
    */
   private calculateGasLimit(gasConsumption: bigint): number {
     return new BigNumber(gasConsumption.toString())
       .plus(GAS_RESERVE)
       .toNumber();
+  }
+
+  /**
+   * Checks if a given address has the basic requirements of an Ethereum address format.
+   *
+   * @param address - The Ethereum address to validate.
+   *
+   * @returns `true` if the address meets basic requirements, otherwise `false`.
+   */
+  private isAddress(address: string): boolean {
+    return /^(0x)?([0-9a-f]{40})$/.test(address.toLowerCase());
   }
 }

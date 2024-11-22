@@ -16,5 +16,5 @@ export type Delegation = {
 
 export type CreateAccountResponse = {
   createStakeAccountVerTx: VersionedTransaction;
-  stakeAccount: string;
+  stakeAccount: PublicKey;
 };
