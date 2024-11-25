@@ -122,17 +122,14 @@ export abstract class Blockchain {
    * @returns a bool type result.
    *
    */
-  protected isValidURL(url: string): boolean {
-    const pattern = new RegExp(
-      '^(https?:\\/\\/)?' +
-        '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' +
-        '((\\d{1,3}\\.){3}\\d{1,3}))' +
-        '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' +
-        '(\\?[;&a-z\\d%_.~+=-]*)?' +
-        '(\\#[-a-z\\d_]*)?$',
-      'i',
-    );
+  public isValidURL(url: string): boolean {
+    let urlClass;
+    try {
+      urlClass = new URL(url);
+    } catch (_) {
+      return false;
+    }
 
-    return pattern.test(url);
+    return urlClass.protocol === 'http:' || urlClass.protocol === 'https:';
   }
 }
