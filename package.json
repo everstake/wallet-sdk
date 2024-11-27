@@ -48,7 +48,7 @@
     "bip39": "^3.1.0",
     "bs58": "^5.0.0",
     "superstruct": "^0.16.7",
-    "web3": "^4.12.1"
+    "web3": "^4.14.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.7.0",
