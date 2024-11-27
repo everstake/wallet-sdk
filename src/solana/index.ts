@@ -28,7 +28,13 @@ import {
   Network,
   StakeState,
 } from './constants';
-import { ApiResponse, CreateAccountResponse, Delegation } from './types';
+import {
+  Account,
+  AccountToSplit,
+  ApiResponse,
+  CreateAccountResponse,
+  Delegation,
+} from './types';
 import BigNumber from 'bignumber.js';
 import { StakeAccount } from './stakeAccount';
 
@@ -572,8 +578,9 @@ export class Solana extends Blockchain {
         return stakeB.minus(stakeA).toNumber();
       });
 
-      const accountsToDeactivate = [];
-      const accountsToSplit = [];
+      const accountsToDeactivate: Account[] = [];
+      const accountsToSplit: AccountToSplit[] = [];
+
       let i = 0;
       while (
         lamportsBN.gt(new BigNumber(0)) &&
