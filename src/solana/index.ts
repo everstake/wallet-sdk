@@ -4,7 +4,6 @@ import {
   ComputeBudgetProgram,
   Connection,
   Keypair,
-  LAMPORTS_PER_SOL,
   Lockup,
   PublicKey,
   Signer,
@@ -15,11 +14,9 @@ import {
   VersionedTransaction,
 } from '@solana/web3.js';
 
-import { CheckToken, SetStats } from '../utils/api';
 import { Blockchain } from '../utils';
 import { ERROR_MESSAGES } from './constants/errors';
 import {
-  CHAIN,
   DEVNET_VALIDATOR_ADDRESS,
   FILTER_DATA_SIZE,
   FILTER_OFFSET,
@@ -185,27 +182,20 @@ export class Solana extends Blockchain {
   /**
    * Delegates a specified amount from a stake account to a validator.
    *
-   * @param token - The token to be used for the delegation.
    * @param address - The public key of the account.
    * @param lamports - The amount in lamports to be delegated.
    * @param stakeAccount - The public key of the stake account.
    *
-   * @throws Throws an error if the token is invalid, the amount is less than the minimum amount, or if there's an issue during the delegation process.
+   * @throws Throws an error if the amount is less than the minimum amount, or if there's an issue during the delegation process.
    *
    * @returns Returns a promise that resolves with the delegation transaction.
    *
    */
   public async delegate(
-    token: string,
     address: string,
     lamports: number,
     stakeAccount: string,
   ): Promise<ApiResponse<VersionedTransaction>> {
-    const isTokenValid = await CheckToken(token);
-    if (!isTokenValid) {
-      this.throwError('INVALID_TOKEN_ERROR');
-    }
-
     if (lamports < MIN_AMOUNT) {
       this.throwError('MIN_AMOUNT_ERROR', MIN_AMOUNT.toString());
     }
@@ -227,14 +217,6 @@ export class Solana extends Blockchain {
         publicKey,
         [],
       );
-
-      await SetStats({
-        token,
-        action: 'stake',
-        amount: lamports / LAMPORTS_PER_SOL,
-        address,
-        chain: CHAIN,
-      });
 
       return { result: delegateVerTx };
     } catch (error) {
@@ -282,28 +264,20 @@ export class Solana extends Blockchain {
   /**
    * Withdraws a specified amount from a stake account.
    *
-   * @param token - The token to be used for the withdrawal.
    * @param address - The public key of the account.
    * @param stakeAccountPublicKey - The public key of the stake account.
    * @param stakeBalance - The amount in lamports to be withdrawn from the stake account.
    *
-   * @throws Throws an error if the token is invalid or if there's an issue during the withdrawal process.
+   * @throws Throws an error if there's an issue during the withdrawal process.
    *
    * @returns Returns a promise that resolves with the withdrawal transaction.
    *
    */
   public async withdraw(
-    token: string,
     address: string,
     stakeAccountPublicKey: PublicKey,
     stakeBalance: number,
   ): Promise<ApiResponse<VersionedTransaction>> {
-    // Check if the token is valid
-    const isTokenValid = await CheckToken(token);
-    if (!isTokenValid) {
-      this.throwError('INVALID_TOKEN_ERROR');
-    }
-
     try {
       const publicKey = new PublicKey(address);
       const stakeAccount = new PublicKey(stakeAccountPublicKey);
@@ -317,15 +291,6 @@ export class Solana extends Blockchain {
           lamports: stakeBalance,
         }),
       );
-
-      // Update the stats
-      await SetStats({
-        token,
-        action: 'unstake',
-        amount: stakeBalance / LAMPORTS_PER_SOL,
-        address,
-        chain: CHAIN,
-      });
 
       const withdrawVerTx = await this.prepareTransaction(
         withdrawTx.instructions,
@@ -374,7 +339,6 @@ export class Solana extends Blockchain {
   /**
    * Stakes a certain amount of lamports.
    *
-   * @param token - The token to be used for the delegation.
    * @param sender - The public key of the sender.
    * @param lamports - The number of lamports to stake.
    * @param source  - stake source
@@ -382,7 +346,6 @@ export class Solana extends Blockchain {
    * @returns A promise that resolves to a VersionedTransaction object.
    */
   async stake(
-    token: string,
     sender: string,
     lamports: number,
     source: string | null,
@@ -427,15 +390,6 @@ export class Solana extends Blockchain {
         senderPublicKey,
         externalSigners,
       );
-
-      // Update the stats
-      await SetStats({
-        token,
-        action: 'stake',
-        amount: lamports / LAMPORTS_PER_SOL,
-        address: sender,
-        chain: CHAIN,
-      });
 
       return { result: stakeVerTx };
     } catch (error) {
@@ -519,24 +473,16 @@ export class Solana extends Blockchain {
   }
 
   /** unstake - unstake
-   * @param {string} token - auth API token
    * @param {string} sender - account blockchain address (staker)
    * @param {number} lamports - lamport amount
    * @param {string} source - stake source
    * @returns {Promise<object>} Promise object with Versioned Tx
    */
   public async unstake(
-    token: string,
     sender: string,
     lamports: number,
     source: string,
   ): Promise<ApiResponse<VersionedTransaction>> {
-    // Check if the token is valid
-    const isTokenValid = await CheckToken(token);
-    if (!isTokenValid) {
-      this.throwError('INVALID_TOKEN_ERROR');
-    }
-
     try {
       const delegations = await this.getDelegations(sender);
 
@@ -649,14 +595,6 @@ export class Solana extends Blockchain {
         senderPublicKey,
         [],
       );
-
-      await SetStats({
-        action: 'unstake',
-        address: sender,
-        amount: lamports / LAMPORTS_PER_SOL,
-        chain: CHAIN,
-        token: token,
-      });
 
       return { result: versionedTX };
     } catch (error) {
