@@ -7,7 +7,8 @@ export { Ethereum, Solana, CreateToken, GetAssets };
 
 export * from './utils';
 
-import * as EthConstants from './ethereum/constants';
-import * as SolConstants from './solana/constants';
+export * from './ethereum/constants';
+export * from './solana/constants';
 
-export { EthConstants, SolConstants };
+export * from './ethereum/types';
+export * from './solana/types';

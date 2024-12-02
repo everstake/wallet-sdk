@@ -1,7 +1,7 @@
-import type { NetworkAddressesMap } from '../types';
+import type { EthNetworkAddressesMap } from '../types';
 import BigNumber from 'bignumber.js';
 
-export const NETWORK_ADDRESSES: NetworkAddressesMap = {
+export const ETH_NETWORK_ADDRESSES: EthNetworkAddressesMap = {
   mainnet: {
     addressContractAccounting: '0x7a7f0b3c23C23a31cFcb0c44709be70d4D545c6e',
     addressContractPool: '0xD523794C879D9eC028960a231F866758e405bE34',
@@ -18,8 +18,8 @@ export const NETWORK_ADDRESSES: NetworkAddressesMap = {
   },
 };
 
-export const GAS_RESERVE = new BigNumber(220000);
+export const ETH_GAS_RESERVE = new BigNumber(220000);
 
 export const UINT16_MAX = 65535 | 0; // asm type annotation
 
-export const MIN_AMOUNT = new BigNumber('100000000000000000');
+export const ETH_MIN_AMOUNT = new BigNumber('100000000000000000');

@@ -10,22 +10,22 @@ export interface ApiResponse<T> {
   result: T;
 }
 
-export type Delegation = {
+export type SolDelegation = {
   pubkey: PublicKey;
   account: AccountInfo<Buffer | ParsedAccountData>;
 };
 
-export type CreateAccountResponse = {
+export type SolCreateAccountResponse = {
   createStakeAccountVerTx: VersionedTransaction;
   stakeAccount: PublicKey;
 };
 
-export type Account = {
+export type SolAccount = {
   pubkey: PublicKey;
   account: StakeAccount;
 };
 
-export type AccountToSplit = {
-  account: Account;
+export type SolAccountToSplit = {
+  account: SolAccount;
   lamports: number;
 };
