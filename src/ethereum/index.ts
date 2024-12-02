@@ -501,7 +501,7 @@ export class Ethereum extends Blockchain {
 
     const amountWei = this.web3.utils.toWei(amount, 'ether');
 
-    if (this.minAmount.lt(amountWei)) {
+    if (new BigNumber(amountWei).lt(this.minAmount)) {
       this.throwError('MIN_AMOUNT_ERROR', this.minAmount.toString());
     }
 

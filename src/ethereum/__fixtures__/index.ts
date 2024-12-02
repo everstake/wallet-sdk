@@ -213,7 +213,7 @@ export const stakeErrorFixture = [
     args: {
       network: 'mainnet',
       address: '0x69E0951Ae0efA1Cb4a8d6702bf064C98Fc8E9A6a',
-      amount: '1', // Less than minAmount
+      amount: '0.0001', // Less than minAmount
       source: '0',
     },
     error: 'Min Amount 100000000000000000 wei',
