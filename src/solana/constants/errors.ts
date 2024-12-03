@@ -13,4 +13,5 @@ export const ERROR_MESSAGES = {
   UNSTAKE_ERROR: 'An error occurred while unstaking the stake',
   NOTHING_TO_CLAIM_ERROR: 'Nothing to claim while claiming',
   NOT_ENOUGH_ACTIVE_STAKE_ERROR: 'Active stake less than requested',
+  GET_EPOCH_INFO_ERROR: 'An error occurred while fetching epoch information',
 };
