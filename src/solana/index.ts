@@ -3,6 +3,7 @@ import {
   clusterApiUrl,
   ComputeBudgetProgram,
   Connection,
+  EpochInfo,
   Keypair,
   Lockup,
   PublicKey,
@@ -721,6 +722,16 @@ export class Solana extends Blockchain {
       return { result: versionedTX };
     } catch (error) {
       throw this.handleError('CLAIM_ERROR', error);
+    }
+  }
+
+  public async getEpochInfo(): Promise<ApiResponse<EpochInfo>> {
+    try {
+      const epochInfo = await this.connection.getEpochInfo();
+
+      return { result: epochInfo };
+    } catch (error) {
+      throw this.handleError('GET_EPOCH_INFO_ERROR', error);
     }
   }
 
