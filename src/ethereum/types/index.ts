@@ -1,17 +1,17 @@
-export type NetworkType = 'mainnet' | 'holesky';
+export type EthNetworkType = 'mainnet' | 'holesky';
 
-export interface NetworkAddresses {
+export interface EthNetworkAddresses {
   addressContractAccounting: string;
   addressContractPool: string;
   addressContractWithdrawTreasury: string;
   rpcUrl: string;
 }
 
-export type NetworkAddressesMap = {
-  [K in NetworkType]: NetworkAddresses;
+export type EthNetworkAddressesMap = {
+  [K in EthNetworkType]: EthNetworkAddresses;
 };
 
-export type Transaction = {
+export type EthTransaction = {
   from: string;
   to: string;
   value: number;

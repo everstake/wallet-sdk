@@ -17,20 +17,20 @@ import {
 import { Blockchain } from '../utils';
 import { ERROR_MESSAGES } from './constants/errors';
 import {
-  DEVNET_VALIDATOR_ADDRESS,
+  SOL_DEVNET_VALIDATOR_ADDRESS,
   FILTER_DATA_SIZE,
   FILTER_OFFSET,
-  MAINNET_VALIDATOR_ADDRESS,
-  MIN_AMOUNT,
-  Network,
+  SOL_MAINNET_VALIDATOR_ADDRESS,
+  SOL_MIN_AMOUNT,
+  SolNetwork,
   StakeState,
 } from './constants';
 import {
-  Account,
-  AccountToSplit,
+  SolAccount,
+  SolAccountToSplit,
   ApiResponse,
-  CreateAccountResponse,
-  Delegation,
+  SolCreateAccountResponse,
+  SolDelegation,
 } from './types';
 import BigNumber from 'bignumber.js';
 import { StakeAccount } from './stakeAccount';
@@ -50,7 +50,10 @@ export class Solana extends Blockchain {
   protected ERROR_MESSAGES = ERROR_MESSAGES;
   protected ORIGINAL_ERROR_MESSAGES = {};
 
-  constructor(network: Network = Network.Mainnet, rpc: string | null = null) {
+  constructor(
+    network: SolNetwork = SolNetwork.Mainnet,
+    rpc: string | null = null,
+  ) {
     super();
     if (rpc && !this.isValidURL(rpc)) {
       throw this.throwError('INVALID_RPC_ERROR');
@@ -62,11 +65,11 @@ export class Solana extends Blockchain {
       throw this.handleError('CONNECTION_ERROR', error);
     }
     switch (network) {
-      case Network.Mainnet:
-        this.validator = MAINNET_VALIDATOR_ADDRESS;
+      case SolNetwork.Mainnet:
+        this.validator = SOL_MAINNET_VALIDATOR_ADDRESS;
         break;
-      case Network.Devnet:
-        this.validator = DEVNET_VALIDATOR_ADDRESS;
+      case SolNetwork.Devnet:
+        this.validator = SOL_DEVNET_VALIDATOR_ADDRESS;
         break;
       default:
         throw this.throwError('UNSUPPORTED_NETWORK_ERROR');
@@ -92,10 +95,10 @@ export class Solana extends Blockchain {
     lamports: number,
     source: string | null,
     lockup: Lockup | null = Lockup.default,
-  ): Promise<ApiResponse<CreateAccountResponse>> {
+  ): Promise<ApiResponse<SolCreateAccountResponse>> {
     // Check if the amount is greater than or equal to the minimum amount
-    if (lamports < MIN_AMOUNT) {
-      this.throwError('MIN_AMOUNT_ERROR', MIN_AMOUNT.toString());
+    if (lamports < SOL_MIN_AMOUNT) {
+      this.throwError('MIN_AMOUNT_ERROR', SOL_MIN_AMOUNT.toString());
     }
 
     try {
@@ -196,8 +199,8 @@ export class Solana extends Blockchain {
     lamports: number,
     stakeAccount: string,
   ): Promise<ApiResponse<VersionedTransaction>> {
-    if (lamports < MIN_AMOUNT) {
-      this.throwError('MIN_AMOUNT_ERROR', MIN_AMOUNT.toString());
+    if (lamports < SOL_MIN_AMOUNT) {
+      this.throwError('MIN_AMOUNT_ERROR', SOL_MIN_AMOUNT.toString());
     }
 
     try {
@@ -316,7 +319,7 @@ export class Solana extends Blockchain {
    */
   public async getDelegations(
     address: string,
-  ): Promise<ApiResponse<Array<Delegation>>> {
+  ): Promise<ApiResponse<Array<SolDelegation>>> {
     try {
       // Define the filters for the getParsedProgramAccounts method
       const filters = [
@@ -500,7 +503,7 @@ export class Solana extends Blockchain {
       const activeStakeAccounts = stakeAccounts.filter((acc) => {
         const isActive = !(
           acc.account.isLockupInForce(epochInfo.epoch, tm) ||
-          acc.account.stakeAccountState(epochInfo.epoch) !== StakeState.Active
+          acc.account.stakeAccountState(epochInfo.epoch) !== StakeState.active
         );
         if (isActive && acc.account.account.data.info.stake) {
           totalActiveStake = totalActiveStake.plus(
@@ -524,8 +527,8 @@ export class Solana extends Blockchain {
         return stakeB.minus(stakeA).toNumber();
       });
 
-      const accountsToDeactivate: Account[] = [];
-      const accountsToSplit: AccountToSplit[] = [];
+      const accountsToDeactivate: SolAccount[] = [];
+      const accountsToSplit: SolAccountToSplit[] = [];
 
       let i = 0;
       while (
@@ -543,7 +546,7 @@ export class Solana extends Blockchain {
         // If reminder amount less than min stake amount stake account automatically become disabled
         const isBelowThreshold =
           stakeAmount.lte(lamportsBN) ||
-          stakeAmount.minus(lamportsBN).lt(MIN_AMOUNT);
+          stakeAmount.minus(lamportsBN).lt(SOL_MIN_AMOUNT);
         if (isBelowThreshold) {
           accountsToDeactivate.push(acc);
           lamportsBN = lamportsBN.minus(stakeAmount);
@@ -677,7 +680,7 @@ export class Solana extends Blockchain {
         const isDeactivated =
           !acc.account.isLockupInForce(epochInfo.epoch, tm) &&
           acc.account.stakeAccountState(epochInfo.epoch) ===
-            StakeState.Deactivated;
+            StakeState.deactivated;
         if (info.stake && isDeactivated) {
           totalClaimableStake = totalClaimableStake.plus(
             info.stake.delegation.stake,

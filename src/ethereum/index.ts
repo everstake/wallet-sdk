@@ -4,15 +4,15 @@ import BigNumber from 'bignumber.js';
 import { HttpProvider } from 'web3';
 import type { Web3BaseProvider, Contract } from 'web3';
 import {
-  NETWORK_ADDRESSES,
-  GAS_RESERVE,
-  MIN_AMOUNT,
+  ETH_NETWORK_ADDRESSES,
+  ETH_GAS_RESERVE,
+  ETH_MIN_AMOUNT,
   UINT16_MAX,
 } from './constants';
 import { ABI_CONTRACT_ACCOUNTING, ABI_CONTRACT_POOL } from './abi';
 
 import { ERROR_MESSAGES, ORIGINAL_ERROR_MESSAGES } from './constants/errors';
-import type { NetworkType, Transaction } from './types';
+import type { EthNetworkType, EthTransaction } from './types';
 import { ValidatorStatus } from './types';
 import { Blockchain } from '../utils';
 
@@ -41,12 +41,12 @@ export class Ethereum extends Blockchain {
 
   private rpcUrl!: Web3BaseProvider;
   private web3!: Web3;
-  private minAmount = new BigNumber(MIN_AMOUNT);
+  private minAmount = new BigNumber(ETH_MIN_AMOUNT);
 
   protected ERROR_MESSAGES = ERROR_MESSAGES;
   protected ORIGINAL_ERROR_MESSAGES = ORIGINAL_ERROR_MESSAGES;
 
-  constructor(network: NetworkType = 'mainnet', url?: string) {
+  constructor(network: EthNetworkType = 'mainnet', url?: string) {
     super();
     this.initializeNetwork(network, url);
   }
@@ -300,7 +300,7 @@ export class Ethereum extends Blockchain {
    *
    * @throws Will throw an Error if the contract call fails or there are no rewards.
    */
-  public async autocompound(address: string): Promise<Transaction> {
+  public async autocompound(address: string): Promise<EthTransaction> {
     try {
       if (!this.isAddress(address)) {
         this.throwError('ADDRESS_FORMAT_ERROR');
@@ -422,7 +422,7 @@ export class Ethereum extends Blockchain {
    *
    * @throws Will throw an Error if the contract call fails, there are no funds to claim, or the claim is not yet filled.
    */
-  public async claimWithdrawRequest(address: string): Promise<Transaction> {
+  public async claimWithdrawRequest(address: string): Promise<EthTransaction> {
     try {
       if (!this.isAddress(address)) {
         this.throwError('ADDRESS_FORMAT_ERROR');
@@ -490,7 +490,7 @@ export class Ethereum extends Blockchain {
     address: string,
     amount: string,
     source: string = '0',
-  ): Promise<Transaction> {
+  ): Promise<EthTransaction> {
     if (!this.isAddress(address)) {
       this.throwError('ADDRESS_FORMAT_ERROR');
     }
@@ -543,7 +543,7 @@ export class Ethereum extends Blockchain {
     amount: string,
     allowedInterchangeNum: number = 0,
     source: string = '0',
-  ): Promise<Transaction> {
+  ): Promise<EthTransaction> {
     if (!this.isAddress(address)) {
       this.throwError('ADDRESS_FORMAT_ERROR');
     }
@@ -642,7 +642,7 @@ export class Ethereum extends Blockchain {
   public async unstakePending(
     address: string,
     amount: number,
-  ): Promise<Transaction> {
+  ): Promise<EthTransaction> {
     if (!this.isAddress(address)) {
       this.throwError('ADDRESS_FORMAT_ERROR');
     }
@@ -699,7 +699,7 @@ export class Ethereum extends Blockchain {
    *
    * @throws Will throw an Error if the contract call fails.
    */
-  public async activateStake(address: string): Promise<Transaction> {
+  public async activateStake(address: string): Promise<EthTransaction> {
     try {
       if (!this.isAddress(address)) {
         this.throwError('ADDRESS_FORMAT_ERROR');
@@ -836,7 +836,7 @@ export class Ethereum extends Blockchain {
    *
    * @returns The current instance of the `Ethereum` class.
    */
-  public selectNetwork(network: NetworkType, url?: string): Ethereum {
+  public selectNetwork(network: EthNetworkType, url?: string): Ethereum {
     this.initializeNetwork(network, url);
 
     return this;
@@ -852,8 +852,8 @@ export class Ethereum extends Blockchain {
    *
    * @throws Will throw an error if the provided network is not supported (i.e., not a key in `NETWORK_ADDRESSES`).
    */
-  private initializeNetwork(network: NetworkType, url?: string): void {
-    const networkAddresses = NETWORK_ADDRESSES[network];
+  private initializeNetwork(network: EthNetworkType, url?: string): void {
+    const networkAddresses = ETH_NETWORK_ADDRESSES[network];
 
     if (!networkAddresses) {
       this.throwError('NETWORK_NOT_SUPPORTED', network);
@@ -909,7 +909,7 @@ export class Ethereum extends Blockchain {
    */
   private calculateGasLimit(gasConsumption: bigint): number {
     return new BigNumber(gasConsumption.toString())
-      .plus(GAS_RESERVE)
+      .plus(ETH_GAS_RESERVE)
       .toNumber();
   }
 

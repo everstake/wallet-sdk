@@ -12,15 +12,17 @@ import {
   unstakePendingSuccessFixture,
   unstakeSuccessFixture,
 } from '../__fixtures__';
-import { NetworkType } from '../types';
+import { EthNetworkType } from '../types';
 import type { Contract } from 'web3';
 import { ABI_CONTRACT_POOL } from '../abi';
 
 describe('selectNetwork', () => {
   selectNetworkSuccessFixture.forEach(({ description, args, result }) => {
     it(description, () => {
-      const ethereum = new Ethereum(args.network as NetworkType);
-      const ethInstance = ethereum.selectNetwork(args.network as NetworkType);
+      const ethereum = new Ethereum(args.network as EthNetworkType);
+      const ethInstance = ethereum.selectNetwork(
+        args.network as EthNetworkType,
+      );
 
       expect(ethInstance.addressContractPool).toBe(result.addressContractPool);
       expect(ethInstance.addressContractAccounting).toBe(
@@ -35,7 +37,7 @@ describe('selectNetwork', () => {
   selectNetworErrorkFixture.forEach(({ description, args, error }) => {
     it(description, () => {
       expect(() =>
-        new Ethereum().selectNetwork(args.network as NetworkType),
+        new Ethereum().selectNetwork(args.network as EthNetworkType),
       ).toThrow(error);
     });
   });
@@ -52,7 +54,7 @@ describe('unstakePending', () => {
       result,
     }) => {
       it(description, async () => {
-        const ethereum = new Ethereum(args.network as NetworkType);
+        const ethereum = new Ethereum(args.network as EthNetworkType);
         ethereum.pendingBalanceOf = jest
           .fn()
           .mockResolvedValue(new BigNumber(mockPendingBalance as string));
@@ -84,7 +86,7 @@ describe('unstakePending', () => {
   unstakePendingErrorFixture.forEach(
     ({ description, args, mockPendingBalance, mockMinStakeAmount, error }) => {
       it(description, async () => {
-        const ethereum = new Ethereum(args.network as NetworkType);
+        const ethereum = new Ethereum(args.network as EthNetworkType);
 
         ethereum.pendingBalanceOf = jest
           .fn()
@@ -120,7 +122,7 @@ describe('claimWithdrawRequest', () => {
   claimWithdrawRequestErrorFixture.forEach(
     ({ description, args, mockRewards, error }) => {
       it(description, async () => {
-        const ethereum = new Ethereum(args.network as NetworkType);
+        const ethereum = new Ethereum(args.network as EthNetworkType);
 
         ethereum.withdrawRequest = jest.fn().mockResolvedValue({
           requested: new BigNumber(mockRewards?.requested as string),
@@ -138,7 +140,7 @@ describe('claimWithdrawRequest', () => {
 describe('stake', () => {
   stakeSuccessFixture.forEach(({ description, args, result }) => {
     it(description, async () => {
-      const ethereum = new Ethereum(args.network as NetworkType);
+      const ethereum = new Ethereum(args.network as EthNetworkType);
 
       ethereum.contractPool.methods.stake(args.source).estimateGas = jest
         .fn()
@@ -154,7 +156,7 @@ describe('stake', () => {
 
   stakeErrorFixture.forEach(({ description, args, error }) => {
     it(description, async () => {
-      const ethereum = new Ethereum(args.network as NetworkType);
+      const ethereum = new Ethereum(args.network as EthNetworkType);
 
       await expect(
         ethereum.stake(args.address, args.amount as string, args.source),
@@ -167,7 +169,7 @@ describe('unstake', () => {
   unstakeSuccessFixture.forEach(
     ({ description, args, mockedAutocompoundBalance, result }) => {
       it(description, async () => {
-        const ethereum = new Ethereum(args.network as NetworkType);
+        const ethereum = new Ethereum(args.network as EthNetworkType);
 
         ethereum.autocompoundBalanceOf = jest
           .fn()
@@ -185,7 +187,7 @@ describe('unstake', () => {
   unstakeErrorFixture.forEach(
     ({ description, args, mockedAutocompoundBalance, error }) => {
       it(description, async () => {
-        const ethereum = new Ethereum(args.network as NetworkType);
+        const ethereum = new Ethereum(args.network as EthNetworkType);
 
         ethereum.autocompoundBalanceOf = jest
           .fn()
