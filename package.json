@@ -1,6 +1,6 @@
 {
   "name": "@everstake/wallet-sdk",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Everstake Wallet SDK for Javascript",
   "publishConfig": {
     "access": "public"
@@ -44,10 +44,10 @@
   },
   "homepage": "https://github.com/everstake/wallet-sdk#readme",
   "dependencies": {
-    "@solana/web3.js": "^1.75.0",
-    "bignumber.js": "^9.1.2",
-    "superstruct": "^0.16.7",
-    "web3": "^4.14.0"
+    "@solana/web3.js": "1.95.8",
+    "bignumber.js": "9.1.2",
+    "superstruct": "2.0.2",
+    "web3": "4.16.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.7.0",
