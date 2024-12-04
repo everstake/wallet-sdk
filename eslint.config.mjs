@@ -17,4 +17,7 @@ export default [
       ],
     },
   },
+  {
+    ignores: ["src/solana/temp/**"]
+  }
 ];

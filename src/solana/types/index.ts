@@ -1,31 +1,35 @@
 import {
-  AccountInfo,
-  ParsedAccountData,
-  PublicKey,
-  VersionedTransaction,
+  // Account,
+  //   AccountInfo,
+  //   ParsedAccountData,
+  //   PublicKey,
+  //   VersionedTransaction,
+  Address,
+  TransactionMessageWithBlockhashLifetime,
 } from '@solana/web3.js';
-import { StakeAccount } from '../stakeAccount';
 
 export interface ApiResponse<T> {
   result: T;
 }
 
-export type Delegation = {
-  pubkey: PublicKey;
-  account: AccountInfo<Buffer | ParsedAccountData>;
-};
-
 export type CreateAccountResponse = {
-  createStakeAccountVerTx: VersionedTransaction;
-  stakeAccount: PublicKey;
+  transaction: TransactionMessageWithBlockhashLifetime;
+  stakeAccount: Address;
 };
 
-export type Account = {
-  pubkey: PublicKey;
-  account: StakeAccount;
+export type StakeResponse = CreateAccountResponse;
+
+export type ClaimResponse = {
+  claimVerTx: TransactionMessageWithBlockhashLifetime;
+  totalClaimAmount: bigint;
 };
 
-export type AccountToSplit = {
-  account: Account;
-  lamports: number;
-};
+// export type Account = {
+//   pubkey: PublicKey;
+//   account: StakeAccount;
+// };
+
+// export type AccountToSplit = {
+//   account: Account;
+//   lamports: number;
+// };
