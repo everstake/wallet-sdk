@@ -1,39 +1,79 @@
 import {
-  Authorized,
-  clusterApiUrl,
-  ComputeBudgetProgram,
-  Connection,
-  Keypair,
-  Lockup,
-  PublicKey,
-  Signer,
-  StakeProgram,
-  Transaction,
-  TransactionInstruction,
-  TransactionMessage,
-  VersionedTransaction,
+  // Authorized,
+  // clusterApiUrl,
+  // ComputeBudgetProgram,
+  // Connection,
+  // Keypair,
+  // Lockup,
+  // PublicKey,
+  Address,
+  // Signer,
+  // StakeProgram,
+  // Transaction,
+  // TransactionInstruction,
+  // TransactionMessage,
+  // VersionedTransaction,
+  // TransactionVersion,
+  createAddressWithSeed,
+  createSolanaRpc,
+  mainnet,
+  // devnet,
+  // Blockhash,
+  // CompilableTransactionMessage,
+  // TransactionMessage,
+  ClusterUrl,
+  address,
+  // blockhash,
+  // lamports,
+  TransactionMessageWithBlockhashLifetime,
+  //
+  createNoopSigner,
+  //
+  pipe,
+  createTransactionMessage,
+  setTransactionMessageFeePayer,
+  setTransactionMessageLifetimeUsingBlockhash,
+  appendTransactionMessageInstruction,
+  //
+  RpcFromTransport,
+  SolanaRpcApiFromTransport,
+  RpcTransportFromClusterUrl,
 } from '@solana/web3.js';
+import {
+  getCreateAccountWithSeedInstruction,
+  getCreateAccountInstruction,
+  // getTransferSolDiscriminatorBytes,
+  // getTransferSolInstruction,
+} from '@solana-program/system';
+// import {
+// } from '@solana/keys';
 
 import { Blockchain } from '../utils';
 import { ERROR_MESSAGES } from './constants/errors';
 import {
   DEVNET_VALIDATOR_ADDRESS,
-  FILTER_DATA_SIZE,
-  FILTER_OFFSET,
+  // FILTER_DATA_SIZE,
+  // FILTER_OFFSET,
   MAINNET_VALIDATOR_ADDRESS,
   MIN_AMOUNT,
   Network,
-  StakeState,
+  // StakeState,
 } from './constants';
 import {
-  Account,
-  AccountToSplit,
+  //   Account,
+  //   AccountToSplit,
   ApiResponse,
   CreateAccountResponse,
-  Delegation,
+  //   Delegation,
 } from './types';
-import BigNumber from 'bignumber.js';
-import { StakeAccount } from './stakeAccount';
+// import BigNumber from 'bignumber.js';
+// import { StakeAccount } from './stakeAccount';
+import {
+  getWithdrawInstruction,
+  getDeactivateInstruction,
+  getDelegateStakeInstruction,
+  STAKE_PROGRAM_ADDRESS
+} from './temp';
 
 /**
  * The `Solana` class extends the `Blockchain` class and provides methods for interacting with the Solana blockchain.
@@ -45,8 +85,11 @@ import { StakeAccount } from './stakeAccount';
  * @throws Throws an error if there's an issue establishing the connection.
  */
 export class Solana extends Blockchain {
-  private connection!: Connection;
-  private validator: PublicKey;
+  private connection!: RpcFromTransport<
+    SolanaRpcApiFromTransport<RpcTransportFromClusterUrl<ClusterUrl>>,
+    RpcTransportFromClusterUrl<ClusterUrl>
+  >;
+  private validator: Address;
   protected ERROR_MESSAGES = ERROR_MESSAGES;
   protected ORIGINAL_ERROR_MESSAGES = {};
 
@@ -55,9 +98,14 @@ export class Solana extends Blockchain {
     if (rpc && !this.isValidURL(rpc)) {
       throw this.throwError('INVALID_RPC_ERROR');
     }
-    rpc = rpc || clusterApiUrl(network);
+    rpc = rpc || mainnet('https://api.mainnet-beta.solana.com');
+
+    // const mainnetRpc = createSolanaRpc(mainnet('https://api.mainnet-beta.solana.com'));
+    //    ^? RpcMainnet<SolanaRpcApiMainnet>
+
+    // const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
     try {
-      this.connection = new Connection(rpc, 'confirmed');
+      this.connection = createSolanaRpc(rpc);
     } catch (error) {
       throw this.handleError('CONNECTION_ERROR', error);
     }
@@ -88,56 +136,88 @@ export class Solana extends Blockchain {
    *
    */
   public async createAccount(
-    address: PublicKey,
-    lamports: number,
+    sender: string,
+    amountInLamports: number,
     source: string | null,
-    lockup: Lockup | null = Lockup.default,
+    // lockup: Lockup | null = Lockup.default,
   ): Promise<ApiResponse<CreateAccountResponse>> {
     // Check if the amount is greater than or equal to the minimum amount
-    if (lamports < MIN_AMOUNT) {
+    if (amountInLamports < MIN_AMOUNT) {
       this.throwError('MIN_AMOUNT_ERROR', MIN_AMOUNT.toString());
     }
 
     try {
-      const publicKey = new PublicKey(address);
+      //     const senderAddress = new PublicKey(address);
 
       // Get the minimum balance for rent exemption
       const minimumRent =
         await this.connection.getMinimumBalanceForRentExemption(
-          StakeProgram.space,
-        );
-      lockup = lockup || Lockup.default;
+          BigInt(200), // StakeProgram.space
+        ).send();
 
-      const [createStakeAccountTx, stakeAccountPublicKey, externalSigners] =
-        source === null
-          ? await this.createAccountTx(
-              publicKey,
-              lamports + minimumRent,
-              lockup,
-            )
-          : await this.createAccountWithSeedTx(
-              publicKey,
-              lamports + minimumRent,
-              source,
-              lockup,
-            );
+      //     lockup = lockup || Lockup.default;
 
-      const versionedTX = await this.prepareTransaction(
-        createStakeAccountTx.instructions,
-        publicKey,
-        externalSigners,
+      //     const [createStakeAccountTx, stakeAccountPublicKey, externalSigners] =
+      //       source === null
+      //         ? await this.createAccountTx(
+      //             publicKey,
+      //             lamports + minimumRent,
+      //             lockup,
+      //           )
+      //         : await this.createAccountWithSeedTx(
+      //             publicKey,
+      //             lamports + minimumRent,
+      //             source,
+      //             lockup,
+      //           );
+
+      //   // Format source to
+      const seed = this.formatSource(source || '');
+
+      const stakeAccountPubkey = await createAddressWithSeed(
+        {
+          baseAddress: address(sender),
+          programAddress: STAKE_PROGRAM_ADDRESS,
+          seed: seed,
+        }
+      );
+
+      const createAccountInstruction = getCreateAccountWithSeedInstruction({
+        payer: createNoopSigner(address(sender)),
+        newAccount: stakeAccountPubkey,
+        baseAccount: createNoopSigner(address(sender)),
+        base: address(sender),
+        seed:seed,
+        amount: BigInt(amountInLamports) + minimumRent,
+        // TODO get from package
+        space: 200,
+        programAddress: STAKE_PROGRAM_ADDRESS,
+      });
+
+      // TODO Initialise
+      
+      const { value: finalLatestBlockhash } = await this.connection
+        .getLatestBlockhash()
+        .send();
+      const transactionMessage = pipe(
+        createTransactionMessage({ version: 0 }),
+        (tx) => setTransactionMessageFeePayer(address(sender), tx),
+        (tx) =>
+          setTransactionMessageLifetimeUsingBlockhash(finalLatestBlockhash, tx),
+        (tx) => appendTransactionMessageInstruction(createAccountInstruction, tx),
       );
 
       return {
         result: {
-          createStakeAccountVerTx: versionedTX,
-          stakeAccount: stakeAccountPublicKey,
+          createStakeAccountVerTx: transactionMessage,
+          stakeAccount: stakeAccountPubkey,
         },
       };
     } catch (error) {
       throw this.handleError('CREATE_ACCOUNT_ERROR', error);
     }
   }
+
   /**
    * Prepares a transaction with the given instructions and payer.
    *
@@ -146,38 +226,26 @@ export class Solana extends Blockchain {
    * @param externalSigners - an array of external signers.
    * @returns A promise that resolves to a VersionedTransaction object.
    */
-  public async prepareTransaction(
-    instructions: TransactionInstruction[],
-    payer: PublicKey,
-    externalSigners: Signer[],
-  ): Promise<VersionedTransaction> {
-    const blockhash = await this.getBlockhash();
-    const messageV0 = new TransactionMessage({
-      payerKey: payer,
-      recentBlockhash: blockhash,
-      instructions,
-    }).compileToV0Message();
+  // public async prepareTransaction(
+  //   instructions: TransactionInstruction[],
+  //   payer: PublicKey,
+  //   externalSigners: Signer[],
+  // ): Promise<VersionedTransaction> {
+  //   const blockhash = await this.getBlockhash();
+  //   const messageV0 = new TransactionMessage({
+  //     payerKey: payer,
+  //     recentBlockhash: blockhash,
+  //     instructions,
+  //   }).compileToV0Message();
 
-    const tx = new VersionedTransaction(messageV0);
+  //   const tx = new VersionedTransaction(messageV0);
 
-    if (externalSigners.length > 0) {
-      tx.sign(externalSigners);
-    }
+  //   if (externalSigners.length > 0) {
+  //     tx.sign(externalSigners);
+  //   }
 
-    return tx;
-  }
-  /**
-   * Retrieves the latest blockhash.
-   *
-   * @returns A promise that resolves to a string representing the blockhash.
-   */
-  public async getBlockhash(): Promise<string> {
-    const res = await this.connection.getLatestBlockhash({
-      commitment: 'max',
-    });
-
-    return res.blockhash;
-  }
+  //   return tx;
+  // }
 
   /**
    * Delegates a specified amount from a stake account to a validator.
@@ -192,33 +260,54 @@ export class Solana extends Blockchain {
    *
    */
   public async delegate(
-    address: string,
+    sender: string,
     lamports: number,
     stakeAccount: string,
-  ): Promise<ApiResponse<VersionedTransaction>> {
+  ): Promise<ApiResponse<TransactionMessageWithBlockhashLifetime>> {
     if (lamports < MIN_AMOUNT) {
       this.throwError('MIN_AMOUNT_ERROR', MIN_AMOUNT.toString());
     }
 
     try {
-      const publicKey = new PublicKey(address);
-      const stakeAccountPublicKey = new PublicKey(stakeAccount);
+      //     const publicKey = new PublicKey(address);
+      //     const stakeAccountPublicKey = new PublicKey(stakeAccount);
 
-      const delegateTx = new Transaction().add(
-        StakeProgram.delegate({
-          stakePubkey: stakeAccountPublicKey,
-          authorizedPubkey: publicKey,
-          votePubkey: this.validator,
-        }),
+      //     const delegateTx = new Transaction().add(
+      //       StakeProgram.delegate({
+      //         stakePubkey: stakeAccountPublicKey,
+      //         authorizedPubkey: publicKey,
+      //         votePubkey: this.validator,
+      //       }),
+      //     );
+
+      //     const delegateVerTx = await this.prepareTransaction(
+      //       delegateTx.instructions,
+      //       publicKey,
+      //       [],
+      //     );
+
+      const delegateInstruction = getDelegateStakeInstruction({
+        stake: address(stakeAccount),
+        vote: this.validator,
+        stakeAuthority:  createNoopSigner(address(sender)),
+      });
+
+      const { value: finalLatestBlockhash } = await this.connection
+        .getLatestBlockhash()
+        .send();
+      const transactionMessage = pipe(
+        createTransactionMessage({ version: 0 }),
+        (tx) => setTransactionMessageFeePayer(address(sender), tx),
+        (tx) =>
+          setTransactionMessageLifetimeUsingBlockhash(finalLatestBlockhash, tx),
+        (tx) =>
+        appendTransactionMessageInstruction(
+            delegateInstruction,
+            tx,
+        ),
       );
 
-      const delegateVerTx = await this.prepareTransaction(
-        delegateTx.instructions,
-        publicKey,
-        [],
-      );
-
-      return { result: delegateVerTx };
+      return { result: transactionMessage };
     } catch (error) {
       throw this.handleError('DELEGATE_ERROR', error);
     }
@@ -234,28 +323,41 @@ export class Solana extends Blockchain {
    *
    */
   public async deactivate(
-    address: string,
+    sender: string,
     stakeAccountPublicKey: string,
-  ): Promise<ApiResponse<VersionedTransaction>> {
+  ): Promise<ApiResponse<TransactionMessageWithBlockhashLifetime>> {
     try {
-      const publicKey = new PublicKey(address);
-      const stakeAccount = new PublicKey(stakeAccountPublicKey);
+      //     const publicKey = new PublicKey(address);
+      //     const stakeAccount = new PublicKey(stakeAccountPublicKey);
 
-      // Create the deactivate transaction
-      const deactivateTx = new Transaction().add(
-        StakeProgram.deactivate({
-          stakePubkey: stakeAccount,
-          authorizedPubkey: publicKey,
-        }),
+      //     // Create the deactivate transaction
+      //     const deactivateTx = new Transaction().add(
+      //       StakeProgram.deactivate({
+      //         stakePubkey: stakeAccount,
+      //         authorizedPubkey: publicKey,
+      //       }),
+      //     );
+      const deactivateInstruction = getDeactivateInstruction({
+        /** Delegated stake account */
+        stake: address(stakeAccountPublicKey),
+        /** Stake authority */
+        stakeAuthority: createNoopSigner(address(sender)),
+        /** Clock sysvar */
+        // clockSysvar?: Address<TAccountClockSysvar>;
+      });
+
+      const { value: finalLatestBlockhash } = await this.connection
+        .getLatestBlockhash()
+        .send();
+      const transactionMessage = pipe(
+        createTransactionMessage({ version: 0 }),
+        (tx) => setTransactionMessageFeePayer(address(sender), tx),
+        (tx) =>
+          setTransactionMessageLifetimeUsingBlockhash(finalLatestBlockhash, tx),
+        (tx) => appendTransactionMessageInstruction(deactivateInstruction, tx),
       );
 
-      const deactivateVerTx = await this.prepareTransaction(
-        deactivateTx.instructions,
-        publicKey,
-        [],
-      );
-
-      return { result: deactivateVerTx };
+      return { result: transactionMessage };
     } catch (error) {
       throw this.handleError('DEACTIVATE_ERROR', error);
     }
@@ -274,31 +376,54 @@ export class Solana extends Blockchain {
    *
    */
   public async withdraw(
-    address: string,
-    stakeAccountPublicKey: PublicKey,
+    sender: Address,
+    stakeAccountPublicKey: Address,
     stakeBalance: number,
-  ): Promise<ApiResponse<VersionedTransaction>> {
+  ): Promise<ApiResponse<TransactionMessageWithBlockhashLifetime>> {
     try {
-      const publicKey = new PublicKey(address);
-      const stakeAccount = new PublicKey(stakeAccountPublicKey);
+      //     const publicKey = new PublicKey(address);
+      //     const stakeAccount = new PublicKey(stakeAccountPublicKey);
 
-      // Create the withdraw transaction
-      const withdrawTx = new Transaction().add(
-        StakeProgram.withdraw({
-          stakePubkey: stakeAccount,
-          authorizedPubkey: publicKey,
-          toPubkey: publicKey,
-          lamports: stakeBalance,
-        }),
+      //     // Create the withdraw transaction
+      //     const withdrawTx = new Transaction().add(
+      //       StakeProgram.withdraw({
+      //         stakePubkey: stakeAccount,
+      //         authorizedPubkey: publicKey,
+      //         toPubkey: publicKey,
+      //         lamports: stakeBalance,
+      //       }),
+      //     );
+
+      // Create the withdraw instruction
+      const withdrawInstruction = getWithdrawInstruction({
+        stake: stakeAccountPublicKey,
+        /** Recipient account */
+        recipient: sender,
+        /** Withdraw authority */
+        withdrawAuthority: createNoopSigner(address(sender)),
+
+        args: stakeBalance,
+
+        /** Clock sysvar */
+        // clockSysvar?: null,
+        /** Stake history sysvar */
+        // stakeHistory?: '',
+        /** Lockup authority */
+        // lockupAuthority?: '',
+      });
+
+      const { value: finalLatestBlockhash } = await this.connection
+        .getLatestBlockhash()
+        .send();
+      const transactionMessage = pipe(
+        createTransactionMessage({ version: 0 }),
+        (tx) => setTransactionMessageFeePayer(address(sender), tx),
+        (tx) =>
+          setTransactionMessageLifetimeUsingBlockhash(finalLatestBlockhash, tx),
+        (tx) => appendTransactionMessageInstruction(withdrawInstruction, tx),
       );
 
-      const withdrawVerTx = await this.prepareTransaction(
-        withdrawTx.instructions,
-        publicKey,
-        [],
-      );
-
-      return { result: withdrawVerTx };
+      return { result: transactionMessage };
     } catch (error) {
       throw this.handleError('WITHDRAW_ERROR', error);
     }
@@ -314,27 +439,27 @@ export class Solana extends Blockchain {
    * @returns Returns a promise that resolves with the delegations of the account.
    *
    */
-  public async getDelegations(
-    address: string,
-  ): Promise<ApiResponse<Array<Delegation>>> {
-    try {
-      // Define the filters for the getParsedProgramAccounts method
-      const filters = [
-        { dataSize: FILTER_DATA_SIZE },
-        { memcmp: { offset: FILTER_OFFSET, bytes: address } },
-      ];
+  // public async getDelegations(
+  //   address: string,
+  // ): Promise<ApiResponse<Array<Delegation>>> {
+  //   try {
+  //     // Define the filters for the getParsedProgramAccounts method
+  //     const filters = [
+  //       { dataSize: FILTER_DATA_SIZE },
+  //       { memcmp: { offset: FILTER_OFFSET, bytes: address } },
+  //     ];
 
-      // Fetch the accounts
-      const accounts = await this.connection.getParsedProgramAccounts(
-        StakeProgram.programId,
-        { filters },
-      );
+  //     // Fetch the accounts
+  //     const accounts = await this.connection.getParsedProgramAccounts(
+  //       StakeProgram.programId,
+  //       { filters },
+  //     );
 
-      return { result: accounts };
-    } catch (error) {
-      throw this.handleError('GET_DELEGATIONS_ERROR', error);
-    }
-  }
+  //     return { result: accounts };
+  //   } catch (error) {
+  //     throw this.handleError('GET_DELEGATIONS_ERROR', error);
+  //   }
+  // }
 
   /**
    * Stakes a certain amount of lamports.
@@ -347,51 +472,66 @@ export class Solana extends Blockchain {
    */
   async stake(
     sender: string,
-    lamports: number,
-    source: string | null,
-    lockup: Lockup | null = Lockup.default,
-  ): Promise<ApiResponse<VersionedTransaction>> {
+    // lamports: number,
+    // source: string | null,
+    // lockup: Lockup | null = Lockup.default,
+  ): Promise<ApiResponse<TransactionMessageWithBlockhashLifetime>> {
     try {
-      const senderPublicKey = new PublicKey(sender);
+      //     const senderPublicKey = new PublicKey(sender);
 
-      // Calculate how much we want to stake
-      const minimumRent =
-        await this.connection.getMinimumBalanceForRentExemption(
-          StakeProgram.space,
-        );
-      lockup = lockup || Lockup.default;
+      //     // Calculate how much we want to stake
+      //     const minimumRent =
+      //       await this.connection.getMinimumBalanceForRentExemption(
+      //         StakeProgram.space,
+      //       );
+      //     lockup = lockup || Lockup.default;
 
-      const [createStakeAccountTx, stakeAccountPublicKey, externalSigners] =
-        source === null
-          ? await this.createAccountTx(
-              senderPublicKey,
-              lamports + minimumRent,
-              lockup,
-            )
-          : await this.createAccountWithSeedTx(
-              senderPublicKey,
-              lamports + minimumRent,
-              source,
-              lockup,
-            );
+      //     const [createStakeAccountTx, stakeAccountPublicKey, externalSigners] =
+      //       source === null
+      //         ? await this.createAccountTx(
+      //             senderPublicKey,
+      //             lamports + minimumRent,
+      //             lockup,
+      //           )
+      //         : await this.createAccountWithSeedTx(
+      //             senderPublicKey,
+      //             lamports + minimumRent,
+      //             source,
+      //             lockup,
+      //           );
 
-      const stakeTx = new Transaction().add(
-        ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50 }),
-        createStakeAccountTx,
-        StakeProgram.delegate({
-          stakePubkey: stakeAccountPublicKey,
-          authorizedPubkey: senderPublicKey,
-          votePubkey: this.validator,
-        }),
+      //     const stakeTx = new Transaction().add(
+      //       ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50 }),
+      //       createStakeAccountTx,
+      //       StakeProgram.delegate({
+      //         stakePubkey: stakeAccountPublicKey,
+      //         authorizedPubkey: senderPublicKey,
+      //         votePubkey: this.validator,
+      //       }),
+      //     );
+
+      //     const stakeVerTx = await this.prepareTransaction(
+      //       stakeTx.instructions,
+      //       senderPublicKey,
+      //       externalSigners,
+      //     );
+
+      const { value: finalLatestBlockhash } = await this.connection
+        .getLatestBlockhash()
+        .send();
+      const transactionMessage = pipe(
+        createTransactionMessage({ version: 0 }),
+        (tx) => setTransactionMessageFeePayer(address(sender), tx),
+        (tx) =>
+          setTransactionMessageLifetimeUsingBlockhash(finalLatestBlockhash, tx),
+        // tx =>
+        // appendTransactionMessageInstruction(
+        //     transferInstruction,
+        //     tx,
+        // ),
       );
 
-      const stakeVerTx = await this.prepareTransaction(
-        stakeTx.instructions,
-        senderPublicKey,
-        externalSigners,
-      );
-
-      return { result: stakeVerTx };
+      return { result: transactionMessage };
     } catch (error) {
       throw this.handleError('STAKE_ERROR', error);
     }
@@ -409,25 +549,25 @@ export class Solana extends Blockchain {
    * @returns Returns a promise that resolves with the Transaction, PublicKey and array of Keypair.
    *
    */
-  private async createAccountTx(
-    address: PublicKey,
-    lamports: number,
-    lockup: Lockup,
-  ): Promise<[Transaction, PublicKey, Keypair[]]> {
-    const blockhash = await this.getBlockhash();
-    const stakeAccount = Keypair.generate();
-    const createStakeAccountTx = StakeProgram.createAccount({
-      authorized: new Authorized(address, address),
-      fromPubkey: address,
-      lamports: lamports,
-      stakePubkey: stakeAccount.publicKey,
-      lockup: lockup,
-    });
-    createStakeAccountTx.recentBlockhash = blockhash;
-    createStakeAccountTx.sign(stakeAccount);
+  // private async createAccountTx(
+  //   address: PublicKey,
+  //   lamports: number,
+  //   lockup: Lockup,
+  // ): Promise<[Transaction, PublicKey, Keypair[]]> {
+  //   const blockhash = await this.getBlockhash();
+  //   const stakeAccount = Keypair.generate();
+  //   const createStakeAccountTx = StakeProgram.createAccount({
+  //     authorized: new Authorized(address, address),
+  //     fromPubkey: address,
+  //     lamports: lamports,
+  //     stakePubkey: stakeAccount.publicKey,
+  //     lockup: lockup,
+  //   });
+  //   createStakeAccountTx.recentBlockhash = blockhash;
+  //   createStakeAccountTx.sign(stakeAccount);
 
-    return [createStakeAccountTx, stakeAccount.publicKey, [stakeAccount]];
-  }
+  //   return [createStakeAccountTx, stakeAccount.publicKey, [stakeAccount]];
+  // }
 
   /**
    * Create account Tx, public key and array of keypair using seed.
@@ -442,35 +582,35 @@ export class Solana extends Blockchain {
    * @returns Returns a promise that resolves with the Transaction, PublicKey and array of Keypair.
    *
    */
-  private async createAccountWithSeedTx(
-    authorityPublicKey: PublicKey,
-    lamports: number,
-    source: string,
-    lockup: Lockup,
-  ): Promise<[Transaction, PublicKey, Keypair[]]> {
-    // Format source to
-    const seed = this.formatSource(source);
+  // private async createAccountWithSeedTx(
+  //   authorityPublicKey: PublicKey,
+  //   lamports: number,
+  //   source: string,
+  //   lockup: Lockup,
+  // ): Promise<[Transaction, PublicKey, Keypair[]]> {
+  //   // Format source to
+  //   const seed = this.formatSource(source);
 
-    const stakeAccountPubkey = await PublicKey.createWithSeed(
-      authorityPublicKey,
-      seed,
-      StakeProgram.programId,
-    );
+  //   const stakeAccountPubkey = await PublicKey.createWithSeed(
+  //     authorityPublicKey,
+  //     seed,
+  //     StakeProgram.programId,
+  //   );
 
-    const createStakeAccountTx = new Transaction().add(
-      StakeProgram.createAccountWithSeed({
-        authorized: new Authorized(authorityPublicKey, authorityPublicKey),
-        fromPubkey: authorityPublicKey,
-        basePubkey: authorityPublicKey,
-        stakePubkey: stakeAccountPubkey,
-        lockup: lockup,
-        seed: seed,
-        lamports: lamports,
-      }),
-    );
+  //   const createStakeAccountTx = new Transaction().add(
+  //     StakeProgram.createAccountWithSeed({
+  //       authorized: new Authorized(authorityPublicKey, authorityPublicKey),
+  //       fromPubkey: authorityPublicKey,
+  //       basePubkey: authorityPublicKey,
+  //       stakePubkey: stakeAccountPubkey,
+  //       lockup: lockup,
+  //       seed: seed,
+  //       lamports: lamports,
+  //     }),
+  //   );
 
-    return [createStakeAccountTx, stakeAccountPubkey, []];
-  }
+  //   return [createStakeAccountTx, stakeAccountPubkey, []];
+  // }
 
   /** unstake - unstake
    * @param {string} sender - account blockchain address (staker)
@@ -480,123 +620,137 @@ export class Solana extends Blockchain {
    */
   public async unstake(
     sender: string,
-    lamports: number,
-    source: string,
-  ): Promise<ApiResponse<VersionedTransaction>> {
+    // lamports: number,
+    // source: string,
+  ): Promise<ApiResponse<TransactionMessageWithBlockhashLifetime>> {
     try {
-      const delegations = await this.getDelegations(sender);
+      //     const delegations = await this.getDelegations(sender);
 
-      const stakeAccounts = delegations.result.map((delegationAcc) => {
-        return {
-          pubkey: delegationAcc.pubkey,
-          account: new StakeAccount(delegationAcc.account),
-        };
-      });
+      //     const stakeAccounts = delegations.result.map((delegationAcc) => {
+      //       return {
+      //         pubkey: delegationAcc.pubkey,
+      //         account: new StakeAccount(delegationAcc.account),
+      //       };
+      //     });
 
-      const epochInfo = await this.connection.getEpochInfo();
-      const tm = this.timestampInSec();
+      //     const epochInfo = await this.connection.getEpochInfo();
+      //     const tm = this.timestampInSec();
 
-      let totalActiveStake = new BigNumber(0);
-      const activeStakeAccounts = stakeAccounts.filter((acc) => {
-        const isActive = !(
-          acc.account.isLockupInForce(epochInfo.epoch, tm) ||
-          acc.account.stakeAccountState(epochInfo.epoch) !== StakeState.Active
-        );
-        if (isActive && acc.account.account.data.info.stake) {
-          totalActiveStake = totalActiveStake.plus(
-            acc.account.account.data.info.stake.delegation.stake,
-          );
-        }
+      //     let totalActiveStake = new BigNumber(0);
+      //     const activeStakeAccounts = stakeAccounts.filter((acc) => {
+      //       const isActive = !(
+      //         acc.account.isLockupInForce(epochInfo.epoch, tm) ||
+      //         acc.account.stakeAccountState(epochInfo.epoch) !== StakeState.Active
+      //       );
+      //       if (isActive && acc.account.account.data.info.stake) {
+      //         totalActiveStake = totalActiveStake.plus(
+      //           acc.account.account.data.info.stake.delegation.stake,
+      //         );
+      //       }
 
-        return isActive;
-      });
+      //       return isActive;
+      //     });
 
-      let lamportsBN = new BigNumber(lamports);
-      if (totalActiveStake.lt(lamportsBN))
-        throw this.throwError('NOT_ENOUGH_ACTIVE_STAKE_ERROR');
+      //     let lamportsBN = new BigNumber(lamports);
+      //     if (totalActiveStake.lt(lamportsBN))
+      //       throw this.throwError('NOT_ENOUGH_ACTIVE_STAKE_ERROR');
 
-      // Desc sorting
-      activeStakeAccounts.sort((a, b): number => {
-        const stakeA = a.account.account.data.info.stake?.delegation.stake;
-        const stakeB = b.account.account.data.info.stake?.delegation.stake;
-        if (!stakeA || !stakeB) return 0;
+      //     // Desc sorting
+      //     activeStakeAccounts.sort((a, b): number => {
+      //       const stakeA = a.account.account.data.info.stake?.delegation.stake;
+      //       const stakeB = b.account.account.data.info.stake?.delegation.stake;
+      //       if (!stakeA || !stakeB) return 0;
 
-        return stakeB.minus(stakeA).toNumber();
-      });
+      //       return stakeB.minus(stakeA).toNumber();
+      //     });
 
-      const accountsToDeactivate: Account[] = [];
-      const accountsToSplit: AccountToSplit[] = [];
+      //     const accountsToDeactivate: Account[] = [];
+      //     const accountsToSplit: AccountToSplit[] = [];
 
-      let i = 0;
-      while (
-        lamportsBN.gt(new BigNumber(0)) &&
-        i < activeStakeAccounts.length
-      ) {
-        const acc = activeStakeAccounts[i];
-        if (acc === undefined || acc.account.account.data.info.stake === null) {
-          i++;
-          continue;
-        }
-        const stakeAmount =
-          acc.account.account.data.info.stake.delegation.stake;
+      //     let i = 0;
+      //     while (
+      //       lamportsBN.gt(new BigNumber(0)) &&
+      //       i < activeStakeAccounts.length
+      //     ) {
+      //       const acc = activeStakeAccounts[i];
+      //       if (acc === undefined || acc.account.account.data.info.stake === null) {
+      //         i++;
+      //         continue;
+      //       }
+      //       const stakeAmount =
+      //         acc.account.account.data.info.stake.delegation.stake;
 
-        // If reminder amount less than min stake amount stake account automatically become disabled
-        const isBelowThreshold =
-          stakeAmount.lte(lamportsBN) ||
-          stakeAmount.minus(lamportsBN).lt(MIN_AMOUNT);
-        if (isBelowThreshold) {
-          accountsToDeactivate.push(acc);
-          lamportsBN = lamportsBN.minus(stakeAmount);
-          i++;
-          continue;
-        }
+      //       // If reminder amount less than min stake amount stake account automatically become disabled
+      //       const isBelowThreshold =
+      //         stakeAmount.lte(lamportsBN) ||
+      //         stakeAmount.minus(lamportsBN).lt(MIN_AMOUNT);
+      //       if (isBelowThreshold) {
+      //         accountsToDeactivate.push(acc);
+      //         lamportsBN = lamportsBN.minus(stakeAmount);
+      //         i++;
+      //         continue;
+      //       }
 
-        accountsToSplit.push({ account: acc, lamports: lamportsBN.toNumber() });
-        break;
-      }
+      //       accountsToSplit.push({ account: acc, lamports: lamportsBN.toNumber() });
+      //       break;
+      //     }
 
-      const senderPublicKey = new PublicKey(sender);
+      //     const senderPublicKey = new PublicKey(sender);
 
-      let instructions = [
-        ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50 }),
-      ];
-      for (const acc of accountsToSplit) {
-        const [tx, newStakeAccountPubkey] = await this.split(
-          senderPublicKey,
-          acc.lamports,
-          acc.account.pubkey,
-          source,
-        );
+      //     let instructions = [
+      //       ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50 }),
+      //     ];
+      //     for (const acc of accountsToSplit) {
+      //       const [tx, newStakeAccountPubkey] = await this.split(
+      //         senderPublicKey,
+      //         acc.lamports,
+      //         acc.account.pubkey,
+      //         source,
+      //       );
 
-        const deactivateTx = StakeProgram.deactivate({
-          stakePubkey: newStakeAccountPubkey,
-          authorizedPubkey: senderPublicKey,
-        });
+      //       const deactivateTx = StakeProgram.deactivate({
+      //         stakePubkey: newStakeAccountPubkey,
+      //         authorizedPubkey: senderPublicKey,
+      //       });
 
-        instructions.push(...tx.instructions, ...deactivateTx.instructions);
-      }
+      //       instructions.push(...tx.instructions, ...deactivateTx.instructions);
+      //     }
 
-      for (const acc of accountsToDeactivate) {
-        const deactivateTx = StakeProgram.deactivate({
-          stakePubkey: acc.pubkey,
-          authorizedPubkey: senderPublicKey,
-        });
+      //     for (const acc of accountsToDeactivate) {
+      //       const deactivateTx = StakeProgram.deactivate({
+      //         stakePubkey: acc.pubkey,
+      //         authorizedPubkey: senderPublicKey,
+      //       });
 
-        instructions.push(...deactivateTx.instructions);
-      }
+      //       instructions.push(...deactivateTx.instructions);
+      //     }
 
-      // cast instructions to correct JSON Serialization
-      instructions = instructions.map((instruction) => {
-        return new TransactionInstruction(instruction);
-      });
+      //     // cast instructions to correct JSON Serialization
+      //     instructions = instructions.map((instruction) => {
+      //       return new TransactionInstruction(instruction);
+      //     });
 
-      const versionedTX = await this.prepareTransaction(
-        instructions,
-        senderPublicKey,
-        [],
+      //     const versionedTX = await this.prepareTransaction(
+      //       instructions,
+      //       senderPublicKey,
+      //       [],
+      //     );
+      const { value: finalLatestBlockhash } = await this.connection
+        .getLatestBlockhash()
+        .send();
+      const transactionMessage = pipe(
+        createTransactionMessage({ version: 0 }),
+        (tx) => setTransactionMessageFeePayer(address(sender), tx),
+        (tx) =>
+          setTransactionMessageLifetimeUsingBlockhash(finalLatestBlockhash, tx),
+        // tx =>
+        // appendTransactionMessageInstruction(
+        //     transferInstruction,
+        //     tx,
+        // ),
       );
 
-      return { result: versionedTX };
+      return { result: transactionMessage };
     } catch (error) {
       throw this.handleError('UNSTAKE_ERROR', error);
     }
@@ -615,34 +769,34 @@ export class Solana extends Blockchain {
    * @returns Returns a promise that resolves with the Transaction, PublicKey and array of Keypair.
    *
    */
-  private async split(
-    authorityPublicKey: PublicKey,
-    lamports: number,
-    oldStakeAccountPubkey: PublicKey,
-    source: string,
-  ): Promise<[Transaction, PublicKey, Keypair[]]> {
-    // Format source to
-    const seed = this.formatSource(source);
+  // private async split(
+  //   authorityPublicKey: PublicKey,
+  //   lamports: number,
+  //   oldStakeAccountPubkey: PublicKey,
+  //   source: string,
+  // ): Promise<[Transaction, PublicKey, Keypair[]]> {
+  //   // Format source to
+  //   const seed = this.formatSource(source);
 
-    const newStakeAccountPubkey = await PublicKey.createWithSeed(
-      authorityPublicKey,
-      seed,
-      StakeProgram.programId,
-    );
+  //   const newStakeAccountPubkey = await PublicKey.createWithSeed(
+  //     authorityPublicKey,
+  //     seed,
+  //     StakeProgram.programId,
+  //   );
 
-    const splitStakeAccountTx = new Transaction().add(
-      StakeProgram.splitWithSeed({
-        stakePubkey: oldStakeAccountPubkey,
-        authorizedPubkey: authorityPublicKey,
-        splitStakePubkey: newStakeAccountPubkey,
-        basePubkey: authorityPublicKey,
-        seed: seed,
-        lamports: lamports,
-      }),
-    );
+  //   const splitStakeAccountTx = new Transaction().add(
+  //     StakeProgram.splitWithSeed({
+  //       stakePubkey: oldStakeAccountPubkey,
+  //       authorizedPubkey: authorityPublicKey,
+  //       splitStakePubkey: newStakeAccountPubkey,
+  //       basePubkey: authorityPublicKey,
+  //       seed: seed,
+  //       lamports: lamports,
+  //     }),
+  //   );
 
-    return [splitStakeAccountTx, newStakeAccountPubkey, []];
-  }
+  //   return [splitStakeAccountTx, newStakeAccountPubkey, []];
+  // }
 
   /**
    * Claim makes withdrawal from all sender's deactivated accounts.
@@ -656,66 +810,70 @@ export class Solana extends Blockchain {
    */
   public async claim(
     sender: string,
-  ): Promise<ApiResponse<VersionedTransaction>> {
+  ): Promise<ApiResponse<TransactionMessageWithBlockhashLifetime>> {
     try {
-      const delegations = await this.getDelegations(sender);
+      //     const delegations = await this.getDelegations(sender);
 
-      const stakeAccounts = delegations.result.map((delegationAcc) => {
-        return {
-          pubkey: delegationAcc.pubkey,
-          account: new StakeAccount(delegationAcc.account),
-        };
-      });
+      //     const stakeAccounts = delegations.result.map((delegationAcc) => {
+      //       return {
+      //         pubkey: delegationAcc.pubkey,
+      //         account: new StakeAccount(delegationAcc.account),
+      //       };
+      //     });
 
-      const epochInfo = await this.connection.getEpochInfo();
-      const tm = this.timestampInSec();
+      //     const epochInfo = await this.connection.getEpochInfo();
+      //     const tm = this.timestampInSec();
 
-      let totalClaimableStake = new BigNumber(0);
-      const deactivatedStakeAccounts = stakeAccounts.filter((acc) => {
-        const { data } = acc.account.account;
-        const { info } = data;
-        const isDeactivated =
-          !acc.account.isLockupInForce(epochInfo.epoch, tm) &&
-          acc.account.stakeAccountState(epochInfo.epoch) ===
-            StakeState.Deactivated;
-        if (info.stake && isDeactivated) {
-          totalClaimableStake = totalClaimableStake.plus(
-            info.stake.delegation.stake,
-          );
-        }
+      //     let totalClaimableStake = new BigNumber(0);
+      //     const deactivatedStakeAccounts = stakeAccounts.filter((acc) => {
+      //       const { data } = acc.account.account;
+      //       const { info } = data;
+      //       const isDeactivated =
+      //         !acc.account.isLockupInForce(epochInfo.epoch, tm) &&
+      //         acc.account.stakeAccountState(epochInfo.epoch) ===
+      //           StakeState.Deactivated;
+      //       if (info.stake && isDeactivated) {
+      //         totalClaimableStake = totalClaimableStake.plus(
+      //           info.stake.delegation.stake,
+      //         );
+      //       }
 
-        return isDeactivated;
-      });
+      //       return isDeactivated;
+      //     });
 
-      if (deactivatedStakeAccounts.length === 0)
-        throw this.throwError('NOTHING_TO_CLAIM_ERROR');
+      //     if (deactivatedStakeAccounts.length === 0)
+      //       throw this.throwError('NOTHING_TO_CLAIM_ERROR');
 
-      const senderPublicKey = new PublicKey(sender);
-      let instructions = [
-        ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50 }),
-      ];
-      for (const acc of deactivatedStakeAccounts) {
-        const withdrawTx = StakeProgram.withdraw({
-          stakePubkey: acc.pubkey,
-          authorizedPubkey: senderPublicKey,
-          toPubkey: senderPublicKey,
-          lamports: acc.account.account.lamports,
-        });
-        instructions.push(...withdrawTx.instructions);
-      }
+      //     const senderPublicKey = new PublicKey(sender);
+      //     let instructions = [
+      //       ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50 }),
+      //     ];
+      //     for (const acc of deactivatedStakeAccounts) {
+      //       const withdrawTx = StakeProgram.withdraw({
+      //         stakePubkey: acc.pubkey,
+      //         authorizedPubkey: senderPublicKey,
+      //         toPubkey: senderPublicKey,
+      //         lamports: acc.account.account.lamports,
+      //       });
+      //       instructions.push(...withdrawTx.instructions);
+      //     }
 
-      // cast instructions to correct JSON Serialization
-      instructions = instructions.map((instruction) => {
-        return new TransactionInstruction(instruction);
-      });
-
-      const versionedTX = await this.prepareTransaction(
-        instructions,
-        senderPublicKey,
-        [],
+      const { value: finalLatestBlockhash } = await this.connection
+        .getLatestBlockhash()
+        .send();
+      const transactionMessage = pipe(
+        createTransactionMessage({ version: 0 }),
+        (tx) => setTransactionMessageFeePayer(address(sender), tx),
+        (tx) =>
+          setTransactionMessageLifetimeUsingBlockhash(finalLatestBlockhash, tx),
+        // tx =>
+        // appendTransactionMessageInstruction(
+        //     transferInstruction,
+        //     tx,
+        // ),
       );
 
-      return { result: versionedTX };
+      return { result: transactionMessage };
     } catch (error) {
       throw this.handleError('CLAIM_ERROR', error);
     }
@@ -733,19 +891,19 @@ export class Solana extends Blockchain {
    * @returns Returns a promise that resolves with the Transaction, PublicKey and array of Keypair.
    *
    */
-  private async merge(
-    authorityPublicKey: PublicKey,
-    stakeAccount1: PublicKey,
-    stakeAccount2: PublicKey,
-  ) {
-    const mergeStakeAccountTx = StakeProgram.merge({
-      stakePubkey: stakeAccount1,
-      sourceStakePubKey: stakeAccount2,
-      authorizedPubkey: authorityPublicKey,
-    });
+  // private async merge(
+  //   authorityPublicKey: PublicKey,
+  //   stakeAccount1: PublicKey,
+  //   stakeAccount2: PublicKey,
+  // ) {
+  //   const mergeStakeAccountTx = StakeProgram.merge({
+  //     stakePubkey: stakeAccount1,
+  //     sourceStakePubKey: stakeAccount2,
+  //     authorizedPubkey: authorityPublicKey,
+  //   });
 
-    return [mergeStakeAccountTx];
-  }
+  //   return [mergeStakeAccountTx];
+  // }
 
   /**
    * Generate a unique source for crating an account.
