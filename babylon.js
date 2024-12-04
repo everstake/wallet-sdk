@@ -1,4 +1,5 @@
-const {payments, networks, Transaction} = require('bitcoinjs-lib');
+const {payments, networks, Transaction, initEccLib} = require('bitcoinjs-lib');
+const ecc = require('tiny-secp256k1');  // For elliptic curve operations
 const {
     stakingTransaction,
     StakingScriptData,
@@ -7,6 +8,9 @@ const {
     withdrawTimelockUnbondedTransaction
 } = require('btc-staking-ts');
 const {SetStats} = require("./utils/api");
+
+// Taproot requires tiny-secp256k1 for ECC operations
+initEccLib(ecc);
 
 const chain = 'bitcoin';
 
@@ -27,7 +31,7 @@ class Babylon {
     /**
      * @constructor
      * @param {string} network  - network (signet, mainnet)
-     * @param {string} publicKey - user (staker) publicKey
+     * @param {Buffer} publicKey - user (staker) publicKey
      * @param {string} authToken - Auth API token
      */
     constructor(network, publicKey, authToken) {
@@ -62,13 +66,14 @@ class Babylon {
      * @returns {Promise<Object>} Promise with unsigned TX
      */
     async stake(amount, feeRate = 1) {
+        const globalParams = await this.globalParams();
         const {
             timelockScript,
             unbondingScript,
             slashingScript,
             dataEmbedScript,
             unbondingTimelockScript,
-        } = await this.getStakingData()
+        } = await this.getStakingData(globalParams);
 
         const validation = await this.validateAddress(this.address);
         if (!validation.isvalid) {
@@ -76,7 +81,7 @@ class Babylon {
         }
 
         const allUTXOs = await this.getUTXOsByAddress(this.address);
-        const utxos = this.selectUTXOs(allUTXOs, stakeOutputsNumber, amount, feeRate)
+        const utxos = this.selectUTXOs(allUTXOs, stakeOutputsNumber, amount, feeRate);
         const filteredUTXOs = utxos.map((utxo) => {
             return {
                 txid: utxo.txid,
@@ -113,13 +118,15 @@ class Babylon {
             throw new Error('Unbonding not eligible');
         }
 
+        const globalParams = await this.globalParams();
+
         const {
             timelockScript,
             unbondingScript,
             slashingScript,
             dataEmbedScript,
             unbondingTimelockScript,
-        } = await this.getStakingData()
+        } = await this.getStakingData(globalParams);
 
         const validation = await this.validateAddress(this.address);
         if (!validation.isvalid) {
@@ -138,7 +145,7 @@ class Babylon {
             timelockScript,
             slashingScript,
         }
-        await SetStats(this.token, 'unbond', amount, this.address, '', chain);
+        await SetStats(this.token, 'unbond', delegation.staking_value, this.address, '', chain);
         return unbondingTransaction(
             script,
             Transaction.fromHex(delegation.staking_tx.tx_hex),
@@ -154,13 +161,14 @@ class Babylon {
      * @returns {Promise<Object>} Promise with unsigned TX
      */
     async withdrawEarlyUnbonded(stakingTxHash, feeRate = 1) {
+        const globalParams = await this.globalParams();
         const {
             timelockScript,
             unbondingScript,
             slashingScript,
             dataEmbedScript,
             unbondingTimelockScript,
-        } = this.getStakingData();
+        } = await this.getStakingData(globalParams);
 
         const scripts = {
             unbondingTimelockScript,
@@ -173,7 +181,7 @@ class Babylon {
             throw new Error('delegation ' + stakingTxHash + ' not found');
         }
 
-        await SetStats(this.token, 'withdraw', amount, this.address, '', chain);
+        await SetStats(this.token, 'withdraw', delegation.staking_value, this.address, '', chain);
         return withdrawEarlyUnbondedTransaction(
             scripts,
             Transaction.fromHex(delegation.unbonding_tx.tx_hex),
@@ -189,13 +197,14 @@ class Babylon {
      * @returns {Promise<Object>} Promise with unsigned TX
      */
     async withdrawTimelockUnbonded(stakingTxHash, feeRate = 1) {
+        const globalParams = await this.globalParams();
         const {
             timelockScript,
             unbondingScript,
             slashingScript,
             dataEmbedScript,
             unbondingTimelockScript,
-        } = this.getStakingData();
+        } = await this.getStakingData(globalParams);
 
         const scripts = {
             timelockScript,
@@ -209,7 +218,7 @@ class Babylon {
             throw new Error('delegation ' + stakingTxHash + ' not found');
         }
 
-        await SetStats(this.token, 'withdraw', amount, this.address, '', chain);
+        await SetStats(this.token, 'withdraw', delegation.staking_value, this.address, '', chain);
         return withdrawTimelockUnbondedTransaction(
             scripts,
             Transaction.fromHex(delegation.staking_tx.tx_hex),
@@ -220,14 +229,20 @@ class Babylon {
         );
     }
 
-    /** getStakingData - returns prepared data to create staking txs
-     * @returns {Promise<Object>} Promise with staking Data
+    /** globalParams - returns current version of global params
+     * @returns {Promise<Object>} Promise with globalParams
      */
-    async getStakingData() {
+    async globalParams() {
         const height = await this.getLatestHeight();
         const globalParamsVersions = await this.getGlobalParamsVersions();
-        const globalParams = this.getCurrentGlobalParamsVersion(+height, globalParamsVersions);
+        return this.getCurrentGlobalParamsVersion(+height, globalParamsVersions);
+    }
 
+    /** getStakingData - returns prepared data to create staking txs
+     * @param {Object} globalParams  - global params object
+     * @returns {Promise<Object>} Promise with staking Data
+     */
+    async getStakingData(globalParams) {
         const covenantPks = globalParams.covenant_pks.map((pk) => Buffer.from(pk, "hex").subarray(1, 33));
         const magicBytes = Buffer.from(globalParams.tag, 'hex');
         const stakingTime = globalParams.max_staking_time;
@@ -254,6 +269,12 @@ class Babylon {
         return await response.json();
     }
 
+    /**
+     * getCurrentGlobalParamsVersion select current version of params from list
+     * @param {number} height
+     * @param {Array} versionedParams
+     * @returns {Promise<Object>} Promise with globalParams
+     */
     getCurrentGlobalParamsVersion(height, versionedParams) {
         if (!versionedParams.length) {
             throw new Error("No global params versions found");
