@@ -152,7 +152,7 @@ async function autocompound(address) {
             'from': address,
             'to': ADDRESS_CONTRACT_ACCOUNTING,
             'value': 0,
-            'gasLimit': gasConsumption + gasReserve,
+            'gasLimit': Number(gasConsumption) + gasReserve,
             'data': contract_accounting.methods.autocompound().encodeABI()
         };
     } catch (error) {
@@ -224,7 +224,7 @@ async function claimWithdrawRequest(address) {
             'from': address,
             'to': ADDRESS_CONTRACT_ACCOUNTING,
             'value': 0,
-            'gasLimit': gasConsumption + gasReserve,
+            'gasLimit': Number(gasConsumption) + gasReserve,
             'data': contract_accounting.methods.claimWithdrawRequest().encodeABI()
         };
     } catch (error) {
@@ -325,7 +325,7 @@ async function stake(address, amount, source = '0') {
             'from': address,
             'to': ADDRESS_CONTRACT_POOL,
             'value': amountWei,
-            'gasLimit': gasConsumption + gasReserve,
+            'gasLimit': Number(gasConsumption) + gasReserve,
             'data': contract_pool.methods.stake(source).encodeABI()
         };
     } catch (error) {
@@ -365,7 +365,7 @@ async function unstake(address, amount, allowedInterchangeNum = 0, source = '0')
             'from': address,
             'value': 0,
             'to': ADDRESS_CONTRACT_POOL,
-            'gasLimit': gasConsumption + gasReserve,
+            'gasLimit': Number(gasConsumption) + gasReserve,
             'data': contract_pool.methods.unstake(amountWei, allowedInterchangeNum, source).encodeABI()
         };
     } catch (error) {
@@ -428,7 +428,7 @@ async function unstakePending(address, amount) {
             'from': address,
             'value': 0,
             'to': ADDRESS_CONTRACT_POOL,
-            'gasLimit': gasConsumption + gasReserve,
+            'gasLimit': Number(gasConsumption) + gasReserve,
             'data': contract_pool.methods.unstakePending(amountWei).encodeABI()
         };
     } catch (err) {
