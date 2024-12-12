@@ -5,6 +5,8 @@ import {
   // claimWithdrawRequestSuccessFixture,
   selectNetworErrorkFixture,
   selectNetworkSuccessFixture,
+  stakeErrorFixture,
+  stakeSuccessFixture,
   unstakeErrorFixture,
   unstakePendingErrorFixture,
   unstakePendingSuccessFixture,
@@ -135,33 +137,33 @@ describe('claimWithdrawRequest', () => {
   );
 });
 
-// describe('stake', () => {
-//   stakeSuccessFixture.forEach(({ description, args, result }) => {
-//     it(description, async () => {
-//       const ethereum = new Ethereum(args.network as EthNetworkType);
-//
-//       ethereum.contractPool.methods.stake(args.source).estimateGas = jest
-//         .fn()
-//         .mockResolvedValue(result.mockGasConsumption);
-//
-//       const tx = await ethereum.stake(args.address, args.amount, args.source);
-//       const { gasLimit, ...rest } = tx;
-//
-//       expect(gasLimit).toBeGreaterThan(0);
-//       expect(rest).toEqual(result.expectedTx);
-//     });
-//   });
-//
-//   stakeErrorFixture.forEach(({ description, args, error }) => {
-//     it(description, async () => {
-//       const ethereum = new Ethereum(args.network as EthNetworkType);
-//
-//       await expect(
-//         ethereum.stake(args.address, args.amount as string, args.source),
-//       ).rejects.toThrow(error);
-//     });
-//   });
-// });
+describe('stake', () => {
+  stakeSuccessFixture.forEach(({ description, args, result }) => {
+    it(description, async () => {
+      const ethereum = new Ethereum(args.network as EthNetworkType);
+
+      ethereum.contractPool.methods.stake(args.source).estimateGas = jest
+        .fn()
+        .mockResolvedValue(result.mockGasConsumption);
+
+      const tx = await ethereum.stake(args.address, args.amount, args.source);
+      const { gasLimit, ...rest } = tx;
+
+      expect(gasLimit).toBeGreaterThan(0);
+      expect(rest).toEqual(result.expectedTx);
+    });
+  });
+
+  stakeErrorFixture.forEach(({ description, args, error }) => {
+    it(description, async () => {
+      const ethereum = new Ethereum(args.network as EthNetworkType);
+
+      await expect(
+        ethereum.stake(args.address, args.amount as string, args.source),
+      ).rejects.toThrow(error);
+    });
+  });
+});
 
 describe('unstake', () => {
   unstakeSuccessFixture.forEach(

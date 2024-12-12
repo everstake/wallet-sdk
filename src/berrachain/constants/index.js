@@ -1,6 +1,0 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.ETH_GAS_RESERVE = exports.TESTNET_BGT_CONTRACT_ADDRESS = exports.TESTNET_VALIDATOR = void 0;
-exports.TESTNET_VALIDATOR = '0x6f06dD615817886E8e1c3Cb837BF69F94e903472';
-exports.TESTNET_BGT_CONTRACT_ADDRESS = '0x8288Ab28D6196cA4E89269B8644A146E493E23B3';
-exports.ETH_GAS_RESERVE = 220000;
