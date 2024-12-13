@@ -519,13 +519,13 @@ export class Solana extends Blockchain {
       if (totalActiveStake.lt(lamportsBN))
         throw this.throwError('NOT_ENOUGH_ACTIVE_STAKE_ERROR');
 
-      // Desc sorting
+      // ASC sorting
       activeStakeAccounts.sort((a, b): number => {
         const stakeA = a.account.account.data.info.stake?.delegation.stake;
         const stakeB = b.account.account.data.info.stake?.delegation.stake;
         if (!stakeA || !stakeB) return 0;
 
-        return stakeB.minus(stakeA).toNumber();
+        return stakeA.minus(stakeB).toNumber();
       });
 
       const accountsToDeactivate: SolAccount[] = [];
@@ -564,12 +564,19 @@ export class Solana extends Blockchain {
       let instructions = [
         ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50 }),
       ];
+
+      const minimumRent =
+        await this.connection.getMinimumBalanceForRentExemption(
+          StakeProgram.space,
+        );
+
       for (const acc of accountsToSplit) {
         const [tx, newStakeAccountPubkey] = await this.split(
           senderPublicKey,
           acc.lamports,
           acc.account.pubkey,
           source,
+          minimumRent,
         );
 
         const deactivateTx = StakeProgram.deactivate({
@@ -624,6 +631,7 @@ export class Solana extends Blockchain {
     lamports: number,
     oldStakeAccountPubkey: PublicKey,
     source: string,
+    rentExemptReserve: number,
   ): Promise<[Transaction, PublicKey, Keypair[]]> {
     // Format source to
     const seed = this.formatSource(source);
@@ -635,14 +643,17 @@ export class Solana extends Blockchain {
     );
 
     const splitStakeAccountTx = new Transaction().add(
-      StakeProgram.splitWithSeed({
-        stakePubkey: oldStakeAccountPubkey,
-        authorizedPubkey: authorityPublicKey,
-        splitStakePubkey: newStakeAccountPubkey,
-        basePubkey: authorityPublicKey,
-        seed: seed,
-        lamports: lamports,
-      }),
+      StakeProgram.splitWithSeed(
+        {
+          stakePubkey: oldStakeAccountPubkey,
+          authorizedPubkey: authorityPublicKey,
+          splitStakePubkey: newStakeAccountPubkey,
+          basePubkey: authorityPublicKey,
+          seed: seed,
+          lamports: lamports,
+        },
+        rentExemptReserve,
+      ),
     );
 
     return [splitStakeAccountTx, newStakeAccountPubkey, []];
