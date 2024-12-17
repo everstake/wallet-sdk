@@ -24,3 +24,7 @@ export enum ValidatorStatus {
   Pending = 1,
   Deposited = 2,
 }
+
+export interface AggregatedBalances {
+  [key: string]: string;
+}
