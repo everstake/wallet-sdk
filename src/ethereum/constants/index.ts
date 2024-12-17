@@ -23,3 +23,6 @@ export const ETH_GAS_RESERVE = new BigNumber(220000);
 export const UINT16_MAX = 65535 | 0; // asm type annotation
 
 export const ETH_MIN_AMOUNT = new BigNumber('100000000000000000');
+
+export const MULTICALL_CONTRACT_ADDRESS =
+  '0xca11bde05977b3631167028862be2a173976ca11';
