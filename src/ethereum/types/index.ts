@@ -28,19 +28,3 @@ export enum ValidatorStatus {
 export interface AggregatedBalances {
   [key: string]: string;
 }
-
-export type PoolBalances = {
-  balance: string;
-  pendingBalance: string;
-  pendingDepositedBalance: string;
-  pendingRestakedRewards: string;
-  readyforAutocompoundRewardsAmount: string;
-};
-
-export type UserBalances = {
-  pendingBalanceOf: string;
-  pendingDepositedBalanceOf: string;
-  pendingRestakedRewardOf: string;
-  autocompoundBalanceOf: string;
-  depositedBalanceOf: string;
-};

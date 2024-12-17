@@ -422,7 +422,7 @@ export class Ethereum extends Blockchain {
   /**
    * Returns aggregated pool balances using multicall contract.
    *
-   * @returns A Promise that resolves to a PoolBalances object.
+   * @returns A Promise that resolves to a AggregatedBalances object.
    *
    * @throws Will throw an Error if the contract call fails.
    */
@@ -472,7 +472,7 @@ export class Ethereum extends Blockchain {
    *
    * @param address - The user address.
    *
-   * @returns A Promise that resolves to a UserBalances object.
+   * @returns A Promise that resolves to a AggregatedBalances object.
    *
    * @throws Will throw an Error if the contract call fails.
    */
