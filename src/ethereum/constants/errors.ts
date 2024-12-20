@@ -56,6 +56,8 @@ export const ERROR_MESSAGES = {
     'An error occurred while simulating the unstake transaction',
   MAX_AMOUNT_FOR_UNSTAKE_ERROR: 'Max Amount For Unstake {0}',
   ADDRESS_FORMAT_ERROR: 'Invalid Ethereum address format',
+  USER_BALANCES_ERROR: 'An error occurred while getting the user balances',
+  POOL_BALANCES_ERROR: 'An error occurred while getting the pool balances',
 };
 
 export const ORIGINAL_ERROR_MESSAGES = {

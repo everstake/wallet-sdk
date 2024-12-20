@@ -1,5 +1,6 @@
 import Web3 from 'web3';
 import BigNumber from 'bignumber.js';
+import { Multicall, ContractCallContext } from 'ethereum-multicall';
 
 import { HttpProvider } from 'web3';
 import type { Web3BaseProvider, Contract } from 'web3';
@@ -8,11 +9,16 @@ import {
   ETH_GAS_RESERVE,
   ETH_MIN_AMOUNT,
   UINT16_MAX,
+  MULTICALL_CONTRACT_ADDRESS,
 } from './constants';
 import { ABI_CONTRACT_ACCOUNTING, ABI_CONTRACT_POOL } from './abi';
 
 import { ERROR_MESSAGES, ORIGINAL_ERROR_MESSAGES } from './constants/errors';
-import type { EthNetworkType, EthTransaction } from './types';
+import type {
+  EthNetworkType,
+  EthTransaction,
+  AggregatedBalances,
+} from './types';
 import { ValidatorStatus } from './types';
 import { Blockchain } from '../utils';
 
@@ -411,6 +417,108 @@ export class Ethereum extends Blockchain {
     } catch (error) {
       throw this.handleError('WITHDRAW_REQUEST_ERROR', error);
     }
+  }
+
+  /**
+   * Returns aggregated pool balances using multicall contract.
+   *
+   * @returns A Promise that resolves to a AggregatedBalances object.
+   *
+   * @throws Will throw an Error if the contract call fails.
+   */
+  public async poolBalances(): Promise<AggregatedBalances> {
+    const methods: string[] = [
+      'balance',
+      'pendingBalance',
+      'pendingDepositedBalance',
+      'pendingRestakedRewards',
+      'readyforAutocompoundRewardsAmount',
+    ];
+    const result: AggregatedBalances = {};
+    try {
+      const multicall = new Multicall({
+        multicallCustomContractAddress: MULTICALL_CONTRACT_ADDRESS,
+        web3Instance: this.web3,
+        tryAggregate: true,
+      });
+      const contractCallContext: ContractCallContext[] = [];
+      methods.forEach((method) =>
+        contractCallContext.push({
+          reference: method,
+          contractAddress: this.addressContractAccounting,
+          /* eslint-disable @typescript-eslint/no-explicit-any */
+          abi: ABI_CONTRACT_ACCOUNTING as unknown as any[], // TODO check it
+          calls: [
+            { reference: method, methodName: method, methodParameters: [] },
+          ],
+        }),
+      );
+      const results = await multicall.call(contractCallContext);
+      for (const [key, value] of Object.entries(results.results)) {
+        result[key] = this.web3.utils.fromWei(
+          value.callsReturnContext[0]?.returnValues[0].hex,
+          'ether',
+        );
+      }
+    } catch (error) {
+      throw this.handleError('POOL_BALANCES_ERROR', error);
+    }
+
+    return result;
+  }
+
+  /**
+   * Returns aggregated user balances using multicall contract.
+   *
+   * @param address - The user address.
+   *
+   * @returns A Promise that resolves to a AggregatedBalances object.
+   *
+   * @throws Will throw an Error if the contract call fails.
+   */
+  public async userBalances(address: string): Promise<AggregatedBalances> {
+    const methods = [
+      'pendingBalanceOf',
+      'pendingDepositedBalanceOf',
+      'pendingRestakedRewardOf',
+      'autocompoundBalanceOf',
+      'depositedBalanceOf',
+    ];
+    const result: AggregatedBalances = {};
+    try {
+      const multicall = new Multicall({
+        multicallCustomContractAddress: MULTICALL_CONTRACT_ADDRESS,
+        web3Instance: this.web3,
+        tryAggregate: true,
+      });
+      const contractCallContext: ContractCallContext[] = [];
+      methods.forEach((method) =>
+        contractCallContext.push({
+          reference: method,
+          contractAddress: this.addressContractAccounting,
+          /* eslint-disable @typescript-eslint/no-explicit-any */
+          abi: ABI_CONTRACT_ACCOUNTING as unknown as any[], // TODO check it
+          calls: [
+            {
+              reference: method,
+              methodName: method,
+              methodParameters: [address],
+            },
+          ],
+        }),
+      );
+      const results = await multicall.call(contractCallContext);
+      for (const [key, value] of Object.entries(results.results)) {
+        result[key] = this.web3.utils.fromWei(
+          value.callsReturnContext[0]?.returnValues[0].hex,
+          'ether',
+        );
+      }
+    } catch (error) {
+      throw this.handleError('USER_BALANCES_ERROR', error);
+    }
+
+    return result;
   }
 
   /**
