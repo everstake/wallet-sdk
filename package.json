@@ -1,6 +1,6 @@
 {
   "name": "@everstake/wallet-sdk",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Everstake Wallet SDK for Javascript",
   "publishConfig": {
     "access": "public"
@@ -49,6 +49,11 @@
     "ethereum-multicall": "^2.26.0",
     "superstruct": "2.0.2",
     "web3": "4.16.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "ws": "^8.0.0"
+    }
   },
   "devDependencies": {
     "@eslint/js": "^9.7.0",
