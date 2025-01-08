@@ -20,6 +20,9 @@ importers:
       '@solana-program/compute-budget':
         specifier: ^0.6.1
         version: 0.6.1(@solana/web3.js@2.0.0(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.5.3)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)))
+      '@solana-program/stake':
+        specifier: ^0.0.0
+        version: 0.0.0(@solana/web3.js@2.0.0(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.5.3)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)))
       '@solana-program/system':
         specifier: ^0.6.2
         version: 0.6.2(@solana/web3.js@2.0.0(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.5.3)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)))
@@ -760,6 +763,11 @@ packages:
 
   '@solana-program/compute-budget@0.6.1':
     resolution: {integrity: sha512-PWcVmRx2gSQ8jd5va5HzSlKqQmR8Q1sYaPcqpCzhOHcApJ4YsVWY6QhaOD5Nx7z1UXkP12vNq3KDsSCZnT3Hkw==}
+    peerDependencies:
+      '@solana/web3.js': ^2.0.0
+
+  '@solana-program/stake@0.0.0':
+    resolution: {integrity: sha512-wQQaAiDxZNQEr18DmiwJQTV6kvFxYuU0IbD9KOGiajrEXxGaUVyFHg0GezyMBbOGrtBE/W3/SXAuVEvl8+J2Jw==}
     peerDependencies:
       '@solana/web3.js': ^2.0.0
 
@@ -3761,6 +3769,10 @@ snapshots:
       '@sinonjs/commons': 3.0.1
 
   '@solana-program/compute-budget@0.6.1(@solana/web3.js@2.0.0(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.5.3)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)))':
+    dependencies:
+      '@solana/web3.js': 2.0.0(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.5.3)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@5.0.10))
+
+  '@solana-program/stake@0.0.0(@solana/web3.js@2.0.0(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.5.3)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)))':
     dependencies:
       '@solana/web3.js': 2.0.0(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.5.3)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@5.0.10))
 

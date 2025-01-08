@@ -1,41 +1,19 @@
 import {
-  // Authorized,
-  // clusterApiUrl,
-  // ComputeBudgetProgram,
-  // Connection,
-  // Keypair,
-  // Lockup,
-  // PublicKey,
   Address,
   Account,
-  // Signer,
-  // StakeProgram,
-  // Transaction,
-  // TransactionInstruction,
-  // TransactionMessage,
-  // VersionedTransaction,
-  // TransactionVersion,
   createAddressWithSeed,
   createSolanaRpc,
   mainnet,
-  // devnet,
-  // Blockhash,
-  // CompilableTransactionMessage,
-  // TransactionMessage,
+  devnet,
   ClusterUrl,
   address,
-  // blockhash,
-  // lamports,
   TransactionMessageWithBlockhashLifetime,
-  //
   createNoopSigner,
-  //
   pipe,
   createTransactionMessage,
   setTransactionMessageFeePayer,
   setTransactionMessageLifetimeUsingBlockhash,
   appendTransactionMessageInstruction,
-  //
   RpcFromTransport,
   SolanaRpcApiFromTransport,
   RpcTransportFromClusterUrl,
@@ -43,17 +21,14 @@ import {
   generateKeyPair,
   createSignerFromKeyPair,
   signTransactionMessageWithSigners,
-
-  // AccountInfoWithPubkey,
-  // AccountInfoBase,
   parseBase64RpcAccount,
-  // MaybeEncodedAccount,
-  // TAddresses
+  Blockhash,
 } from '@solana/web3.js';
+
 import {
   getCreateAccountWithSeedInstruction,
   getCreateAccountInstruction,
-  // getAllocateInstruction,
+  getTransferSolInstruction,
   getAllocateWithSeedInstruction,
 } from '@solana-program/system';
 
@@ -67,35 +42,32 @@ import {
   MIN_AMOUNT,
   Network,
   StakeState,
+  STAKE_ACCOUNT_V2_SIZE,
+  ADDRESS_DEFAULT,
+  STAKE_HISTORY_ACCOUNT,
+  STAKE_CONFIG_ACCOUNT,
 } from './constants';
 import {
-  // Account,
-  // AccountToSplit,
   ApiResponse,
   CreateAccountResponse,
   ClaimResponse,
   StakeResponse,
-  // Delegation,
 } from './types';
-// import { StakeAccount } from './stakeAccount';
+
 import {
   getWithdrawInstruction,
-  getDeactivateInstruction,
   getDelegateStakeInstruction,
-  STAKE_PROGRAM_ADDRESS,
+  getDeactivateInstruction,
   getInitializeInstruction,
   getSplitInstruction,
+  STAKE_PROGRAM_ADDRESS,
   decodeStakeStateAccount,
   StakeStateAccount,
   StakeStateV2,
   Meta,
   Stake,
   StakeFlags,
-} from './temp';
-
-//TODO move to consts
-const STAKE_ACCOUNT_V2_SIZE = 200;
-const ADDRESS_DEFAULT = address('11111111111111111111111111111111');
+} from '@solana-program/stake';
 
 /**
  * The `Solana` class extends the `Blockchain` class and provides methods for interacting with the Solana blockchain.
@@ -115,33 +87,32 @@ export class Solana extends Blockchain {
   protected ERROR_MESSAGES = ERROR_MESSAGES;
   protected ORIGINAL_ERROR_MESSAGES = {};
 
-  constructor(network: Network = Network.Mainnet, rpc: string | null = null) {
+  constructor(
+    network: Network = Network.Mainnet,
+    rpc: ClusterUrl | null = null,
+  ) {
     super();
     if (rpc && !this.isValidURL(rpc)) {
       throw this.throwError('INVALID_RPC_ERROR');
     }
-    rpc = rpc || mainnet('https://api.mainnet-beta.solana.com');
-    // rpc = rpc || mainnet('https://api.devnet.solana.com');
-    // TODO fix
 
-    // const mainnetRpc = createSolanaRpc(mainnet('https://api.mainnet-beta.solana.com'));
-    //    ^? RpcMainnet<SolanaRpcApiMainnet>
-
-    // const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
-    try {
-      this.connection = createSolanaRpc(rpc);
-    } catch (error) {
-      throw this.handleError('CONNECTION_ERROR', error);
-    }
     switch (network) {
       case Network.Mainnet:
+        rpc = rpc || mainnet('https://api.mainnet-beta.solana.com');
         this.validator = MAINNET_VALIDATOR_ADDRESS;
         break;
       case Network.Devnet:
+        rpc = rpc || devnet('https://api.devnet.solana.com');
         this.validator = DEVNET_VALIDATOR_ADDRESS;
         break;
       default:
         throw this.throwError('UNSUPPORTED_NETWORK_ERROR');
+    }
+
+    try {
+      this.connection = createSolanaRpc(rpc);
+    } catch (error) {
+      throw this.handleError('CONNECTION_ERROR', error);
     }
   }
 
@@ -164,6 +135,15 @@ export class Solana extends Blockchain {
     amountInLamports: number,
     source: string | null,
     // lockup: Lockup | null = Lockup.default,
+    params?: {
+      epoch?: bigint;
+      finalLatestBlockhash?: {
+        /** a Hash as base-58 encoded string */
+        blockhash: Blockhash;
+        /** last block height at which the blockhash will be valid */
+        lastValidBlockHeight: bigint;
+      };
+    },
   ): Promise<ApiResponse<CreateAccountResponse>> {
     // Check if the amount is greater than or equal to the minimum amount
     if (amountInLamports < MIN_AMOUNT) {
@@ -179,7 +159,7 @@ export class Solana extends Blockchain {
         )
         .send();
 
-      //     lockup = lockup || Lockup.default;
+      //  lockup = lockup || Lockup.default;
 
       const [
         createAccountInstruction,
@@ -189,56 +169,19 @@ export class Solana extends Blockchain {
         source === null
           ? await this.createAccountTx(
               address(sender),
-              amountInLamports + +minimumRent.toString(),
+              BigInt(amountInLamports) + minimumRent,
               // lockup,
             )
           : await this.createAccountWithSeedTx(
               address(sender),
-              amountInLamports + +minimumRent.toString(),
+              BigInt(amountInLamports) + minimumRent,
               source,
               // lockup,
             );
 
-      //   // Format source to
-      // const seed = this.formatSource(source || '');
-      // const stakeAccountPubkey = await createAddressWithSeed(
-      //   {
-      //     baseAddress: address(sender),
-      //     programAddress: STAKE_PROGRAM_ADDRESS,
-      //     seed: seed,
-      //   }
-      // );
-      // const createAccountInstruction = getCreateAccountWithSeedInstruction({
-      //   payer: createNoopSigner(address(sender)),
-      //   newAccount: stakeAccountPubkey,
-      //   baseAccount: createNoopSigner(address(sender)),
-      //   base: address(sender),
-      //   seed:seed,
-      //   amount: BigInt(amountInLamports) + minimumRent,
-      //   // TODO get from package
-      //   space: 200,
-      //   programAddress: STAKE_PROGRAM_ADDRESS,
-      // });
-      // // TODO Initialise
-      // const initializeInstruction = getInitializeInstruction(
-      //     /** Uninitialized stake account */
-      //   {  stake: address(stakeAccountPubkey),
-      //     arg0: {
-      //       staker: address(sender),
-      //       withdrawer: address(sender)
-      //     },
-      //     arg1: {
-      //       //TODO
-      //       unixTimestamp: 0,
-      //       epoch: 0,
-      //       custodian: address('0000'),
-      //     },
-      //   }
-      // );
-
-      const { value: finalLatestBlockhash } = await this.connection
-        .getLatestBlockhash()
-        .send();
+      const finalLatestBlockhash =
+        params?.finalLatestBlockhash ||
+        (await this.connection.getLatestBlockhash().send()).value;
       const transactionMessage = pipe(
         createTransactionMessage({ version: 0 }),
         (tx) => setTransactionMessageFeePayer(address(sender), tx),
@@ -279,6 +222,15 @@ export class Solana extends Blockchain {
     sender: string,
     lamports: number,
     stakeAccount: string,
+    params?: {
+      epoch?: bigint;
+      finalLatestBlockhash?: {
+        /** a Hash as base-58 encoded string */
+        blockhash: Blockhash;
+        /** last block height at which the blockhash will be valid */
+        lastValidBlockHeight: bigint;
+      };
+    },
   ): Promise<ApiResponse<TransactionMessageWithBlockhashLifetime>> {
     if (lamports < MIN_AMOUNT) {
       this.throwError('MIN_AMOUNT_ERROR', MIN_AMOUNT.toString());
@@ -288,12 +240,14 @@ export class Solana extends Blockchain {
       const delegateInstruction = getDelegateStakeInstruction({
         stake: address(stakeAccount),
         vote: this.validator,
+        stakeHistory: STAKE_HISTORY_ACCOUNT,
+        unused: STAKE_CONFIG_ACCOUNT,
         stakeAuthority: createNoopSigner(address(sender)),
       });
 
-      const { value: finalLatestBlockhash } = await this.connection
-        .getLatestBlockhash()
-        .send();
+      const finalLatestBlockhash =
+        params?.finalLatestBlockhash ||
+        (await this.connection.getLatestBlockhash().send()).value;
       const transactionMessage = pipe(
         createTransactionMessage({ version: 0 }),
         (tx) => setTransactionMessageFeePayer(address(sender), tx),
@@ -320,6 +274,15 @@ export class Solana extends Blockchain {
   public async deactivate(
     sender: string,
     stakeAccountPublicKey: string,
+    params?: {
+      epoch?: bigint;
+      finalLatestBlockhash?: {
+        /** a Hash as base-58 encoded string */
+        blockhash: Blockhash;
+        /** last block height at which the blockhash will be valid */
+        lastValidBlockHeight: bigint;
+      };
+    },
   ): Promise<ApiResponse<TransactionMessageWithBlockhashLifetime>> {
     try {
       const deactivateInstruction = getDeactivateInstruction({
@@ -327,9 +290,9 @@ export class Solana extends Blockchain {
         stakeAuthority: createNoopSigner(address(sender)),
       });
 
-      const { value: finalLatestBlockhash } = await this.connection
-        .getLatestBlockhash()
-        .send();
+      const finalLatestBlockhash =
+        params?.finalLatestBlockhash ||
+        (await this.connection.getLatestBlockhash().send()).value;
       const transactionMessage = pipe(
         createTransactionMessage({ version: 0 }),
         (tx) => setTransactionMessageFeePayer(address(sender), tx),
@@ -360,19 +323,29 @@ export class Solana extends Blockchain {
     sender: Address,
     stakeAccountPublicKey: Address,
     stakeBalance: number,
+    params?: {
+      epoch?: bigint;
+      finalLatestBlockhash?: {
+        /** a Hash as base-58 encoded string */
+        blockhash: Blockhash;
+        /** last block height at which the blockhash will be valid */
+        lastValidBlockHeight: bigint;
+      };
+    },
   ): Promise<ApiResponse<TransactionMessageWithBlockhashLifetime>> {
     try {
       // Create the withdraw instruction
       const withdrawInstruction = getWithdrawInstruction({
         stake: stakeAccountPublicKey,
         recipient: sender,
+        stakeHistory: STAKE_HISTORY_ACCOUNT,
         withdrawAuthority: createNoopSigner(address(sender)),
         args: stakeBalance,
       });
 
-      const { value: finalLatestBlockhash } = await this.connection
-        .getLatestBlockhash()
-        .send();
+      const finalLatestBlockhash =
+        params?.finalLatestBlockhash ||
+        (await this.connection.getLatestBlockhash().send()).value;
       const transactionMessage = pipe(
         createTransactionMessage({ version: 0 }),
         (tx) => setTransactionMessageFeePayer(address(sender), tx),
@@ -401,6 +374,7 @@ export class Solana extends Blockchain {
     address: string,
   ): Promise<ApiResponse<Array<Account<StakeStateAccount, Address>>>> {
     try {
+
       // Fetch the accounts
       const accounts = await this.connection
         .getProgramAccounts(STAKE_PROGRAM_ADDRESS, {
@@ -446,6 +420,15 @@ export class Solana extends Blockchain {
     lamports: number,
     source: string | null,
     // lockup: Lockup | null = Lockup.default,
+    params?: {
+      epoch?: bigint;
+      finalLatestBlockhash?: {
+        /** a Hash as base-58 encoded string */
+        blockhash: Blockhash;
+        /** last block height at which the blockhash will be valid */
+        lastValidBlockHeight: bigint;
+      };
+    },
   ): Promise<ApiResponse<StakeResponse>> {
     try {
       //     lockup = lockup || Lockup.default;
@@ -465,14 +448,12 @@ export class Solana extends Blockchain {
         source === null
           ? await this.createAccountTx(
               address(sender),
-              //TODO fix
-              lamports + +minimumRent.toString(),
+              BigInt(lamports) + minimumRent,
               // lockup,
             )
           : await this.createAccountWithSeedTx(
               address(sender),
-              //TODO fix
-              lamports + +minimumRent.toString(),
+              BigInt(lamports) + minimumRent,
               source,
               // lockup,
             );
@@ -480,12 +461,14 @@ export class Solana extends Blockchain {
       const delegateInstruction = getDelegateStakeInstruction({
         stake: stakeAccountPublicKey,
         vote: this.validator,
+        stakeHistory: STAKE_HISTORY_ACCOUNT,
+        unused: STAKE_CONFIG_ACCOUNT,
         stakeAuthority: createNoopSigner(address(sender)),
       });
 
-      const { value: finalLatestBlockhash } = await this.connection
-        .getLatestBlockhash()
-        .send();
+      const finalLatestBlockhash =
+        params?.finalLatestBlockhash ||
+        (await this.connection.getLatestBlockhash().send()).value;
       const transactionMessage = pipe(
         createTransactionMessage({ version: 0 }),
         (tx) => setTransactionMessageFeePayer(address(sender), tx),
@@ -532,10 +515,9 @@ export class Solana extends Blockchain {
    */
   private async createAccountTx(
     authorityPublicKey: Address,
-    lamports: number,
+    lamports: bigint,
     // lockup: Lockup,
   ): Promise<[IInstruction, IInstruction, Address]> {
-    // const blockhash = await this.getBlockhash();
     const stakeAccountKeyPair = await generateKeyPair();
     const signer = await createSignerFromKeyPair(stakeAccountKeyPair);
 
@@ -583,7 +565,7 @@ export class Solana extends Blockchain {
    */
   private async createAccountWithSeedTx(
     authorityPublicKey: Address,
-    lamports: number,
+    lamports: bigint,
     source: string,
     // lockup: Lockup,
   ): Promise<[IInstruction, IInstruction, Address]> {
@@ -617,7 +599,7 @@ export class Solana extends Blockchain {
           withdrawer: authorityPublicKey,
         },
         arg1: {
-          //TODO
+          //TODO implement Lockup
           unixTimestamp: 0,
           epoch: 0,
           custodian: ADDRESS_DEFAULT,
@@ -642,11 +624,21 @@ export class Solana extends Blockchain {
     sender: string,
     lamports: bigint,
     source: string,
+    params?: {
+      epoch?: bigint;
+      finalLatestBlockhash?: {
+        /** a Hash as base-58 encoded string */
+        blockhash: Blockhash;
+        /** last block height at which the blockhash will be valid */
+        lastValidBlockHeight: bigint;
+      };
+    },
   ): Promise<ApiResponse<TransactionMessageWithBlockhashLifetime>> {
     try {
       const stakeAccounts = (await this.getDelegations(sender)).result;
 
-      const epochInfo = await this.connection.getEpochInfo().send();
+      const epoch =
+        params?.epoch || (await this.connection.getEpochInfo().send()).epoch;
       const tm = this.timestampInSec();
 
       let totalActiveStake: bigint = 0n;
@@ -656,9 +648,8 @@ export class Solana extends Blockchain {
         }
 
         const isActive = !(
-          isLockupInForce(acc.data, epochInfo.epoch, BigInt(tm)) ||
-          this.stakeAccountState(acc.data, epochInfo.epoch) !==
-            StakeState.Active
+          isLockupInForce(acc.data, epoch, BigInt(tm)) ||
+          stakeAccountState(acc.data, epoch) !== StakeState.Active
         );
 
         if (isActive) {
@@ -691,17 +682,12 @@ export class Solana extends Blockchain {
       let i = 0;
       while (lamports > 0n && i < activeStakeAccounts.length) {
         const acc = activeStakeAccounts[i];
-        //TODO check stake
-        if (
-          acc === undefined /*|| acc.account.account.data.info.stake === null*/
-        ) {
+        if (acc === undefined || !isStake(acc.data.state)) {
           i++;
           continue;
         }
-        const stakeAmount = isStake(acc.data.state)
-          ? acc.data.state.fields[1].delegation.stake
-          : 0n;
-        // acc.account.account.data.info.stake.delegation.stake;
+
+        const stakeAmount = acc.data.state.fields[1].delegation.stake;
 
         // If reminder amount less than min stake amount stake account automatically become disabled
         const isBelowThreshold =
@@ -718,9 +704,9 @@ export class Solana extends Blockchain {
       }
 
       const senderPublicKey = address(sender);
-      const { value: finalLatestBlockhash } = await this.connection
-        .getLatestBlockhash()
-        .send();
+      const finalLatestBlockhash =
+        params?.finalLatestBlockhash ||
+        (await this.connection.getLatestBlockhash().send()).value;
 
       const transactionMessage = pipe(
         createTransactionMessage({ version: 0 }),
@@ -734,11 +720,17 @@ export class Solana extends Blockchain {
       //     ];
 
       for (const acc of accountsToSplit) {
-        const [instructions, newStakeAccountPubkey] = await this.split(
+        const [splitInstructions, newStakeAccountPubkey] = await this.split(
           senderPublicKey,
           acc[1],
           acc[0].address,
           source,
+        );
+
+        splitInstructions.forEach((splitInstruction) =>
+          pipe(transactionMessage, (tx) =>
+            appendTransactionMessageInstruction(splitInstruction, tx),
+          ),
         );
 
         const deactivateInstruction = getDeactivateInstruction({
@@ -746,23 +738,12 @@ export class Solana extends Blockchain {
           stakeAuthority: createNoopSigner(address(sender)),
         });
 
-        pipe(
-          transactionMessage,
-          (tx) => appendTransactionMessageInstruction(instructions[0], tx),
-          (tx) => appendTransactionMessageInstruction(instructions[1], tx),
-          (tx) =>
-            appendTransactionMessageInstruction(deactivateInstruction, tx),
+        pipe(transactionMessage, (tx) =>
+          appendTransactionMessageInstruction(deactivateInstruction, tx),
         );
-
-        // const deactivateTx = StakeProgram.deactivate({
-        //   stakePubkey: newStakeAccountPubkey,
-        //   authorizedPubkey: senderPublicKey,
-        // });
-
-        // instructions.push(...tx.instructions, ...deactivateTx.instructions);
       }
 
-      for (const acc of accountsToDeactivate) {
+      accountsToDeactivate.forEach((acc) => {
         const deactivateInstruction = getDeactivateInstruction({
           stake: acc.address,
           stakeAuthority: createNoopSigner(address(sender)),
@@ -771,65 +752,12 @@ export class Solana extends Blockchain {
         pipe(transactionMessage, (tx) =>
           appendTransactionMessageInstruction(deactivateInstruction, tx),
         );
-
-        // const deactivateTx = StakeProgram.deactivate({
-        //   stakePubkey: acc.pubkey,
-        //   authorizedPubkey: senderPublicKey,
-        // });
-
-        // instructions.push(...deactivateTx.instructions);
-      }
+      });
 
       return { result: transactionMessage };
     } catch (error) {
       throw this.handleError('UNSTAKE_ERROR', error);
     }
-  }
-
-  /**
-   * Determins the current state of a stake account given the current epoch
-   * @param currentEpoch
-   * @returns `stakeAccount`'s stake state`string`
-   */
-  public stakeAccountState(
-    account: StakeStateAccount,
-    currentEpoch: bigint,
-  ): string {
-    //TODO check
-    if (account.state.__kind !== 'Stake') {
-      return StakeState.Inactive;
-    }
-
-    // const {
-    //   type,
-    //   info: { stake },
-    // } = account.state.fields[0].authorized.data;
-
-    // if (type !== 'delegated' || stake === null) {
-    //   return StakeState.Inactive;
-    // }
-
-    const activationEpoch = account.state.fields[1].delegation.activationEpoch;
-    const deactivationEpoch =
-      account.state.fields[1].delegation.deactivationEpoch;
-
-    if (activationEpoch > currentEpoch) {
-      return StakeState.Inactive;
-    }
-    if (activationEpoch === currentEpoch) {
-      // if you activate then deactivate in the same epoch,
-      // deactivationEpoch === activationEpoch.
-      // if you deactivate then activate again in the same epoch,
-      // the deactivationEpoch will be reset to EPOCH_MAX
-      if (deactivationEpoch === activationEpoch) return StakeState.Inactive;
-
-      return StakeState.Activating;
-    }
-    // activationEpoch < currentEpochBN
-    if (deactivationEpoch > currentEpoch) return StakeState.Active;
-    if (deactivationEpoch === currentEpoch) return StakeState.Deactivating;
-
-    return StakeState.Deactivated;
   }
 
   /**
@@ -850,7 +778,8 @@ export class Solana extends Blockchain {
     lamports: bigint,
     oldStakeAccountPubkey: Address,
     source: string,
-  ): Promise<[[IInstruction, IInstruction], Address]> {
+    rentExemptReserve?: number,
+  ): Promise<[Array<IInstruction>, Address]> {
     // Format source to
     const seed = this.formatSource(source);
 
@@ -860,29 +789,30 @@ export class Solana extends Blockchain {
       seed,
     });
 
+    const instructions: Array<IInstruction> = [];
+
     // TODO add support split w\o seed
     const allocateWithSeedInstruction = getAllocateWithSeedInstruction({
       newAccount: newStakeAccountPubkey,
       baseAccount: createNoopSigner(address(authorityPublicKey)),
       base: authorityPublicKey,
       seed: seed,
-      //TODO get from account
+      //TODO get from library if possible
       space: STAKE_ACCOUNT_V2_SIZE,
       programAddress: STAKE_PROGRAM_ADDRESS,
     });
 
-    //TODO transfer
-    /*
+    instructions.push(allocateWithSeedInstruction);
+
+    //If creates new account need to top up balance ny rent amount
     if (rentExemptReserve && rentExemptReserve > 0) {
-      transaction.add(
-        SystemProgram.transfer({
-          fromPubkey: params.authorizedPubkey,
-          toPubkey: splitStakePubkey,
-          lamports: rentExemptReserve,
-        }),
-      );
+      const rentTransferInstruction = getTransferSolInstruction({
+        source: createNoopSigner(authorityPublicKey),
+        destination: newStakeAccountPubkey,
+        amount: rentExemptReserve,
+      });
+      instructions.push(rentTransferInstruction);
     }
-    */
 
     const splitInstruction = getSplitInstruction({
       stake: oldStakeAccountPubkey,
@@ -891,10 +821,9 @@ export class Solana extends Blockchain {
       args: lamports,
     });
 
-    return [
-      [allocateWithSeedInstruction, splitInstruction],
-      newStakeAccountPubkey,
-    ];
+    instructions.push(splitInstruction);
+
+    return [instructions, newStakeAccountPubkey];
   }
 
   /**
@@ -907,33 +836,30 @@ export class Solana extends Blockchain {
    * @returns Returns a promise that resolves with a Versioned Transaction.
    *
    */
-  public async claim(sender: string): Promise<ApiResponse<ClaimResponse>> {
+  public async claim(
+    sender: string,
+    params?: {
+      epoch?: bigint;
+      finalLatestBlockhash?: {
+        /** a Hash as base-58 encoded string */
+        blockhash: Blockhash;
+        /** last block height at which the blockhash will be valid */
+        lastValidBlockHeight: bigint;
+      };
+    },
+  ): Promise<ApiResponse<ClaimResponse>> {
     try {
       const delegations = await this.getDelegations(sender);
 
-      //     const stakeAccounts = delegations.result.map((delegationAcc) => {
-      //       return {
-      //         pubkey: delegationAcc.pubkey,
-      //         account: new StakeAccount(delegationAcc.account),
-      //       };
-      //     });
-
-      const epochInfo = await this.connection.getEpochInfo().send();
+      const epoch =
+        params?.epoch || (await this.connection.getEpochInfo().send()).epoch;
       const tm = this.timestampInSec();
 
       let totalClaimableStake = 0n;
       const deactivatedStakeAccounts = delegations.result.filter((acc) => {
-        // const { data } = acc.account.account;
-
-        // const stakeAmount = isStake(acc.data.state)
-        //   ? acc.data.state.fields[1].delegation.stake
-        //   : 0n;
-
-        // const { info } = data;
         const isDeactivated =
-          !isLockupInForce(acc.data, epochInfo.epoch, BigInt(tm)) &&
-          this.stakeAccountState(acc.data, epochInfo.epoch) ===
-            StakeState.Deactivated;
+          !isLockupInForce(acc.data, epoch, BigInt(tm)) &&
+          stakeAccountState(acc.data, epoch) === StakeState.Deactivated;
         if (isDeactivated) {
           totalClaimableStake += acc.lamports;
         }
@@ -948,9 +874,10 @@ export class Solana extends Blockchain {
       //       ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50 }),
       //     ];
 
-      const { value: finalLatestBlockhash } = await this.connection
-        .getLatestBlockhash()
-        .send();
+      const finalLatestBlockhash =
+        params?.finalLatestBlockhash ||
+        (await this.connection.getLatestBlockhash().send()).value;
+
       const transactionMessage = pipe(
         createTransactionMessage({ version: 0 }),
         (tx) => setTransactionMessageFeePayer(address(sender), tx),
@@ -963,17 +890,10 @@ export class Solana extends Blockchain {
         const withdrawInstruction = getWithdrawInstruction({
           stake: acc.address,
           recipient: address(sender),
+          stakeHistory: STAKE_HISTORY_ACCOUNT,
           withdrawAuthority: createNoopSigner(address(sender)),
           args: acc.lamports,
         });
-
-        // const withdrawTx = getWithdrawInstruction({
-        //   stakePubkey: acc.pubkey,
-        //   authorizedPubkey: senderPublicKey,
-        //   toPubkey: senderPublicKey,
-        //   lamports: acc.account.account.lamports,
-        // });
-        // instructions.push(...withdrawTx.instructions);
 
         pipe(transactionMessage, (tx) =>
           appendTransactionMessageInstruction(withdrawInstruction, tx),
@@ -1043,6 +963,44 @@ export class Solana extends Blockchain {
   }
 }
 
+//TODO think about export of this methods
+/**
+ * Determins the current state of a stake account given the current epoch
+ * @param currentEpoch
+ * @returns `stakeAccount`'s stake state`string`
+ */
+function stakeAccountState(
+  account: StakeStateAccount,
+  currentEpoch: bigint,
+): string {
+  //TODO check
+  if (account.state.__kind !== 'Stake') {
+    return StakeState.Inactive;
+  }
+
+  const activationEpoch = account.state.fields[1].delegation.activationEpoch;
+  const deactivationEpoch =
+    account.state.fields[1].delegation.deactivationEpoch;
+
+  if (activationEpoch > currentEpoch) {
+    return StakeState.Inactive;
+  }
+  if (activationEpoch === currentEpoch) {
+    // if you activate then deactivate in the same epoch,
+    // deactivationEpoch === activationEpoch.
+    // if you deactivate then activate again in the same epoch,
+    // the deactivationEpoch will be reset to EPOCH_MAX
+    if (deactivationEpoch === activationEpoch) return StakeState.Inactive;
+
+    return StakeState.Activating;
+  }
+  // activationEpoch < currentEpochBN
+  if (deactivationEpoch > currentEpoch) return StakeState.Active;
+  if (deactivationEpoch === currentEpoch) return StakeState.Deactivating;
+
+  return StakeState.Deactivated;
+}
+
 /**
  * Check if lockup is in force
  * @param currEpoch current epoch.
@@ -1054,8 +1012,10 @@ function isLockupInForce(
   currEpoch: bigint,
   currUnixTimestamp: bigint,
 ): boolean {
-  //TODO check
-  if (account.state.__kind !== 'Stake') {
+  if (
+    account.state.__kind !== 'Stake' &&
+    account.state.__kind !== 'Initialized'
+  ) {
     return false;
   }
 

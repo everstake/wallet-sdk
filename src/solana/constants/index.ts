@@ -1,4 +1,4 @@
-import { address } from '@solana/web3.js';
+import { address, Address } from '@solana/web3.js';
 
 export const CHAIN = 'solana';
 export const MIN_AMOUNT = 10000000; // 0.01 SOL
@@ -23,3 +23,10 @@ export const StakeState = {
   Deactivating: 'deactivating',
   Deactivated: 'deactivated',
 };
+
+export const STAKE_ACCOUNT_V2_SIZE = 200;
+export const ADDRESS_DEFAULT = address('11111111111111111111111111111111');
+export const STAKE_HISTORY_ACCOUNT =
+  'SysvarStakeHistory1111111111111111111111111' as Address<'SysvarStakeHistory1111111111111111111111111'>;
+export const STAKE_CONFIG_ACCOUNT =
+  'StakeConfig11111111111111111111111111111111' as Address<'StakeConfig11111111111111111111111111111111'>;
