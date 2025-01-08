@@ -1,9 +1,4 @@
 import {
-  // Account,
-  //   AccountInfo,
-  //   ParsedAccountData,
-  //   PublicKey,
-  //   VersionedTransaction,
   Address,
   TransactionMessageWithBlockhashLifetime,
 } from '@solana/web3.js';
@@ -23,13 +18,3 @@ export type ClaimResponse = {
   claimVerTx: TransactionMessageWithBlockhashLifetime;
   totalClaimAmount: bigint;
 };
-
-// export type Account = {
-//   pubkey: PublicKey;
-//   account: StakeAccount;
-// };
-
-// export type AccountToSplit = {
-//   account: Account;
-//   lamports: number;
-// };
