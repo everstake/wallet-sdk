@@ -1,7 +1,7 @@
 {
-  "name": "@everstake/wallet-sdk-utils",
+  "name": "@everstake/wallet-sdk-berrachain",
   "version": "0.0.1",
-  "description": "Everstake Wallet SDK utils",
+  "description": "Berrachain - Everstake Wallet SDK",
   "publishConfig": {
     "access": "public"
   },
@@ -24,7 +24,7 @@
     "prebuild": "pnpm run type-check && pnpm run lint"
   },
   "keywords": [
-    "utils",
+    "berrachain",
     "blockchain",
     "everstake",
     "wallet sdk"
@@ -40,6 +40,8 @@
   },
   "homepage": "https://github.com/everstake/wallet-sdk#readme",
   "dependencies": {
+    "bignumber.js": "^9.1.2",
+    "web3": "^4.14.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.7.0",
