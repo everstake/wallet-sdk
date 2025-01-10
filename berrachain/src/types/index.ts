@@ -7,3 +7,8 @@ export type Transaction = {
   gasLimit: number;
   data: string;
 };
+
+export type BoostedQueue = {
+  lastBlock: number;
+  balance: string;
+};

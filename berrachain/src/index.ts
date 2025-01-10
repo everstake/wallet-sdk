@@ -1,5 +1,5 @@
 import { Blockchain } from '../../utils';
-import { Network, Transaction } from './types';
+import { BoostedQueue, Network, Transaction } from './types';
 import Web3 from 'web3';
 import { HttpProvider } from 'web3';
 import type { Contract } from 'web3';
@@ -105,9 +105,7 @@ export class Berrachain extends Blockchain {
    *
    * @throws Will throw an error if the contract call fails.
    */
-  public async boostedQueue(
-    address: string,
-  ): Promise<{ lastBlock: number; balance: string }> {
+  public async boostedQueue(address: string): Promise<BoostedQueue> {
     try {
       const result = await this.btg.methods
         .boostedQueue(address, this.validator)
