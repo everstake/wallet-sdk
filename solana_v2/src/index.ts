@@ -69,9 +69,6 @@ import {
   decodeStakeStateAccount,
   StakeStateAccount,
   StakeStateV2,
-  Meta,
-  Stake,
-  StakeFlags,
 } from '@solana-program/stake';
 
 /**
@@ -1165,15 +1162,14 @@ function isLockupInForce(
     return false;
   }
 
-  return (
-    account.state.fields[0].lockup.unixTimestamp > currUnixTimestamp ||
-    account.state.fields[0].lockup.epoch > currEpoch
-  );
+  const { unixTimestamp, epoch } = account.state.fields[0].lockup;
+
+  return unixTimestamp > currUnixTimestamp || epoch > currEpoch;
 }
 
 function isStake(
   state: StakeStateV2,
-): state is { __kind: 'Stake'; fields: readonly [Meta, Stake, StakeFlags] } {
+): state is Extract<StakeStateV2, { __kind: 'Stake' }> {
   return state.__kind === 'Stake';
 }
 
