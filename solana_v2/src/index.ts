@@ -20,10 +20,12 @@ import {
   IInstruction,
   generateKeyPair,
   createSignerFromKeyPair,
-  signTransactionMessageWithSigners,
+  partiallySignTransactionMessageWithSigners,
   parseBase64RpcAccount,
   Blockhash,
   prependTransactionMessageInstruction,
+  getU8Decoder,
+  getU32Encoder,
 } from '@solana/web3.js';
 
 import {
@@ -186,7 +188,7 @@ export class Solana extends Blockchain {
       const finalLatestBlockhash =
         params?.finalLatestBlockhash ||
         (await this.connection.getLatestBlockhash().send()).value;
-      const transactionMessage = pipe(
+      let transactionMessage = pipe(
         createTransactionMessage({ version: 0 }),
         (tx) => setTransactionMessageFeePayer(address(sender), tx),
         (tx) =>
@@ -205,12 +207,15 @@ export class Solana extends Blockchain {
           /** Transaction compute unit price used for prioritization fees. */
           microLamports: params?.сomputeUnitPrice,
         });
-        pipe(transactionMessage, (tx) =>
-          prependTransactionMessageInstruction(unitPriceInstruction, tx),
+
+        transactionMessage = prependTransactionMessageInstruction(
+          unitPriceInstruction,
+          transactionMessage,
         );
       }
+
       const signedTransactionMessage =
-        await signTransactionMessageWithSigners(transactionMessage);
+        await partiallySignTransactionMessageWithSigners(transactionMessage);
 
       return {
         result: {
@@ -255,18 +260,20 @@ export class Solana extends Blockchain {
     }
 
     try {
-      const delegateInstruction = getDelegateStakeInstruction({
-        stake: address(stakeAccount),
-        vote: this.validator,
-        stakeHistory: STAKE_HISTORY_ACCOUNT,
-        unused: STAKE_CONFIG_ACCOUNT,
-        stakeAuthority: createNoopSigner(address(sender)),
-      });
+      const delegateInstruction = repackInstruction(
+        getDelegateStakeInstruction({
+          stake: address(stakeAccount),
+          vote: this.validator,
+          stakeHistory: STAKE_HISTORY_ACCOUNT,
+          unused: STAKE_CONFIG_ACCOUNT,
+          stakeAuthority: createNoopSigner(address(sender)),
+        }),
+      );
 
       const finalLatestBlockhash =
         params?.finalLatestBlockhash ||
         (await this.connection.getLatestBlockhash().send()).value;
-      const transactionMessage = pipe(
+      let transactionMessage = pipe(
         createTransactionMessage({ version: 0 }),
         (tx) => setTransactionMessageFeePayer(address(sender), tx),
         (tx) =>
@@ -283,8 +290,10 @@ export class Solana extends Blockchain {
           /** Transaction compute unit price used for prioritization fees. */
           microLamports: params?.сomputeUnitPrice,
         });
-        pipe(transactionMessage, (tx) =>
-          prependTransactionMessageInstruction(unitPriceInstruction, tx),
+
+        transactionMessage = prependTransactionMessageInstruction(
+          unitPriceInstruction,
+          transactionMessage,
         );
       }
 
@@ -318,15 +327,17 @@ export class Solana extends Blockchain {
     },
   ): Promise<ApiResponse<TransactionMessageWithBlockhashLifetime>> {
     try {
-      const deactivateInstruction = getDeactivateInstruction({
-        stake: address(stakeAccountPublicKey),
-        stakeAuthority: createNoopSigner(address(sender)),
-      });
+      const deactivateInstruction = repackInstruction(
+        getDeactivateInstruction({
+          stake: address(stakeAccountPublicKey),
+          stakeAuthority: createNoopSigner(address(sender)),
+        }),
+      );
 
       const finalLatestBlockhash =
         params?.finalLatestBlockhash ||
         (await this.connection.getLatestBlockhash().send()).value;
-      const transactionMessage = pipe(
+      let transactionMessage = pipe(
         createTransactionMessage({ version: 0 }),
         (tx) => setTransactionMessageFeePayer(address(sender), tx),
         (tx) =>
@@ -343,8 +354,10 @@ export class Solana extends Blockchain {
           /** Transaction compute unit price used for prioritization fees. */
           microLamports: params?.сomputeUnitPrice,
         });
-        pipe(transactionMessage, (tx) =>
-          prependTransactionMessageInstruction(unitPriceInstruction, tx),
+
+        transactionMessage = prependTransactionMessageInstruction(
+          unitPriceInstruction,
+          transactionMessage,
         );
       }
 
@@ -383,18 +396,20 @@ export class Solana extends Blockchain {
   ): Promise<ApiResponse<TransactionMessageWithBlockhashLifetime>> {
     try {
       // Create the withdraw instruction
-      const withdrawInstruction = getWithdrawInstruction({
-        stake: stakeAccountPublicKey,
-        recipient: sender,
-        stakeHistory: STAKE_HISTORY_ACCOUNT,
-        withdrawAuthority: createNoopSigner(address(sender)),
-        args: stakeBalance,
-      });
+      const withdrawInstruction = repackInstruction(
+        getWithdrawInstruction({
+          stake: stakeAccountPublicKey,
+          recipient: sender,
+          stakeHistory: STAKE_HISTORY_ACCOUNT,
+          withdrawAuthority: createNoopSigner(address(sender)),
+          args: stakeBalance,
+        }),
+      );
 
       const finalLatestBlockhash =
         params?.finalLatestBlockhash ||
         (await this.connection.getLatestBlockhash().send()).value;
-      const transactionMessage = pipe(
+      let transactionMessage = pipe(
         createTransactionMessage({ version: 0 }),
         (tx) => setTransactionMessageFeePayer(address(sender), tx),
         (tx) =>
@@ -411,8 +426,10 @@ export class Solana extends Blockchain {
           /** Transaction compute unit price used for prioritization fees. */
           microLamports: params?.сomputeUnitPrice,
         });
-        pipe(transactionMessage, (tx) =>
-          prependTransactionMessageInstruction(unitPriceInstruction, tx),
+
+        transactionMessage = prependTransactionMessageInstruction(
+          unitPriceInstruction,
+          transactionMessage,
         );
       }
 
@@ -479,7 +496,7 @@ export class Solana extends Blockchain {
   async stake(
     sender: string,
     lamports: number,
-    source: string | null,
+    source: string,
     // lockup: Lockup | null = Lockup.default,
     params?: {
       сomputeUnitPrice?: bigint;
@@ -508,7 +525,8 @@ export class Solana extends Blockchain {
         stakeAccountPublicKey,
       ] =
         source === null
-          ? await this.createAccountTx(
+          ? // TODO fix create account sign
+            await this.createAccountTx(
               address(sender),
               BigInt(lamports) + minimumRent,
               // lockup,
@@ -520,19 +538,21 @@ export class Solana extends Blockchain {
               // lockup,
             );
 
-      const delegateInstruction = getDelegateStakeInstruction({
-        stake: stakeAccountPublicKey,
-        vote: this.validator,
-        stakeHistory: STAKE_HISTORY_ACCOUNT,
-        unused: STAKE_CONFIG_ACCOUNT,
-        stakeAuthority: createNoopSigner(address(sender)),
-      });
+      const delegateInstruction = repackInstruction(
+        getDelegateStakeInstruction({
+          stake: stakeAccountPublicKey,
+          vote: this.validator,
+          stakeHistory: STAKE_HISTORY_ACCOUNT,
+          unused: STAKE_CONFIG_ACCOUNT,
+          stakeAuthority: createNoopSigner(address(sender)),
+        }),
+      );
 
       const finalLatestBlockhash =
         params?.finalLatestBlockhash ||
         (await this.connection.getLatestBlockhash().send()).value;
 
-      const transactionMessage = pipe(
+      let transactionMessage = pipe(
         createTransactionMessage({ version: 0 }),
         (tx) => setTransactionMessageFeePayer(address(sender), tx),
         (tx) =>
@@ -559,12 +579,17 @@ export class Solana extends Blockchain {
           /** Transaction compute unit price used for prioritization fees. */
           microLamports: params?.сomputeUnitPrice,
         });
-        pipe(transactionMessage, (tx) =>
-          prependTransactionMessageInstruction(unitPriceInstruction, tx),
+
+        transactionMessage = prependTransactionMessageInstruction(
+          unitPriceInstruction,
+          transactionMessage,
         );
       }
+
       const signedTransactionMessage =
-        await signTransactionMessageWithSigners(transactionMessage);
+        source === null
+          ? await partiallySignTransactionMessageWithSigners(transactionMessage)
+          : transactionMessage;
 
       return {
         result: {
@@ -606,21 +631,23 @@ export class Solana extends Blockchain {
       programAddress: STAKE_PROGRAM_ADDRESS,
     });
 
-    const initializeInstruction = getInitializeInstruction(
-      /** Uninitialized stake account */
-      {
-        stake: signer.address,
-        arg0: {
-          staker: authorityPublicKey,
-          withdrawer: authorityPublicKey,
+    const initializeInstruction = repackInstruction(
+      getInitializeInstruction(
+        /** Uninitialized stake account */
+        {
+          stake: signer.address,
+          arg0: {
+            staker: authorityPublicKey,
+            withdrawer: authorityPublicKey,
+          },
+          arg1: {
+            //TODO use default
+            unixTimestamp: 0,
+            epoch: 0,
+            custodian: ADDRESS_DEFAULT,
+          },
         },
-        arg1: {
-          //TODO use default
-          unixTimestamp: 0,
-          epoch: 0,
-          custodian: ADDRESS_DEFAULT,
-        },
-      },
+      ),
     );
 
     return [createAccountInstruction, initializeInstruction, signer.address];
@@ -666,21 +693,23 @@ export class Solana extends Blockchain {
       programAddress: STAKE_PROGRAM_ADDRESS,
     });
 
-    const initializeInstruction = getInitializeInstruction(
-      /** Uninitialized stake account */
-      {
-        stake: stakeAccountPubkey,
-        arg0: {
-          staker: authorityPublicKey,
-          withdrawer: authorityPublicKey,
+    const initializeInstruction = repackInstruction(
+      getInitializeInstruction(
+        /** Uninitialized stake account */
+        {
+          stake: stakeAccountPubkey,
+          arg0: {
+            staker: authorityPublicKey,
+            withdrawer: authorityPublicKey,
+          },
+          arg1: {
+            //TODO implement Lockup
+            unixTimestamp: 0,
+            epoch: 0,
+            custodian: ADDRESS_DEFAULT,
+          },
         },
-        arg1: {
-          //TODO implement Lockup
-          unixTimestamp: 0,
-          epoch: 0,
-          custodian: ADDRESS_DEFAULT,
-        },
-      },
+      ),
     );
 
     return [
@@ -785,7 +814,7 @@ export class Solana extends Blockchain {
         params?.finalLatestBlockhash ||
         (await this.connection.getLatestBlockhash().send()).value;
 
-      const transactionMessage = pipe(
+      let transactionMessage = pipe(
         createTransactionMessage({ version: 0 }),
         (tx) => setTransactionMessageFeePayer(address(sender), tx),
         (tx) =>
@@ -801,8 +830,10 @@ export class Solana extends Blockchain {
           /** Transaction compute unit price used for prioritization fees. */
           microLamports: params?.сomputeUnitPrice,
         });
-        pipe(transactionMessage, (tx) =>
-          appendTransactionMessageInstruction(unitPriceInstruction, tx),
+
+        transactionMessage = appendTransactionMessageInstruction(
+          unitPriceInstruction,
+          transactionMessage,
         );
       }
 
@@ -814,32 +845,43 @@ export class Solana extends Blockchain {
           source,
         );
 
-        splitInstructions.forEach((splitInstruction) =>
-          pipe(transactionMessage, (tx) =>
-            appendTransactionMessageInstruction(splitInstruction, tx),
-          ),
+        splitInstructions.forEach(
+          (splitInstruction) =>
+            (transactionMessage = appendTransactionMessageInstruction(
+              splitInstruction,
+              transactionMessage,
+            )),
         );
 
-        const deactivateInstruction = getDeactivateInstruction({
-          stake: newStakeAccountPubkey,
-          stakeAuthority: createNoopSigner(address(sender)),
-        });
-
-        pipe(transactionMessage, (tx) =>
-          appendTransactionMessageInstruction(deactivateInstruction, tx),
+        const deactivateInstruction = repackInstruction(
+          getDeactivateInstruction({
+            stake: newStakeAccountPubkey,
+            stakeAuthority: createNoopSigner(address(sender)),
+          }),
+        );
+        transactionMessage = appendTransactionMessageInstruction(
+          deactivateInstruction,
+          transactionMessage,
         );
       }
 
       accountsToDeactivate.forEach((acc) => {
-        const deactivateInstruction = getDeactivateInstruction({
-          stake: acc.address,
-          stakeAuthority: createNoopSigner(address(sender)),
-        });
+        const deactivateInstruction = repackInstruction(
+          getDeactivateInstruction({
+            stake: acc.address,
+            stakeAuthority: createNoopSigner(address(sender)),
+          }),
+        );
 
-        pipe(transactionMessage, (tx) =>
-          appendTransactionMessageInstruction(deactivateInstruction, tx),
+        transactionMessage = appendTransactionMessageInstruction(
+          deactivateInstruction,
+          transactionMessage,
         );
       });
+
+      if (transactionMessage.instructions.length === 0) {
+        this.handleError('UNSTAKE_ERROR', 'zero instructions');
+      }
 
       return { result: transactionMessage };
     } catch (error) {
@@ -901,12 +943,14 @@ export class Solana extends Blockchain {
       instructions.push(rentTransferInstruction);
     }
 
-    const splitInstruction = getSplitInstruction({
-      stake: oldStakeAccountPubkey,
-      splitStake: newStakeAccountPubkey,
-      stakeAuthority: createNoopSigner(authorityPublicKey),
-      args: lamports,
-    });
+    const splitInstruction = repackInstruction(
+      getSplitInstruction({
+        stake: oldStakeAccountPubkey,
+        splitStake: newStakeAccountPubkey,
+        stakeAuthority: createNoopSigner(authorityPublicKey),
+        args: lamports,
+      }),
+    );
 
     instructions.push(splitInstruction);
 
@@ -962,7 +1006,7 @@ export class Solana extends Blockchain {
         params?.finalLatestBlockhash ||
         (await this.connection.getLatestBlockhash().send()).value;
 
-      const transactionMessage = pipe(
+      let transactionMessage = pipe(
         createTransactionMessage({ version: 0 }),
         (tx) => setTransactionMessageFeePayer(address(sender), tx),
         (tx) =>
@@ -978,23 +1022,27 @@ export class Solana extends Blockchain {
           /** Transaction compute unit price used for prioritization fees. */
           microLamports: params?.сomputeUnitPrice,
         });
-        pipe(transactionMessage, (tx) =>
-          appendTransactionMessageInstruction(unitPriceInstruction, tx),
+        transactionMessage = prependTransactionMessageInstruction(
+          unitPriceInstruction,
+          transactionMessage,
         );
       }
 
       for (const acc of deactivatedStakeAccounts) {
         // Create the withdraw instruction
-        const withdrawInstruction = getWithdrawInstruction({
-          stake: acc.address,
-          recipient: address(sender),
-          stakeHistory: STAKE_HISTORY_ACCOUNT,
-          withdrawAuthority: createNoopSigner(address(sender)),
-          args: acc.lamports,
-        });
+        const withdrawInstruction = repackInstruction(
+          getWithdrawInstruction({
+            stake: acc.address,
+            recipient: address(sender),
+            stakeHistory: STAKE_HISTORY_ACCOUNT,
+            withdrawAuthority: createNoopSigner(address(sender)),
+            args: acc.lamports,
+          }),
+        );
 
-        pipe(transactionMessage, (tx) =>
-          appendTransactionMessageInstruction(withdrawInstruction, tx),
+        transactionMessage = appendTransactionMessageInstruction(
+          withdrawInstruction,
+          transactionMessage,
         );
       }
 
@@ -1127,4 +1175,31 @@ function isStake(
   state: StakeStateV2,
 ): state is { __kind: 'Stake'; fields: readonly [Meta, Stake, StakeFlags] } {
   return state.__kind === 'Stake';
+}
+
+//TEMP fix. Stake program expect u32 as intruction data size but Stake lib use u8
+function repackInstruction(initializeInstruction: IInstruction): IInstruction {
+  if (
+    initializeInstruction === undefined ||
+    initializeInstruction.data === undefined
+  ) {
+    return initializeInstruction;
+  }
+
+  const desc = getU8Decoder().decode(initializeInstruction.data.subarray(0, 1));
+  const descU32 = getU32Encoder().encode(desc);
+
+  const result = new Uint8Array(3 + initializeInstruction.data.length);
+  // Copy the value into the start of the new array
+  result.set(descU32, 0);
+  // Copy the original array after the prepended value
+  result.set(initializeInstruction.data.subarray(1), 4);
+  // initializeInstruction.data = result;
+  const instruction = {
+    accounts: initializeInstruction.accounts,
+    programAddress: initializeInstruction.programAddress,
+    data: result,
+  } as IInstruction;
+
+  return instruction;
 }
