@@ -1,4 +1,6 @@
+import { StakeStateAccount } from '@solana-program/stake';
 import {
+  Account,
   Address,
   TransactionMessageWithBlockhashLifetime,
 } from '@solana/web3.js';
@@ -18,3 +20,5 @@ export type ClaimResponse = {
   claimVerTx: TransactionMessageWithBlockhashLifetime;
   totalClaimAmount: bigint;
 };
+
+export type Delegations = Array<Account<StakeStateAccount, Address>>;
