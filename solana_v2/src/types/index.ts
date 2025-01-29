@@ -3,6 +3,7 @@ import {
   Account,
   Address,
   CompilableTransactionMessage,
+  Transaction,
   TransactionMessageWithBlockhashLifetime,
 } from '@solana/web3.js';
 
@@ -11,14 +12,16 @@ export interface ApiResponse<T> {
 }
 
 export type CreateAccountResponse = {
-  transaction: TransactionMessageWithBlockhashLifetime;
+  transaction:
+    | (CompilableTransactionMessage & TransactionMessageWithBlockhashLifetime)
+    | (Transaction & TransactionMessageWithBlockhashLifetime);
   stakeAccount: Address;
 };
 
 export type StakeResponse = {
   stakeTx:
     | (CompilableTransactionMessage & TransactionMessageWithBlockhashLifetime)
-    | TransactionMessageWithBlockhashLifetime;
+    | (Transaction & TransactionMessageWithBlockhashLifetime);
   stakeAccount: Address;
 };
 
