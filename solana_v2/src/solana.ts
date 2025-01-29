@@ -58,6 +58,7 @@ import {
   ClaimResponse,
   StakeResponse,
   Delegations,
+  UnstakeResponse,
 } from './types';
 
 import {
@@ -591,7 +592,7 @@ export class Solana extends Blockchain {
 
       return {
         result: {
-          transaction: signedTransactionMessage,
+          stakeTx: signedTransactionMessage,
           stakeAccount: stakeAccountPublicKey,
         },
       };
@@ -737,7 +738,7 @@ export class Solana extends Blockchain {
         lastValidBlockHeight: bigint;
       };
     },
-  ): Promise<ApiResponse<TransactionMessageWithBlockhashLifetime>> {
+  ): Promise<ApiResponse<UnstakeResponse>> {
     try {
       const stakeAccounts = (await this.getDelegations(sender)).result;
 
@@ -881,7 +882,7 @@ export class Solana extends Blockchain {
         this.handleError('UNSTAKE_ERROR', 'zero instructions');
       }
 
-      return { result: transactionMessage };
+      return { result: { unstakeTx: transactionMessage } };
     } catch (error) {
       throw this.handleError('UNSTAKE_ERROR', error);
     }
@@ -1046,7 +1047,7 @@ export class Solana extends Blockchain {
 
       return {
         result: {
-          claimVerTx: transactionMessage,
+          claimTx: transactionMessage,
           totalClaimAmount: totalClaimableStake,
         },
       };

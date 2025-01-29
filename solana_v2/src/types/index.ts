@@ -2,6 +2,7 @@ import { StakeStateAccount } from '@solana-program/stake';
 import {
   Account,
   Address,
+  CompilableTransactionMessage,
   TransactionMessageWithBlockhashLifetime,
 } from '@solana/web3.js';
 
@@ -14,10 +15,21 @@ export type CreateAccountResponse = {
   stakeAccount: Address;
 };
 
-export type StakeResponse = CreateAccountResponse;
+export type StakeResponse = {
+  stakeTx:
+    | (CompilableTransactionMessage & TransactionMessageWithBlockhashLifetime)
+    | TransactionMessageWithBlockhashLifetime;
+  stakeAccount: Address;
+};
+
+export type UnstakeResponse = {
+  unstakeTx: CompilableTransactionMessage &
+    TransactionMessageWithBlockhashLifetime;
+};
 
 export type ClaimResponse = {
-  claimVerTx: TransactionMessageWithBlockhashLifetime;
+  claimTx: CompilableTransactionMessage &
+    TransactionMessageWithBlockhashLifetime;
   totalClaimAmount: bigint;
 };
 
