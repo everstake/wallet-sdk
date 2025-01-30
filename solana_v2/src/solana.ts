@@ -771,7 +771,7 @@ export class Solana extends Blockchain {
       if (totalActiveStake < lamports)
         throw this.throwError('NOT_ENOUGH_ACTIVE_STAKE_ERROR');
 
-      // Desc sorting
+      // ASC sorting
       activeStakeAccounts.sort((a, b): number => {
         const stakeA = isStake(a.data.state)
           ? a.data.state.fields[1].delegation.stake
@@ -780,7 +780,7 @@ export class Solana extends Blockchain {
           ? b.data.state.fields[1].delegation.stake
           : 0n;
 
-        return Number(stakeB - stakeA);
+        return Number(stakeA - stakeB);
       });
 
       const accountsToDeactivate: Delegations = [];
@@ -839,12 +839,25 @@ export class Solana extends Blockchain {
         );
       }
 
+      // Get the minimum balance for rent exemption. Send request only if split required
+      const minimumRent =
+        accountsToSplit.length > 0
+          ? await this.connection
+              .getMinimumBalanceForRentExemption(
+                //TODO get from account when it's would be available
+                BigInt(STAKE_ACCOUNT_V2_SIZE),
+              )
+              .send()
+          : 0n;
+
       for (const acc of accountsToSplit) {
         const [splitInstructions, newStakeAccountPubkey] = await this.split(
           senderPublicKey,
           acc[1],
           acc[0].address,
           source,
+          // Need additional value if split amount less than rent
+          acc[1] <= minimumRent ? minimumRent : 0n,
         );
 
         splitInstructions.forEach(
@@ -909,7 +922,7 @@ export class Solana extends Blockchain {
     lamports: bigint,
     oldStakeAccountPubkey: Address,
     source: string,
-    rentExemptReserve?: number,
+    rentExemptReserve?: bigint,
   ): Promise<[Array<IInstruction>, Address]> {
     // Format source to
     const seed = this.formatSource(source);
@@ -935,7 +948,7 @@ export class Solana extends Blockchain {
 
     instructions.push(allocateWithSeedInstruction);
 
-    //If creates new account need to top up balance ny rent amount
+    //If creates new account need to top up balance by rent amount
     if (rentExemptReserve && rentExemptReserve > 0) {
       const rentTransferInstruction = getTransferSolInstruction({
         source: createNoopSigner(authorityPublicKey),
