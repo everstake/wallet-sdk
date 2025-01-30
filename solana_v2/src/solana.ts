@@ -58,6 +58,7 @@ import {
   ClaimResponse,
   StakeResponse,
   Delegations,
+  UnstakeResponse,
 } from './types';
 
 import {
@@ -135,8 +136,8 @@ export class Solana extends Blockchain {
    */
   public async createAccount(
     sender: string,
-    amountInLamports: number,
-    source: string | null,
+    amountInLamports: bigint,
+    source: string,
     // lockup: Lockup | null = Lockup.default,
     params?: {
       сomputeUnitPrice?: bigint;
@@ -171,7 +172,8 @@ export class Solana extends Blockchain {
         stakeAccountPubkey,
       ] =
         source === null
-          ? await this.createAccountTx(
+          ? // TODO fix create account sign
+            await this.createAccountTx(
               address(sender),
               BigInt(amountInLamports) + minimumRent,
               // lockup,
@@ -213,7 +215,9 @@ export class Solana extends Blockchain {
       }
 
       const signedTransactionMessage =
-        await partiallySignTransactionMessageWithSigners(transactionMessage);
+        source === null
+          ? await partiallySignTransactionMessageWithSigners(transactionMessage)
+          : transactionMessage;
 
       return {
         result: {
@@ -240,7 +244,7 @@ export class Solana extends Blockchain {
    */
   public async delegate(
     sender: string,
-    lamports: number,
+    lamports: bigint,
     stakeAccount: string,
     params?: {
       сomputeUnitPrice?: bigint;
@@ -380,7 +384,7 @@ export class Solana extends Blockchain {
   public async withdraw(
     sender: Address,
     stakeAccountPublicKey: Address,
-    stakeBalance: number,
+    stakeBalance: bigint,
     params?: {
       сomputeUnitPrice?: bigint;
       epoch?: bigint;
@@ -493,7 +497,7 @@ export class Solana extends Blockchain {
    */
   async stake(
     sender: string,
-    lamports: number,
+    lamports: bigint,
     source: string,
     // lockup: Lockup | null = Lockup.default,
     params?: {
@@ -591,7 +595,7 @@ export class Solana extends Blockchain {
 
       return {
         result: {
-          transaction: signedTransactionMessage,
+          stakeTx: signedTransactionMessage,
           stakeAccount: stakeAccountPublicKey,
         },
       };
@@ -737,7 +741,7 @@ export class Solana extends Blockchain {
         lastValidBlockHeight: bigint;
       };
     },
-  ): Promise<ApiResponse<TransactionMessageWithBlockhashLifetime>> {
+  ): Promise<ApiResponse<UnstakeResponse>> {
     try {
       const stakeAccounts = (await this.getDelegations(sender)).result;
 
@@ -881,7 +885,7 @@ export class Solana extends Blockchain {
         this.handleError('UNSTAKE_ERROR', 'zero instructions');
       }
 
-      return { result: transactionMessage };
+      return { result: { unstakeTx: transactionMessage } };
     } catch (error) {
       throw this.handleError('UNSTAKE_ERROR', error);
     }
@@ -1046,7 +1050,7 @@ export class Solana extends Blockchain {
 
       return {
         result: {
-          claimVerTx: transactionMessage,
+          claimTx: transactionMessage,
           totalClaimAmount: totalClaimableStake,
         },
       };
