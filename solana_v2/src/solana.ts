@@ -10,6 +10,7 @@ import {
   TransactionMessageWithBlockhashLifetime,
   createNoopSigner,
   pipe,
+  CompilableTransactionMessage,
   createTransactionMessage,
   setTransactionMessageFeePayer,
   setTransactionMessageLifetimeUsingBlockhash,
@@ -22,7 +23,6 @@ import {
   createSignerFromKeyPair,
   partiallySignTransactionMessageWithSigners,
   parseBase64RpcAccount,
-  Blockhash,
   prependTransactionMessageInstruction,
   getU8Decoder,
   getU32Encoder,
@@ -35,7 +35,7 @@ import {
   getAllocateWithSeedInstruction,
 } from '@solana-program/system';
 
-import { getSetComputeUnitPriceInstruction } from '@solana-program/compute-budget';
+import { getSetComputeUnitLimitInstruction, getSetComputeUnitPriceInstruction } from '@solana-program/compute-budget';
 
 import { Blockchain } from './utils';
 import { ERROR_MESSAGES } from './constants/errors';
@@ -59,6 +59,7 @@ import {
   StakeResponse,
   Delegations,
   UnstakeResponse,
+  Params,
 } from './types';
 
 import {
@@ -139,16 +140,7 @@ export class Solana extends Blockchain {
     amountInLamports: bigint,
     source: string,
     // lockup: Lockup | null = Lockup.default,
-    params?: {
-      сomputeUnitPrice?: bigint;
-      epoch?: bigint;
-      finalLatestBlockhash?: {
-        /** a Hash as base-58 encoded string */
-        blockhash: Blockhash;
-        /** last block height at which the blockhash will be valid */
-        lastValidBlockHeight: bigint;
-      };
-    },
+    params?: Params,
   ): Promise<ApiResponse<CreateAccountResponse>> {
     // Check if the amount is greater than or equal to the minimum amount
     if (amountInLamports < MIN_AMOUNT) {
@@ -185,34 +177,7 @@ export class Solana extends Blockchain {
               // lockup,
             );
 
-      const finalLatestBlockhash =
-        params?.finalLatestBlockhash ||
-        (await this.connection.getLatestBlockhash().send()).value;
-      let transactionMessage = pipe(
-        createTransactionMessage({ version: 0 }),
-        (tx) => setTransactionMessageFeePayer(address(sender), tx),
-        (tx) =>
-          setTransactionMessageLifetimeUsingBlockhash(finalLatestBlockhash, tx),
-        (tx) =>
-          appendTransactionMessageInstruction(createAccountInstruction, tx),
-        (tx) => appendTransactionMessageInstruction(initializeInstruction, tx),
-      );
-
-      // TODO refactor as function
-      if (
-        params?.сomputeUnitPrice !== undefined &&
-        params?.сomputeUnitPrice > 0
-      ) {
-        const unitPriceInstruction = getSetComputeUnitPriceInstruction({
-          /** Transaction compute unit price used for prioritization fees. */
-          microLamports: params?.сomputeUnitPrice,
-        });
-
-        transactionMessage = prependTransactionMessageInstruction(
-          unitPriceInstruction,
-          transactionMessage,
-        );
-      }
+            let transactionMessage = await this.baseTx(sender, params);
 
       const signedTransactionMessage =
         source === null
@@ -246,16 +211,7 @@ export class Solana extends Blockchain {
     sender: string,
     lamports: bigint,
     stakeAccount: string,
-    params?: {
-      сomputeUnitPrice?: bigint;
-      epoch?: bigint;
-      finalLatestBlockhash?: {
-        /** a Hash as base-58 encoded string */
-        blockhash: Blockhash;
-        /** last block height at which the blockhash will be valid */
-        lastValidBlockHeight: bigint;
-      };
-    },
+    params?: Params,
   ): Promise<ApiResponse<TransactionMessageWithBlockhashLifetime>> {
     if (lamports < MIN_AMOUNT) {
       this.throwError('MIN_AMOUNT_ERROR', MIN_AMOUNT.toString());
@@ -272,32 +228,7 @@ export class Solana extends Blockchain {
         }),
       );
 
-      const finalLatestBlockhash =
-        params?.finalLatestBlockhash ||
-        (await this.connection.getLatestBlockhash().send()).value;
-      let transactionMessage = pipe(
-        createTransactionMessage({ version: 0 }),
-        (tx) => setTransactionMessageFeePayer(address(sender), tx),
-        (tx) =>
-          setTransactionMessageLifetimeUsingBlockhash(finalLatestBlockhash, tx),
-        (tx) => appendTransactionMessageInstruction(delegateInstruction, tx),
-      );
-
-      // TODO refactor as function
-      if (
-        params?.сomputeUnitPrice !== undefined &&
-        params?.сomputeUnitPrice > 0
-      ) {
-        const unitPriceInstruction = getSetComputeUnitPriceInstruction({
-          /** Transaction compute unit price used for prioritization fees. */
-          microLamports: params?.сomputeUnitPrice,
-        });
-
-        transactionMessage = prependTransactionMessageInstruction(
-          unitPriceInstruction,
-          transactionMessage,
-        );
-      }
+      let transactionMessage = await this.baseTx(sender, params);
 
       return { result: transactionMessage };
     } catch (error) {
@@ -317,16 +248,7 @@ export class Solana extends Blockchain {
   public async deactivate(
     sender: string,
     stakeAccountPublicKey: string,
-    params?: {
-      сomputeUnitPrice?: bigint;
-      epoch?: bigint;
-      finalLatestBlockhash?: {
-        /** a Hash as base-58 encoded string */
-        blockhash: Blockhash;
-        /** last block height at which the blockhash will be valid */
-        lastValidBlockHeight: bigint;
-      };
-    },
+    params?: Params,
   ): Promise<ApiResponse<TransactionMessageWithBlockhashLifetime>> {
     try {
       const deactivateInstruction = repackInstruction(
@@ -335,33 +257,7 @@ export class Solana extends Blockchain {
           stakeAuthority: createNoopSigner(address(sender)),
         }),
       );
-
-      const finalLatestBlockhash =
-        params?.finalLatestBlockhash ||
-        (await this.connection.getLatestBlockhash().send()).value;
-      let transactionMessage = pipe(
-        createTransactionMessage({ version: 0 }),
-        (tx) => setTransactionMessageFeePayer(address(sender), tx),
-        (tx) =>
-          setTransactionMessageLifetimeUsingBlockhash(finalLatestBlockhash, tx),
-        (tx) => appendTransactionMessageInstruction(deactivateInstruction, tx),
-      );
-
-      // TODO refactor as function
-      if (
-        params?.сomputeUnitPrice !== undefined &&
-        params?.сomputeUnitPrice > 0
-      ) {
-        const unitPriceInstruction = getSetComputeUnitPriceInstruction({
-          /** Transaction compute unit price used for prioritization fees. */
-          microLamports: params?.сomputeUnitPrice,
-        });
-
-        transactionMessage = prependTransactionMessageInstruction(
-          unitPriceInstruction,
-          transactionMessage,
-        );
-      }
+      let transactionMessage = await this.baseTx(sender, params);
 
       return { result: transactionMessage };
     } catch (error) {
@@ -385,16 +281,7 @@ export class Solana extends Blockchain {
     sender: Address,
     stakeAccountPublicKey: Address,
     stakeBalance: bigint,
-    params?: {
-      сomputeUnitPrice?: bigint;
-      epoch?: bigint;
-      finalLatestBlockhash?: {
-        /** a Hash as base-58 encoded string */
-        blockhash: Blockhash;
-        /** last block height at which the blockhash will be valid */
-        lastValidBlockHeight: bigint;
-      };
-    },
+    params?: Params,
   ): Promise<ApiResponse<TransactionMessageWithBlockhashLifetime>> {
     try {
       // Create the withdraw instruction
@@ -408,32 +295,7 @@ export class Solana extends Blockchain {
         }),
       );
 
-      const finalLatestBlockhash =
-        params?.finalLatestBlockhash ||
-        (await this.connection.getLatestBlockhash().send()).value;
-      let transactionMessage = pipe(
-        createTransactionMessage({ version: 0 }),
-        (tx) => setTransactionMessageFeePayer(address(sender), tx),
-        (tx) =>
-          setTransactionMessageLifetimeUsingBlockhash(finalLatestBlockhash, tx),
-        (tx) => appendTransactionMessageInstruction(withdrawInstruction, tx),
-      );
-
-      // TODO refactor as function
-      if (
-        params?.сomputeUnitPrice !== undefined &&
-        params?.сomputeUnitPrice > 0
-      ) {
-        const unitPriceInstruction = getSetComputeUnitPriceInstruction({
-          /** Transaction compute unit price used for prioritization fees. */
-          microLamports: params?.сomputeUnitPrice,
-        });
-
-        transactionMessage = prependTransactionMessageInstruction(
-          unitPriceInstruction,
-          transactionMessage,
-        );
-      }
+      let transactionMessage = await this.baseTx(sender, params);
 
       return { result: transactionMessage };
     } catch (error) {
@@ -500,16 +362,7 @@ export class Solana extends Blockchain {
     lamports: bigint,
     source: string,
     // lockup: Lockup | null = Lockup.default,
-    params?: {
-      сomputeUnitPrice?: bigint;
-      epoch?: bigint;
-      finalLatestBlockhash?: {
-        /** a Hash as base-58 encoded string */
-        blockhash: Blockhash;
-        /** last block height at which the blockhash will be valid */
-        lastValidBlockHeight: bigint;
-      };
-    },
+    params?: Params,
   ): Promise<ApiResponse<StakeResponse>> {
     try {
       //     lockup = lockup || Lockup.default;
@@ -550,43 +403,7 @@ export class Solana extends Blockchain {
         }),
       );
 
-      const finalLatestBlockhash =
-        params?.finalLatestBlockhash ||
-        (await this.connection.getLatestBlockhash().send()).value;
-
-      let transactionMessage = pipe(
-        createTransactionMessage({ version: 0 }),
-        (tx) => setTransactionMessageFeePayer(address(sender), tx),
-        (tx) =>
-          setTransactionMessageLifetimeUsingBlockhash(finalLatestBlockhash, tx),
-        (tx) =>
-          appendTransactionMessageInstruction(
-            createStakeAccountInstruction,
-            tx,
-          ),
-        (tx) =>
-          appendTransactionMessageInstruction(
-            initializeStakeAccountInstruction,
-            tx,
-          ),
-        (tx) => appendTransactionMessageInstruction(delegateInstruction, tx),
-      );
-
-      // TODO refactor as function
-      if (
-        params?.сomputeUnitPrice !== undefined &&
-        params?.сomputeUnitPrice > 0
-      ) {
-        const unitPriceInstruction = getSetComputeUnitPriceInstruction({
-          /** Transaction compute unit price used for prioritization fees. */
-          microLamports: params?.сomputeUnitPrice,
-        });
-
-        transactionMessage = prependTransactionMessageInstruction(
-          unitPriceInstruction,
-          transactionMessage,
-        );
-      }
+      let transactionMessage = await this.baseTx(sender, params);
 
       const signedTransactionMessage =
         source === null
@@ -731,16 +548,7 @@ export class Solana extends Blockchain {
     sender: string,
     lamports: bigint,
     source: string,
-    params?: {
-      сomputeUnitPrice?: bigint;
-      epoch?: bigint;
-      finalLatestBlockhash?: {
-        /** a Hash as base-58 encoded string */
-        blockhash: Blockhash;
-        /** last block height at which the blockhash will be valid */
-        lastValidBlockHeight: bigint;
-      };
-    },
+    params?: Params,
   ): Promise<ApiResponse<UnstakeResponse>> {
     try {
       const stakeAccounts = (await this.getDelegations(sender)).result;
@@ -812,32 +620,7 @@ export class Solana extends Blockchain {
       }
 
       const senderPublicKey = address(sender);
-      const finalLatestBlockhash =
-        params?.finalLatestBlockhash ||
-        (await this.connection.getLatestBlockhash().send()).value;
-
-      let transactionMessage = pipe(
-        createTransactionMessage({ version: 0 }),
-        (tx) => setTransactionMessageFeePayer(address(sender), tx),
-        (tx) =>
-          setTransactionMessageLifetimeUsingBlockhash(finalLatestBlockhash, tx),
-      );
-
-      // TODO refactor as function
-      if (
-        params?.сomputeUnitPrice !== undefined &&
-        params?.сomputeUnitPrice > 0
-      ) {
-        const unitPriceInstruction = getSetComputeUnitPriceInstruction({
-          /** Transaction compute unit price used for prioritization fees. */
-          microLamports: params?.сomputeUnitPrice,
-        });
-
-        transactionMessage = appendTransactionMessageInstruction(
-          unitPriceInstruction,
-          transactionMessage,
-        );
-      }
+      let transactionMessage = await this.baseTx(sender, params);
 
       // Get the minimum balance for rent exemption. Send request only if split required
       const minimumRent =
@@ -984,16 +767,7 @@ export class Solana extends Blockchain {
    */
   public async claim(
     sender: string,
-    params?: {
-      сomputeUnitPrice?: bigint;
-      epoch?: bigint;
-      finalLatestBlockhash?: {
-        /** a Hash as base-58 encoded string */
-        blockhash: Blockhash;
-        /** last block height at which the blockhash will be valid */
-        lastValidBlockHeight: bigint;
-      };
-    },
+    params?: Params,
   ): Promise<ApiResponse<ClaimResponse>> {
     try {
       const delegations = await this.getDelegations(sender);
@@ -1016,32 +790,8 @@ export class Solana extends Blockchain {
 
       if (deactivatedStakeAccounts.length === 0)
         throw this.throwError('NOTHING_TO_CLAIM_ERROR');
-
-      const finalLatestBlockhash =
-        params?.finalLatestBlockhash ||
-        (await this.connection.getLatestBlockhash().send()).value;
-
-      let transactionMessage = pipe(
-        createTransactionMessage({ version: 0 }),
-        (tx) => setTransactionMessageFeePayer(address(sender), tx),
-        (tx) =>
-          setTransactionMessageLifetimeUsingBlockhash(finalLatestBlockhash, tx),
-      );
-
-      // TODO refactor as function
-      if (
-        params?.сomputeUnitPrice !== undefined &&
-        params?.сomputeUnitPrice > 0
-      ) {
-        const unitPriceInstruction = getSetComputeUnitPriceInstruction({
-          /** Transaction compute unit price used for prioritization fees. */
-          microLamports: params?.сomputeUnitPrice,
-        });
-        transactionMessage = prependTransactionMessageInstruction(
-          unitPriceInstruction,
-          transactionMessage,
-        );
-      }
+      
+      let transactionMessage = await this.baseTx(sender, params);
 
       for (const acc of deactivatedStakeAccounts) {
         // Create the withdraw instruction
@@ -1097,6 +847,51 @@ export class Solana extends Blockchain {
 
   //   return [mergeStakeAccountTx];
   // }
+
+  private async baseTx(sender: string, params?: Params,): Promise<CompilableTransactionMessage &
+      TransactionMessageWithBlockhashLifetime> {
+    const finalLatestBlockhash =
+    params?.finalLatestBlockhash ||
+    (await this.connection.getLatestBlockhash().send()).value;
+
+    let transactionMessage = pipe(
+      createTransactionMessage({ version: 0 }),
+      (tx) => setTransactionMessageFeePayer(address(sender), tx),
+      (tx) =>
+        setTransactionMessageLifetimeUsingBlockhash(finalLatestBlockhash, tx),
+    );
+
+    if (
+      params?.computeUnitLimit !== undefined &&
+      params?.computeUnitLimit > 0
+    ) {
+      const unitLimitInstruction = getSetComputeUnitLimitInstruction({
+        /** Transaction compute unit limit used for prioritization fees. */
+        units: params?.computeUnitLimit,
+      });
+
+      transactionMessage = prependTransactionMessageInstruction(
+        unitLimitInstruction,
+        transactionMessage,
+      );
+    }
+
+    if (
+      params?.сomputeUnitPrice !== undefined &&
+      params?.сomputeUnitPrice > 0
+    ) {
+      const unitPriceInstruction = getSetComputeUnitPriceInstruction({
+        /** Transaction compute unit price used for prioritization fees. */
+        microLamports: params?.сomputeUnitPrice,
+      });
+      transactionMessage = prependTransactionMessageInstruction(
+        unitPriceInstruction,
+        transactionMessage,
+      );
+    }
+
+    return transactionMessage;
+  }
 
   /**
    * Generate a unique source for crating an account.
