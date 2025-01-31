@@ -35,7 +35,10 @@ import {
   getAllocateWithSeedInstruction,
 } from '@solana-program/system';
 
-import { getSetComputeUnitLimitInstruction, getSetComputeUnitPriceInstruction } from '@solana-program/compute-budget';
+import {
+  getSetComputeUnitLimitInstruction,
+  getSetComputeUnitPriceInstruction,
+} from '@solana-program/compute-budget';
 
 import { Blockchain } from './utils';
 import { ERROR_MESSAGES } from './constants/errors';
@@ -177,8 +180,15 @@ export class Solana extends Blockchain {
               // lockup,
             );
 
-            let transactionMessage = await this.baseTx(sender, params);
-
+      let transactionMessage = await this.baseTx(sender, params);
+      transactionMessage = appendTransactionMessageInstruction(
+        createAccountInstruction,
+        transactionMessage,
+      );
+      transactionMessage = appendTransactionMessageInstruction(
+        initializeInstruction,
+        transactionMessage,
+      );
       const signedTransactionMessage =
         source === null
           ? await partiallySignTransactionMessageWithSigners(transactionMessage)
@@ -229,6 +239,10 @@ export class Solana extends Blockchain {
       );
 
       let transactionMessage = await this.baseTx(sender, params);
+      transactionMessage = appendTransactionMessageInstruction(
+        delegateInstruction,
+        transactionMessage,
+      );
 
       return { result: transactionMessage };
     } catch (error) {
@@ -258,6 +272,10 @@ export class Solana extends Blockchain {
         }),
       );
       let transactionMessage = await this.baseTx(sender, params);
+      transactionMessage = appendTransactionMessageInstruction(
+        deactivateInstruction,
+        transactionMessage,
+      );
 
       return { result: transactionMessage };
     } catch (error) {
@@ -296,6 +314,10 @@ export class Solana extends Blockchain {
       );
 
       let transactionMessage = await this.baseTx(sender, params);
+      transactionMessage = appendTransactionMessageInstruction(
+        withdrawInstruction,
+        transactionMessage,
+      );
 
       return { result: transactionMessage };
     } catch (error) {
@@ -404,6 +426,18 @@ export class Solana extends Blockchain {
       );
 
       let transactionMessage = await this.baseTx(sender, params);
+      transactionMessage = appendTransactionMessageInstruction(
+        createStakeAccountInstruction,
+        transactionMessage,
+      );
+      transactionMessage = appendTransactionMessageInstruction(
+        initializeStakeAccountInstruction,
+        transactionMessage,
+      );
+      transactionMessage = appendTransactionMessageInstruction(
+        delegateInstruction,
+        transactionMessage,
+      );
 
       const signedTransactionMessage =
         source === null
@@ -790,7 +824,7 @@ export class Solana extends Blockchain {
 
       if (deactivatedStakeAccounts.length === 0)
         throw this.throwError('NOTHING_TO_CLAIM_ERROR');
-      
+
       let transactionMessage = await this.baseTx(sender, params);
 
       for (const acc of deactivatedStakeAccounts) {
@@ -848,11 +882,15 @@ export class Solana extends Blockchain {
   //   return [mergeStakeAccountTx];
   // }
 
-  private async baseTx(sender: string, params?: Params,): Promise<CompilableTransactionMessage &
-      TransactionMessageWithBlockhashLifetime> {
+  private async baseTx(
+    sender: string,
+    params?: Params,
+  ): Promise<
+    CompilableTransactionMessage & TransactionMessageWithBlockhashLifetime
+  > {
     const finalLatestBlockhash =
-    params?.finalLatestBlockhash ||
-    (await this.connection.getLatestBlockhash().send()).value;
+      params?.finalLatestBlockhash ||
+      (await this.connection.getLatestBlockhash().send()).value;
 
     let transactionMessage = pipe(
       createTransactionMessage({ version: 0 }),

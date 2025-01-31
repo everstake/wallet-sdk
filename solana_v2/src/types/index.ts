@@ -1,7 +1,7 @@
 import { StakeStateAccount } from '@solana-program/stake';
 import {
   Account,
-  Address,  
+  Address,
   Blockhash,
   CompilableTransactionMessage,
   Transaction,
@@ -38,15 +38,15 @@ export type ClaimResponse = {
 };
 
 export type Params = {
-      сomputeUnitPrice?: bigint;
-      computeUnitLimit?: number;
-      epoch?: bigint;
-      finalLatestBlockhash?: {
-        /** a Hash as base-58 encoded string */
-        blockhash: Blockhash;
-        /** last block height at which the blockhash will be valid */
-        lastValidBlockHeight: bigint;
-      };
-    };
+  сomputeUnitPrice?: bigint;
+  computeUnitLimit?: number;
+  epoch?: bigint;
+  finalLatestBlockhash?: {
+    /** a Hash as base-58 encoded string */
+    blockhash: Blockhash;
+    /** last block height at which the blockhash will be valid */
+    lastValidBlockHeight: bigint;
+  };
+};
 
 export type Delegations = Array<Account<StakeStateAccount, Address>>;
