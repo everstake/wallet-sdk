@@ -673,8 +673,8 @@ export class Solana extends Blockchain {
           acc[1],
           acc[0].address,
           source,
-          // Need additional value if split amount less than rent
-          acc[1] <= minimumRent ? minimumRent : 0n,
+          // Need additional value for rent
+          minimumRent,
         );
 
         splitInstructions.forEach(
