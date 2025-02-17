@@ -10,3 +10,5 @@ export * from './solana/constants';
 
 export * from './ethereum/types';
 export * from './solana/types';
+
+export * from './ethereum/abi';
