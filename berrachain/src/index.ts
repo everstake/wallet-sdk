@@ -1,13 +1,14 @@
 import { Blockchain } from '../../utils';
-import { BoostedQueue, Network, Transaction } from './types';
-import Web3 from 'web3';
-import { HttpProvider } from 'web3';
-import type { Contract } from 'web3';
-import { ABI } from './bgt';
+import { BGTContract, BoostedQueue, Network, Transaction } from './types';
+import Web3, { HttpProvider } from 'web3';
+import { MAINNET_ABI } from './bgt_mainnet';
+import { TESTNET_ABI } from './bgt_testnet';
 import {
-  BERA_GAS_RESERVE,
-  BERA_TESTNET_BGT_CONTRACT_ADDRESS,
-  BERA_TESTNET_VALIDATOR,
+  GAS_RESERVE,
+  MAINNET_BGT_CONTRACT_ADDRESS,
+  MAINNET_VALIDATOR,
+  TESTNET_BGT_CONTRACT_ADDRESS,
+  TESTNET_VALIDATOR,
 } from './constants';
 
 import { ERROR_MESSAGES, ORIGINAL_ERROR_MESSAGES } from './constants/errors';
@@ -29,24 +30,43 @@ export class Berrachain extends Blockchain {
   private validator: string;
   private web3!: Web3;
   private readonly btgAddress: string;
-  private btg!: Contract<typeof ABI>;
+  private btg: BGTContract;
+  private readonly network: Network;
 
   protected ERROR_MESSAGES = ERROR_MESSAGES;
   protected ORIGINAL_ERROR_MESSAGES = ORIGINAL_ERROR_MESSAGES;
 
-  constructor(network: Network, rpc: string) {
+  constructor(network: Network = 'mainnet', rpc: string) {
     super();
+    const httpProvider = new HttpProvider(rpc);
+    this.web3 = new Web3(httpProvider);
+    this.network = network;
     switch (network) {
+      case 'mainnet':
+        this.validator = MAINNET_VALIDATOR;
+        this.btgAddress = MAINNET_BGT_CONTRACT_ADDRESS;
+        this.btg = {
+          network: network,
+          contract: new this.web3.eth.Contract(
+            MAINNET_ABI,
+            MAINNET_BGT_CONTRACT_ADDRESS,
+          ),
+        };
+        break;
       case 'testnet':
-        this.validator = BERA_TESTNET_VALIDATOR;
-        this.btgAddress = BERA_TESTNET_BGT_CONTRACT_ADDRESS;
+        this.validator = TESTNET_VALIDATOR;
+        this.btgAddress = TESTNET_BGT_CONTRACT_ADDRESS;
+        this.btg = {
+          network: network,
+          contract: new this.web3.eth.Contract(
+            TESTNET_ABI,
+            TESTNET_BGT_CONTRACT_ADDRESS,
+          ),
+        };
         break;
       default:
         throw this.throwError('NETWORK_ERROR');
     }
-    const httpProvider = new HttpProvider(rpc);
-    this.web3 = new Web3(httpProvider);
-    this.btg = new this.web3.eth.Contract(ABI, this.btgAddress);
   }
 
   /**
@@ -59,7 +79,7 @@ export class Berrachain extends Blockchain {
    */
   public async balanceOf(address: string): Promise<string> {
     try {
-      return await this.btg.methods.balanceOf(address).call();
+      return await this.btg.contract.methods.balanceOf(address).call();
     } catch (error) {
       throw this.handleError('BALANCE_ERROR', error);
     }
@@ -73,9 +93,11 @@ export class Berrachain extends Blockchain {
    *
    * @throws Will throw an error if the contract call fails.
    */
-  public async boosted(address: string): Promise<string> {
+  public async getStake(address: string): Promise<string> {
     try {
-      return await this.btg.methods.boosted(this.validator, address).call();
+      return await this.btg.contract.methods
+        .boosted(address, this.validator)
+        .call();
     } catch (error) {
       throw this.handleError('BOOSTED_ERROR', error);
     }
@@ -89,9 +111,9 @@ export class Berrachain extends Blockchain {
    *
    * @throws Will throw an error if the contract call fails.
    */
-  public async boosts(address: string): Promise<number> {
+  public async getStakes(address: string): Promise<number> {
     try {
-      return await this.btg.methods.boosts(address).call();
+      return await this.btg.contract.methods.boosts(address).call();
     } catch (error) {
       throw this.handleError('BOOSTS_ERROR', error);
     }
@@ -105,15 +127,15 @@ export class Berrachain extends Blockchain {
    *
    * @throws Will throw an error if the contract call fails.
    */
-  public async boostedQueue(address: string): Promise<BoostedQueue> {
+  public async getStakeInQueue(address: string): Promise<BoostedQueue> {
     try {
-      const result = await this.btg.methods
+      const result: string[] = await this.btg.contract.methods
         .boostedQueue(address, this.validator)
         .call();
 
       return {
         lastBlock: Number(result[0]),
-        balance: result[1].toString(),
+        balance: result[1] ? result[1].toString() : '0',
       };
     } catch (error) {
       throw this.handleError('BOOST_QUEUE_ERROR', error);
@@ -128,18 +150,35 @@ export class Berrachain extends Blockchain {
    *
    * @throws Will throw an error if the contract call fails.
    */
-  public async activateBoost(address: string): Promise<Transaction> {
+  public async activateStake(address: string): Promise<Transaction> {
     try {
-      const gasConsumption = await this.btg.methods
-        .activateBoost(this.validator)
-        .estimateGas({ from: address });
+      let gasConsumption;
+      let data;
+      switch (this.btg.network) {
+        case 'testnet':
+          gasConsumption = await this.btg.contract.methods
+            .activateBoost(this.validator)
+            .estimateGas({ from: address });
+          data = this.btg.contract.methods
+            .activateBoost(this.validator)
+            .encodeABI();
+          break;
+        case 'mainnet':
+          gasConsumption = await this.btg.contract.methods
+            .activateBoost(address, this.validator)
+            .estimateGas({ from: address });
+          data = this.btg.contract.methods
+            .activateBoost(address, this.validator)
+            .encodeABI();
+          break;
+      }
 
       return {
         from: address,
         to: this.btgAddress,
         value: 0,
         gasLimit: this.calculateGasLimit(gasConsumption),
-        data: this.btg.methods.activateBoost(this.validator).encodeABI(),
+        data: data,
       };
     } catch (error) {
       throw this.handleError('ACTIVATE_BOOST_ERROR', error);
@@ -155,7 +194,7 @@ export class Berrachain extends Blockchain {
    *
    * @throws Will throw an error if the contract call fails.
    */
-  public async cancelBoost(
+  public async cancelStakeInQueue(
     address: string,
     amount: string,
   ): Promise<Transaction> {
@@ -166,7 +205,7 @@ export class Berrachain extends Blockchain {
 
       const amountWei = this.web3.utils.toWei(amount, 'ether');
 
-      const gasConsumption = await this.btg.methods
+      const gasConsumption = await this.btg.contract.methods
         .cancelBoost(this.validator, amountWei)
         .estimateGas({ from: address });
 
@@ -175,7 +214,7 @@ export class Berrachain extends Blockchain {
         to: this.btgAddress,
         value: 0,
         gasLimit: this.calculateGasLimit(gasConsumption),
-        data: this.btg.methods
+        data: this.btg.contract.methods
           .cancelBoost(this.validator, amountWei)
           .encodeABI(),
       };
@@ -188,15 +227,12 @@ export class Berrachain extends Blockchain {
    * Creates a transaction data for drop boost (unstake)
    *
    * @param address - The staker address
-   * @param amount - The amount of boost
+   * @param amount - The amount of boost (doesn't use for mainnet)
    * @returns A Promise that resolves to the transaction data
    *
    * @throws Will throw an error if the contract call fails.
    */
-  public async dropBoost(
-    address: string,
-    amount: string,
-  ): Promise<Transaction> {
+  public async unstake(address: string, amount: string): Promise<Transaction> {
     try {
       if (!this.isAddress(address)) {
         this.throwError('ADDRESS_FORMAT_ERROR');
@@ -204,16 +240,33 @@ export class Berrachain extends Blockchain {
 
       const amountWei = this.web3.utils.toWei(amount, 'ether');
 
-      const gasConsumption = await this.btg.methods
-        .dropBoost(this.validator, amountWei)
-        .estimateGas({ from: address });
+      let gasConsumption;
+      let data;
+      switch (this.btg.network) {
+        case 'testnet':
+          gasConsumption = await this.btg.contract.methods
+            .dropBoost(this.validator, amountWei)
+            .estimateGas({ from: address });
+          data = this.btg.contract.methods
+            .dropBoost(this.validator, amountWei)
+            .encodeABI();
+          break;
+        case 'mainnet':
+          gasConsumption = await this.btg.contract.methods
+            .dropBoost(address, this.validator)
+            .estimateGas({ from: address });
+          data = this.btg.contract.methods
+            .dropBoost(address, this.validator)
+            .encodeABI();
+          break;
+      }
 
       return {
         from: address,
         to: this.btgAddress,
         value: 0,
         gasLimit: this.calculateGasLimit(gasConsumption),
-        data: this.btg.methods.dropBoost(this.validator, amountWei).encodeABI(),
+        data: data,
       };
     } catch (error) {
       throw this.handleError('DROP_BOOST_ERROR', error);
@@ -229,7 +282,7 @@ export class Berrachain extends Blockchain {
    *
    * @throws Will throw an error if the contract call fails.
    */
-  public async boost(address: string, amount: string): Promise<Transaction> {
+  public async stake(address: string, amount: string): Promise<Transaction> {
     try {
       if (!this.isAddress(address)) {
         this.throwError('ADDRESS_FORMAT_ERROR');
@@ -237,7 +290,7 @@ export class Berrachain extends Blockchain {
 
       const amountWei = this.web3.utils.toWei(amount, 'ether');
 
-      const gasConsumption = await this.btg.methods
+      const gasConsumption = await this.btg.contract.methods
         .queueBoost(this.validator, amountWei)
         .estimateGas({ from: address });
 
@@ -246,12 +299,88 @@ export class Berrachain extends Blockchain {
         to: this.btgAddress,
         value: 0,
         gasLimit: this.calculateGasLimit(gasConsumption),
-        data: this.btg.methods
+        data: this.btg.contract.methods
           .queueBoost(this.validator, amountWei)
           .encodeABI(),
       };
     } catch (error) {
       throw this.handleError('BOOST_ERROR', error);
+    }
+  }
+
+  /**
+   * Creates a transaction data for queue drop boost (unstake queue)
+   *
+   * @param address - The staker address
+   * @param amount - The amount of boost
+   * @returns A Promise that resolves to the transaction data
+   *
+   * @throws Will throw an error if the contract call fails.
+   */
+  public async queueUnstake(
+    address: string,
+    amount: string,
+  ): Promise<Transaction> {
+    try {
+      if (this.network !== 'mainnet') {
+        this.throwError('NOT_AVAILABLE_NETWORK');
+      }
+
+      const amountWei = this.web3.utils.toWei(amount, 'ether');
+
+      const gasConsumption = await this.btg.contract.methods
+        .queueDropBoost(this.validator, amountWei)
+        .estimateGas({ from: address });
+
+      return {
+        from: address,
+        to: this.btgAddress,
+        value: 0,
+        gasLimit: this.calculateGasLimit(gasConsumption),
+        data: this.btg.contract.methods
+          .queueDropBoost(this.validator, amountWei)
+          .encodeABI(),
+      };
+    } catch (error) {
+      throw this.handleError('QUEUE_DROP_BOOST_ERROR', error);
+    }
+  }
+
+  /**
+   * Creates a transaction data for cancel drop boost (cancel unstake queue)
+   *
+   * @param address - The staker address
+   * @param amount - The amount of boost
+   * @returns A Promise that resolves to the transaction data
+   *
+   * @throws Will throw an error if the contract call fails.
+   */
+  public async cancelUnstake(
+    address: string,
+    amount: string,
+  ): Promise<Transaction> {
+    try {
+      if (this.network !== 'mainnet') {
+        this.throwError('NOT_AVAILABLE_NETWORK');
+      }
+
+      const amountWei = this.web3.utils.toWei(amount, 'ether');
+
+      const gasConsumption = await this.btg.contract.methods
+        .cancelDropBoost(this.validator, amountWei)
+        .estimateGas({ from: address });
+
+      return {
+        from: address,
+        to: this.btgAddress,
+        value: 0,
+        gasLimit: this.calculateGasLimit(gasConsumption),
+        data: this.btg.contract.methods
+          .cancelDropBoost(this.validator, amountWei)
+          .encodeABI(),
+      };
+    } catch (error) {
+      throw this.handleError('CANCEL_DROP_BOOST_ERROR', error);
     }
   }
 
@@ -263,7 +392,7 @@ export class Berrachain extends Blockchain {
    * @returns The calculated gas limit as a number.
    */
   private calculateGasLimit(gasConsumption: bigint): number {
-    return Number(gasConsumption) + BERA_GAS_RESERVE;
+    return Number(gasConsumption) + GAS_RESERVE;
   }
 
   /**
