@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025, Everstake.
+ * Licensed under the BSD-3-Clause License. See LICENSE file for details.
+ */
+
 export const TESTNET_VALIDATOR = '0x6f06dD615817886E8e1c3Cb837BF69F94e903472';
 export const TESTNET_BGT_CONTRACT_ADDRESS =
   '0xbda130737bdd9618301681329bf2e46a016ff9ad';

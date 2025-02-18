@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025, Everstake.
+ * Licensed under the BSD-3-Clause License. See LICENSE file for details.
+ */
+
 export const ABI_CONTRACT_ACCOUNTING = [
   {
     inputs: [{ internalType: 'string', name: 'field', type: 'string' }],

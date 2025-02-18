@@ -1,6 +1,6 @@
 {
   "name": "@everstake/wallet-sdk-berrachain",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Berrachain - Everstake Wallet SDK",
   "publishConfig": {
     "access": "public"
