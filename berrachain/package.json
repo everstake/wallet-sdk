@@ -1,6 +1,6 @@
 {
   "name": "@everstake/wallet-sdk-berrachain",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Berrachain - Everstake Wallet SDK",
   "publishConfig": {
     "access": "public"
@@ -34,7 +34,7 @@
     "url": "git+https://github.com/everstake/wallet-sdk.git"
   },
   "author": "Everstake",
-  "license": "ISC",
+  "license": "BSD-3-Clause",
   "bugs": {
     "url": "https://github.com/everstake/wallet-sdk/issues"
   },

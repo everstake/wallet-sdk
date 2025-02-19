@@ -1,6 +1,6 @@
 {
   "name": "@everstake/wallet-sdk-solana",
-  "version": "2.0.6",
+  "version": "2.0.7",
   "description": "Solana - Everstake Wallet SDK",
   "publishConfig": {
     "access": "public"
@@ -34,7 +34,7 @@
     "url": "git+https://github.com/everstake/wallet-sdk.git"
   },
   "author": "Everstake",
-  "license": "ISC",
+  "license": "BSD-3-Clause",
   "bugs": {
     "url": "https://github.com/everstake/wallet-sdk/issues"
   },
