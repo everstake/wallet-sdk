@@ -1,6 +1,6 @@
 {
   "name": "@everstake/wallet-sdk",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "description": "Everstake Wallet SDK for Javascript",
   "publishConfig": {
     "access": "public"
@@ -38,7 +38,7 @@
     "url": "git+https://github.com/everstake/wallet-sdk.git"
   },
   "author": "Everstake",
-  "license": "ISC",
+  "license": "BSD-3-Clause",
   "bugs": {
     "url": "https://github.com/everstake/wallet-sdk/issues"
   },
