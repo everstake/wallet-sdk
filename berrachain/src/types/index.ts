@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025, Everstake.
+ * Licensed under the BSD-3-Clause License. See LICENSE file for details.
+ */
+
 import type { Contract } from 'web3';
 import { TESTNET_ABI } from '../bgt_testnet';
 import { MAINNET_ABI } from '../bgt_mainnet';

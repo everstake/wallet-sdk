@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025, Everstake.
+ * Licensed under the BSD-3-Clause License. See LICENSE file for details.
+ */
+
 export const ERROR_MESSAGES = {
   CONNECTION_ERROR: 'An error occurred while connecting to the network',
   MIN_AMOUNT_ERROR: 'Min Amount {0}',

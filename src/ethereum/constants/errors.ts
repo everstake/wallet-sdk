@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025, Everstake.
+ * Licensed under the BSD-3-Clause License. See LICENSE file for details.
+ */
+
 export const ERROR_MESSAGES = {
   BALANCE_ERROR: 'An error occurred while getting the balance',
   PENDING_BALANCE_ERROR: 'An error occurred while getting the pending balance',
