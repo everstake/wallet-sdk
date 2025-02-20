@@ -6,6 +6,7 @@ settings:
 
 overrides:
   ws: ^8.0.0
+  elliptic: 6.6.1
 
 importers:
 
@@ -1252,8 +1253,8 @@ packages:
   electron-to-chromium@1.5.3:
     resolution: {integrity: sha512-QNdYSS5i8D9axWp/6XIezRObRHqaav/ur9z1VzCDUCH1XIFOr9WQk5xmgunhsTpjjgDy3oLxO/WMOVZlpUQrlA==}
 
-  elliptic@6.5.4:
-    resolution: {integrity: sha512-iLhC6ULemrljPZb+QutR5TQGB+pdW6KGD5RSegS+8sorOZT+rdQFbsQFJgvN3eRqNALqJer4oQ16YvJHlU8hzQ==}
+  elliptic@6.6.1:
+    resolution: {integrity: sha512-RaddvvMatK2LJHqFJ+YA4WysVN5Ita9E35botqIYspQ4TkRAlCicdzKOjlyv/1Za5RyTNn7di//eEV0uTAfe3g==}
 
   emittery@0.13.1:
     resolution: {integrity: sha512-DeWwawk6r5yR9jFgnDKYt4sLS0LmHJJi3ZOnb5/JdbYwj3nW+FxQnHIjhBKz8YLC7oRNPVM9NQ47I3CVx34eqQ==}
@@ -3141,7 +3142,7 @@ snapshots:
       '@ethersproject/logger': 5.7.0
       '@ethersproject/properties': 5.7.0
       bn.js: 5.2.1
-      elliptic: 6.5.4
+      elliptic: 6.6.1
       hash.js: 1.1.7
 
   '@ethersproject/solidity@5.7.0':
@@ -4069,7 +4070,7 @@ snapshots:
 
   electron-to-chromium@1.5.3: {}
 
-  elliptic@6.5.4:
+  elliptic@6.6.1:
     dependencies:
       bn.js: 4.12.1
       brorand: 1.1.0

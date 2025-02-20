@@ -1,6 +1,6 @@
 {
   "name": "@everstake/wallet-sdk",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "description": "Everstake Wallet SDK for Javascript",
   "publishConfig": {
     "access": "public"
@@ -52,7 +52,8 @@
   },
   "pnpm": {
     "overrides": {
-      "ws": "^8.0.0"
+      "ws": "^8.0.0",
+      "elliptic": "6.6.1"
     }
   },
   "devDependencies": {
