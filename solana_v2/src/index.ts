@@ -5,7 +5,7 @@
 
 export * from './solana';
 
-export * from './utils';
+export * from '../../utils';
 
 export * from './constants';
 
