@@ -1,9 +1,3 @@
-import type { Config } from 'jest';
-
-const config: Config = {
-  preset: 'ts-jest',
-  testEnvironment: 'node',
-  verbose: true,
-};
+import config from './../jest.config';
 
 export default config;
