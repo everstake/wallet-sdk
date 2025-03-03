@@ -7,7 +7,8 @@ import {
   Address,
   Account,
   createAddressWithSeed,
-  createSolanaRpc,
+  createDefaultRpcTransport,
+  createSolanaRpcFromTransport,
   mainnet,
   devnet,
   ClusterUrl,
@@ -68,6 +69,7 @@ import {
   Delegations,
   UnstakeResponse,
   Params,
+  RpcConfig,
 } from './types';
 
 import {
@@ -100,22 +102,21 @@ export class Solana extends Blockchain {
   protected ERROR_MESSAGES = ERROR_MESSAGES;
   protected ORIGINAL_ERROR_MESSAGES = {};
 
-  constructor(
-    network: Network = Network.Mainnet,
-    rpc: ClusterUrl | null = null,
-  ) {
+  constructor(network: Network = Network.Mainnet, rpcConfig: RpcConfig = {}) {
     super();
-    if (rpc && !this.isValidURL(rpc)) {
+    if (rpcConfig.rpc && !this.isValidURL(rpcConfig.rpc)) {
       throw this.throwError('INVALID_RPC_ERROR');
     }
 
     switch (network) {
       case Network.Mainnet:
-        rpc = rpc || mainnet('https://api.mainnet-beta.solana.com');
+        rpcConfig.rpc =
+          rpcConfig.rpc || mainnet('https://api.mainnet-beta.solana.com');
         this.validator = MAINNET_VALIDATOR_ADDRESS;
         break;
       case Network.Devnet:
-        rpc = rpc || devnet('https://api.devnet.solana.com');
+        rpcConfig.rpc =
+          rpcConfig.rpc || devnet('https://api.devnet.solana.com');
         this.validator = DEVNET_VALIDATOR_ADDRESS;
         break;
       default:
@@ -123,7 +124,14 @@ export class Solana extends Blockchain {
     }
 
     try {
-      this.connection = createSolanaRpc(rpc);
+      const transport = createDefaultRpcTransport({
+        url: rpcConfig.rpc,
+        headers: {
+          'User-Agent': rpcConfig.userAgent || '',
+        },
+      });
+
+      this.connection = createSolanaRpcFromTransport(transport);
     } catch (error) {
       throw this.handleError('CONNECTION_ERROR', error);
     }
