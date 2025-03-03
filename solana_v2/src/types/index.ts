@@ -9,6 +9,7 @@ import {
   Address,
   Blockhash,
   CompilableTransactionMessage,
+  ClusterUrl,
   Transaction,
   TransactionMessageWithBlockhashLifetime,
 } from '@solana/web3.js';
@@ -40,6 +41,11 @@ export type ClaimResponse = {
   claimTx: CompilableTransactionMessage &
     TransactionMessageWithBlockhashLifetime;
   totalClaimAmount: bigint;
+};
+
+export type RpcConfig = {
+  rpc?: ClusterUrl;
+  userAgent?: string;
 };
 
 export type Params = {
