@@ -60,6 +60,9 @@ import {
   ADDRESS_DEFAULT,
   STAKE_HISTORY_ACCOUNT,
   STAKE_CONFIG_ACCOUNT,
+  MAX_DEACTIVATE_ACCOUNTS_WITH_SPLIT,
+  MAX_CLAIM_ACCOUNTS,
+  MAX_DEACTIVATE_ACCOUNTS,
 } from './constants';
 import {
   ApiResponse,
@@ -604,6 +607,7 @@ export class Solana extends Blockchain {
         params?.epoch || (await this.connection.getEpochInfo().send()).epoch;
       const tm = this.timestampInSec();
 
+      let unstakeAmount = lamports;
       let totalActiveStake: bigint = 0n;
       const activeStakeAccounts = stakeAccounts.filter((acc) => {
         if (acc.data.state.__kind !== 'Stake') {
@@ -626,7 +630,7 @@ export class Solana extends Blockchain {
       if (totalActiveStake < lamports)
         throw this.throwError('NOT_ENOUGH_ACTIVE_STAKE_ERROR');
 
-      // ASC sorting
+      // ASC sort if num of accounts less than threshold otherwise DESC sorting
       activeStakeAccounts.sort((a, b): number => {
         const stakeA = isStake(a.data.state)
           ? a.data.state.fields[1].delegation.stake
@@ -635,7 +639,11 @@ export class Solana extends Blockchain {
           ? b.data.state.fields[1].delegation.stake
           : 0n;
 
-        return Number(stakeA - stakeB);
+        if (activeStakeAccounts.length < MAX_DEACTIVATE_ACCOUNTS_WITH_SPLIT) {
+          return Number(stakeA - stakeB);
+        }
+
+        return Number(stakeB - stakeA);
       });
 
       const accountsToDeactivate: Delegations = [];
@@ -659,7 +667,19 @@ export class Solana extends Blockchain {
           accountsToDeactivate.push(acc);
           lamports = lamports - stakeAmount;
           i++;
+
+          // Max num of deactivate instructions reached
+          if (accountsToDeactivate.length === MAX_DEACTIVATE_ACCOUNTS) {
+            unstakeAmount -= lamports;
+            break;
+          }
           continue;
+        }
+
+        // Max num of deactivate instructions with split reached
+        if (accountsToDeactivate.length > MAX_DEACTIVATE_ACCOUNTS_WITH_SPLIT) {
+          unstakeAmount -= lamports;
+          break;
         }
 
         accountsToSplit.push([acc, lamports]);
@@ -728,7 +748,9 @@ export class Solana extends Blockchain {
         this.handleError('UNSTAKE_ERROR', 'zero instructions');
       }
 
-      return { result: { unstakeTx: transactionMessage } };
+      return {
+        result: { unstakeTx: transactionMessage, unstakeAmount: unstakeAmount },
+      };
     } catch (error) {
       throw this.handleError('UNSTAKE_ERROR', error);
     }
@@ -823,16 +845,11 @@ export class Solana extends Blockchain {
         params?.epoch || (await this.connection.getEpochInfo().send()).epoch;
       const tm = this.timestampInSec();
 
-      let totalClaimableStake = 0n;
       const deactivatedStakeAccounts = delegations.result.filter((acc) => {
-        const isDeactivated =
+        return (
           !isLockupInForce(acc.data, epoch, BigInt(tm)) &&
-          stakeAccountState(acc.data, epoch) === StakeState.Deactivated;
-        if (isDeactivated) {
-          totalClaimableStake += acc.lamports;
-        }
-
-        return isDeactivated;
+          stakeAccountState(acc.data, epoch) === StakeState.Deactivated
+        );
       });
 
       if (deactivatedStakeAccounts.length === 0)
@@ -840,6 +857,8 @@ export class Solana extends Blockchain {
 
       let transactionMessage = await this.baseTx(sender, params);
 
+      let totalClaimableStake = 0n;
+      let accountsForClaim = 0;
       for (const acc of deactivatedStakeAccounts) {
         // Create the withdraw instruction
         const withdrawInstruction = repackInstruction(
@@ -856,6 +875,13 @@ export class Solana extends Blockchain {
           withdrawInstruction,
           transactionMessage,
         );
+
+        totalClaimableStake += acc.lamports;
+        accountsForClaim++;
+
+        if (accountsForClaim === MAX_CLAIM_ACCOUNTS) {
+          break;
+        }
       }
 
       return {

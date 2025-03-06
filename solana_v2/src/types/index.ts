@@ -35,6 +35,7 @@ export type StakeResponse = {
 export type UnstakeResponse = {
   unstakeTx: CompilableTransactionMessage &
     TransactionMessageWithBlockhashLifetime;
+  unstakeAmount: bigint;
 };
 
 export type ClaimResponse = {
