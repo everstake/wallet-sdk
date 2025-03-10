@@ -40,10 +40,10 @@
   },
   "homepage": "https://github.com/everstake/wallet-sdk#readme",
   "dependencies": {
-    "@solana-program/compute-budget": "^0.6.1",
-    "@solana-program/system": "^0.6.2",
-    "@solana-program/stake": "^0.1.0",
-    "@solana/web3.js": "2.0.0"
+    "@solana-program/compute-budget": "^0.7.0",
+    "@solana-program/system": "^0.7.0",
+    "@solana-program/stake": "^0.2.0",
+    "@solana/kit": "^2.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.7.0",

@@ -12,7 +12,7 @@ import {
   ClusterUrl,
   Transaction,
   TransactionMessageWithBlockhashLifetime,
-} from '@solana/web3.js';
+} from '@solana/kit';
 
 export interface ApiResponse<T> {
   result: T;

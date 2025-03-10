@@ -32,7 +32,7 @@ import {
   prependTransactionMessageInstruction,
   getU8Decoder,
   getU32Encoder,
-} from '@solana/web3.js';
+} from '@solana/kit';
 
 import {
   getCreateAccountWithSeedInstruction,
