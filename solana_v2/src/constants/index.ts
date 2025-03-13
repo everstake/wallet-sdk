@@ -3,7 +3,7 @@
  * Licensed under the BSD-3-Clause License. See LICENSE file for details.
  */
 
-import { address, Address } from '@solana/web3.js';
+import { address, Address } from '@solana/kit';
 
 export const CHAIN = 'solana';
 export const MIN_AMOUNT = 10000000; // 0.01 SOL
