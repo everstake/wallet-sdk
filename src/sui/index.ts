@@ -31,17 +31,38 @@ export class Sui extends Blockchain {
     this.initializeNetwork(network, url);
   }
 
+  /**
+   * Initializes the network.
+   *
+   * This method sets the validator address and initializes the SuiClient with the appropriate RPC URL.
+   *
+   * @param network - The network type. This should be one of the keys in `SUI_NETWORK_ADDRESSES`.
+   * @param url - The RPC URL of the network. If not provided, the method will use the URL from `SUI_NETWORK_ADDRESSES`.
+   *
+   * @throws Will throw an error if the provided network is not supported (i.e., not a key in `SUI_NETWORK_ADDRESSES`).
+   */
   private initializeNetwork(network: SuiNetworkType, url?: string) {
     const networkAddresses = SUI_NETWORK_ADDRESSES[network];
 
     if (!networkAddresses) {
       this.throwError('NETWORK_NOT_SUPPORTED', network);
     }
+
+    this.validatorAddress = networkAddresses.validatorAddress;
     this.client = new SuiClient({
       url: url ?? networkAddresses.rpcUrl,
     });
   }
 
+  /**
+   * Retrieves the delegated stakes for a given address.
+   *
+   * @param address - The address to fetch staking balances for.
+   *
+   * @returns A promise that resolves to an array of DelegatedStake objects.
+   *
+   * @throws Will throw an error if the address is not valid or if the API call fails.
+   */
   public async getStakeBalanceByAddress(
     address: string,
   ): Promise<DelegatedStake[]> {
@@ -51,10 +72,6 @@ export class Sui extends Blockchain {
 
     try {
       const delegatedStakes = await this.client.getStakes({ owner: address });
-      // const totalStaked = delegatedStakes
-      //   .filter(stake => stake.validatorAddress === this.validatorAddress)
-      //   .flatMap(stake => stake.stakes)
-      //   .reduce((total, stake) => total.plus(stake.principal), new BigNumber(0));
 
       return delegatedStakes;
     } catch (error) {
@@ -62,6 +79,15 @@ export class Sui extends Blockchain {
     }
   }
 
+  /**
+   * Retrieves the Sui balance for a given address.
+   *
+   * @param address - The address to fetch the balance for.
+   *
+   * @returns A promise that resolves to a BigNumber representing the balance.
+   *
+   * @throws Will throw an error if the address is not valid or if the API call fails.
+   */
   public async getBalanceByAddress(address: string): Promise<BigNumber> {
     if (!this.isAddress(address)) {
       this.throwError('ADDRESS_FORMAT_ERROR');
@@ -76,6 +102,16 @@ export class Sui extends Blockchain {
     }
   }
 
+  /**
+   * Creates a transaction to transfer SUI tokens to a recipient.
+   * 
+   * @param recipientAddress - The address of the recipient.
+   * @param amount - The amount of SUI tokens to transfer as a string.
+   *
+   * @returns A promise that resolves to a Transaction object ready to be signed and executed.
+   *
+   * @throws Will throw an error if the recipient address is not valid or if the transaction preparation fails.
+   */
   public async sendTransfer(
     recipientAddress: string,
     amount: string,
@@ -99,6 +135,16 @@ export class Sui extends Blockchain {
     }
   }
 
+  /**
+   * Creates a transaction to stake SUI tokens with a validator.
+   *
+   * @param amount - The amount of SUI tokens to stake as a string.
+   *
+   * @returns A promise that resolves to a Transaction object ready to be signed and executed.
+   *
+   * @throws Will throw an error if the amount is less than the minimum required for staking
+   * or if the transaction preparation fails.
+   */
   public async stake(amount: string) {
     if (+amount < SUI_MIN_AMOUNT_FOR_STAKE) {
       this.throwError('MIN_STAKE_AMOUNT_ERROR');
@@ -129,7 +175,16 @@ export class Sui extends Blockchain {
     }
   }
 
-  public async unstake(stakedSuiId: string) {
+  /**
+   * Creates a transaction to unstake SUI tokens from a validator.
+   *
+   * @param stakedSuiId - The ID of the staked SUI object to withdraw.
+   *
+   * @returns A promise that resolves to a Transaction object ready to be signed and executed.
+   *
+   * @throws Will throw an error if the transaction preparation fails.
+   */
+  public async unstake(stakedSuiId: string): Promise<Transaction> {
     try {
       const tx = new Transaction();
       tx.moveCall({
@@ -139,11 +194,20 @@ export class Sui extends Blockchain {
           tx.object(stakedSuiId),
         ],
       });
+
+      return tx;
     } catch (error) {
       throw this.handleError('UNSTAKE_ERROR', error);
     }
   }
 
+  /**
+   * Validates if a string is a valid Sui address.
+   *
+   * @param address - The string to validate as a Sui address.
+   *
+   * @returns A boolean indicating whether the string is a valid Sui address.
+   */
   private isAddress(address: string): boolean {
     return isValidSuiAddress(address);
   }
