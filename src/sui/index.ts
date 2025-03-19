@@ -32,6 +32,23 @@ export class Sui extends Blockchain {
   }
 
   /**
+   * Selects and initializes a new network.
+   *
+   * This method calls `initializeNetwork` with the provided parameters and returns the current instance,
+   * allowing for method chaining.
+   *
+   * @param network - The network type. This should be one of the keys in `SUI_NETWORK_ADDRESSES`.
+   * @param url - The RPC URL of the network. If not provided, the method will use the URL from `SUI_NETWORK_ADDRESSES`.
+   *
+   * @returns The current instance of the `Sui` class.
+   */
+  public selectNetwork(network: SuiNetworkType, url?: string): Sui {
+    this.initializeNetwork(network, url);
+
+    return this;
+  }
+
+  /**
    * Initializes the network.
    *
    * This method sets the validator address and initializes the SuiClient with the appropriate RPC URL.
@@ -104,7 +121,7 @@ export class Sui extends Blockchain {
 
   /**
    * Creates a transaction to transfer SUI tokens to a recipient.
-   * 
+   *
    * @param recipientAddress - The address of the recipient.
    * @param amount - The amount of SUI tokens to transfer as a string.
    *
