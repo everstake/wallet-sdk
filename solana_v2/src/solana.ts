@@ -30,8 +30,6 @@ import {
   partiallySignTransactionMessageWithSigners,
   parseBase64RpcAccount,
   prependTransactionMessageInstruction,
-  getU8Decoder,
-  getU32Encoder,
 } from '@solana/kit';
 
 import {
@@ -244,15 +242,13 @@ export class Solana extends Blockchain {
     }
 
     try {
-      const delegateInstruction = repackInstruction(
-        getDelegateStakeInstruction({
-          stake: address(stakeAccount),
-          vote: this.validator,
-          stakeHistory: STAKE_HISTORY_ACCOUNT,
-          unused: STAKE_CONFIG_ACCOUNT,
-          stakeAuthority: createNoopSigner(address(sender)),
-        }),
-      );
+      const delegateInstruction = getDelegateStakeInstruction({
+        stake: address(stakeAccount),
+        vote: this.validator,
+        stakeHistory: STAKE_HISTORY_ACCOUNT,
+        unused: STAKE_CONFIG_ACCOUNT,
+        stakeAuthority: createNoopSigner(address(sender)),
+      });
 
       let transactionMessage = await this.baseTx(sender, params);
       transactionMessage = appendTransactionMessageInstruction(
@@ -281,12 +277,10 @@ export class Solana extends Blockchain {
     params?: Params,
   ): Promise<ApiResponse<TransactionMessageWithBlockhashLifetime>> {
     try {
-      const deactivateInstruction = repackInstruction(
-        getDeactivateInstruction({
-          stake: address(stakeAccountPublicKey),
-          stakeAuthority: createNoopSigner(address(sender)),
-        }),
-      );
+      const deactivateInstruction = getDeactivateInstruction({
+        stake: address(stakeAccountPublicKey),
+        stakeAuthority: createNoopSigner(address(sender)),
+      });
       let transactionMessage = await this.baseTx(sender, params);
       transactionMessage = appendTransactionMessageInstruction(
         deactivateInstruction,
@@ -319,15 +313,13 @@ export class Solana extends Blockchain {
   ): Promise<ApiResponse<TransactionMessageWithBlockhashLifetime>> {
     try {
       // Create the withdraw instruction
-      const withdrawInstruction = repackInstruction(
-        getWithdrawInstruction({
-          stake: stakeAccountPublicKey,
-          recipient: sender,
-          stakeHistory: STAKE_HISTORY_ACCOUNT,
-          withdrawAuthority: createNoopSigner(address(sender)),
-          args: stakeBalance,
-        }),
-      );
+      const withdrawInstruction = getWithdrawInstruction({
+        stake: stakeAccountPublicKey,
+        recipient: sender,
+        stakeHistory: STAKE_HISTORY_ACCOUNT,
+        withdrawAuthority: createNoopSigner(address(sender)),
+        args: stakeBalance,
+      });
 
       let transactionMessage = await this.baseTx(sender, params);
       transactionMessage = appendTransactionMessageInstruction(
@@ -431,15 +423,13 @@ export class Solana extends Blockchain {
               // lockup,
             );
 
-      const delegateInstruction = repackInstruction(
-        getDelegateStakeInstruction({
-          stake: stakeAccountPublicKey,
-          vote: this.validator,
-          stakeHistory: STAKE_HISTORY_ACCOUNT,
-          unused: STAKE_CONFIG_ACCOUNT,
-          stakeAuthority: createNoopSigner(address(sender)),
-        }),
-      );
+      const delegateInstruction = getDelegateStakeInstruction({
+        stake: stakeAccountPublicKey,
+        vote: this.validator,
+        stakeHistory: STAKE_HISTORY_ACCOUNT,
+        unused: STAKE_CONFIG_ACCOUNT,
+        stakeAuthority: createNoopSigner(address(sender)),
+      });
 
       let transactionMessage = await this.baseTx(sender, params);
       transactionMessage = appendTransactionMessageInstruction(
@@ -500,23 +490,21 @@ export class Solana extends Blockchain {
       programAddress: STAKE_PROGRAM_ADDRESS,
     });
 
-    const initializeInstruction = repackInstruction(
-      getInitializeInstruction(
-        /** Uninitialized stake account */
-        {
-          stake: signer.address,
-          arg0: {
-            staker: authorityPublicKey,
-            withdrawer: authorityPublicKey,
-          },
-          arg1: {
-            //TODO use default
-            unixTimestamp: 0,
-            epoch: 0,
-            custodian: ADDRESS_DEFAULT,
-          },
+    const initializeInstruction = getInitializeInstruction(
+      /** Uninitialized stake account */
+      {
+        stake: signer.address,
+        arg0: {
+          staker: authorityPublicKey,
+          withdrawer: authorityPublicKey,
         },
-      ),
+        arg1: {
+          //TODO use default
+          unixTimestamp: 0,
+          epoch: 0,
+          custodian: ADDRESS_DEFAULT,
+        },
+      },
     );
 
     return [createAccountInstruction, initializeInstruction, signer.address];
@@ -562,23 +550,21 @@ export class Solana extends Blockchain {
       programAddress: STAKE_PROGRAM_ADDRESS,
     });
 
-    const initializeInstruction = repackInstruction(
-      getInitializeInstruction(
-        /** Uninitialized stake account */
-        {
-          stake: stakeAccountPubkey,
-          arg0: {
-            staker: authorityPublicKey,
-            withdrawer: authorityPublicKey,
-          },
-          arg1: {
-            //TODO implement Lockup
-            unixTimestamp: 0,
-            epoch: 0,
-            custodian: ADDRESS_DEFAULT,
-          },
+    const initializeInstruction = getInitializeInstruction(
+      /** Uninitialized stake account */
+      {
+        stake: stakeAccountPubkey,
+        arg0: {
+          staker: authorityPublicKey,
+          withdrawer: authorityPublicKey,
         },
-      ),
+        arg1: {
+          //TODO implement Lockup
+          unixTimestamp: 0,
+          epoch: 0,
+          custodian: ADDRESS_DEFAULT,
+        },
+      },
     );
 
     return [
@@ -718,12 +704,11 @@ export class Solana extends Blockchain {
             )),
         );
 
-        const deactivateInstruction = repackInstruction(
-          getDeactivateInstruction({
-            stake: newStakeAccountPubkey,
-            stakeAuthority: createNoopSigner(address(sender)),
-          }),
-        );
+        const deactivateInstruction = getDeactivateInstruction({
+          stake: newStakeAccountPubkey,
+          stakeAuthority: createNoopSigner(address(sender)),
+        });
+
         transactionMessage = appendTransactionMessageInstruction(
           deactivateInstruction,
           transactionMessage,
@@ -731,12 +716,10 @@ export class Solana extends Blockchain {
       }
 
       accountsToDeactivate.forEach((acc) => {
-        const deactivateInstruction = repackInstruction(
-          getDeactivateInstruction({
-            stake: acc.address,
-            stakeAuthority: createNoopSigner(address(sender)),
-          }),
-        );
+        const deactivateInstruction = getDeactivateInstruction({
+          stake: acc.address,
+          stakeAuthority: createNoopSigner(address(sender)),
+        });
 
         transactionMessage = appendTransactionMessageInstruction(
           deactivateInstruction,
@@ -810,14 +793,12 @@ export class Solana extends Blockchain {
       instructions.push(rentTransferInstruction);
     }
 
-    const splitInstruction = repackInstruction(
-      getSplitInstruction({
-        stake: oldStakeAccountPubkey,
-        splitStake: newStakeAccountPubkey,
-        stakeAuthority: createNoopSigner(authorityPublicKey),
-        args: lamports,
-      }),
-    );
+    const splitInstruction = getSplitInstruction({
+      stake: oldStakeAccountPubkey,
+      splitStake: newStakeAccountPubkey,
+      stakeAuthority: createNoopSigner(authorityPublicKey),
+      args: lamports,
+    });
 
     instructions.push(splitInstruction);
 
@@ -861,15 +842,13 @@ export class Solana extends Blockchain {
       let accountsForClaim = 0;
       for (const acc of deactivatedStakeAccounts) {
         // Create the withdraw instruction
-        const withdrawInstruction = repackInstruction(
-          getWithdrawInstruction({
-            stake: acc.address,
-            recipient: address(sender),
-            stakeHistory: STAKE_HISTORY_ACCOUNT,
-            withdrawAuthority: createNoopSigner(address(sender)),
-            args: acc.lamports,
-          }),
-        );
+        const withdrawInstruction = getWithdrawInstruction({
+          stake: acc.address,
+          recipient: address(sender),
+          stakeHistory: STAKE_HISTORY_ACCOUNT,
+          withdrawAuthority: createNoopSigner(address(sender)),
+          args: acc.lamports,
+        });
 
         transactionMessage = appendTransactionMessageInstruction(
           withdrawInstruction,
@@ -1061,33 +1040,4 @@ export function isStake(
   state: StakeStateV2,
 ): state is Extract<StakeStateV2, { __kind: 'Stake' }> {
   return state.__kind === 'Stake';
-}
-
-//TEMP fix. Stake program expect u32 as intruction data size but Stake lib use u8
-export function repackInstruction(
-  initializeInstruction: IInstruction,
-): IInstruction {
-  if (
-    initializeInstruction === undefined ||
-    initializeInstruction.data === undefined
-  ) {
-    return initializeInstruction;
-  }
-
-  const desc = getU8Decoder().decode(initializeInstruction.data.subarray(0, 1));
-  const descU32 = getU32Encoder().encode(desc);
-
-  const result = new Uint8Array(3 + initializeInstruction.data.length);
-  // Copy the value into the start of the new array
-  result.set(descU32, 0);
-  // Copy the original array after the prepended value
-  result.set(initializeInstruction.data.subarray(1), 4);
-  // initializeInstruction.data = result;
-  const instruction = {
-    accounts: initializeInstruction.accounts,
-    programAddress: initializeInstruction.programAddress,
-    data: result,
-  } as IInstruction;
-
-  return instruction;
 }
