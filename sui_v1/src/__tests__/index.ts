@@ -44,7 +44,7 @@ describe('stake', () => {
           expect(e.code).toBe(code);
         }
       } else {
-        await expect(await sui.stake(args.amount)).not.toThrow();
+        await sui.stake(args.amount);
       }
     });
   });
