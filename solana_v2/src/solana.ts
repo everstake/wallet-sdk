@@ -44,7 +44,7 @@ import {
   getSetComputeUnitPriceInstruction,
 } from '@solana-program/compute-budget';
 
-import { Blockchain } from './utils';
+import { Blockchain } from '../../utils';
 import { ERROR_MESSAGES } from './constants/errors';
 import {
   DEVNET_VALIDATOR_ADDRESS,
