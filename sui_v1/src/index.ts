@@ -4,7 +4,7 @@
  */
 
 import { DelegatedStake, SuiClient } from '@mysten/sui/client';
-import { Blockchain } from '../utils';
+import { Blockchain } from './utils';
 import {
   SUI_BASE_NUM,
   SUI_MIN_AMOUNT_FOR_STAKE,

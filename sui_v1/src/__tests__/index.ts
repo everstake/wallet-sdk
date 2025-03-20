@@ -1,5 +1,5 @@
 import { Sui } from '..';
-import { WalletSDKError } from '../../utils';
+import { WalletSDKError } from '../utils';
 import {
   invalidGetStakeBalanceAddress,
   selectNetworErrorkFixture,

@@ -5,7 +5,6 @@
 
 export * from './ethereum';
 export * from './solana';
-export * from './sui';
 export * from './solana/stakeAccount';
 
 export * from './utils';
