@@ -18,14 +18,13 @@ export const ADDRESS_CONTRACT_BUY =
 
 export const MIN_AMOUNT = new BigNumber('1000000000000000000'); // 1 MATIC
 
-export const DELEGATE_BASE_GAS = 220000;
-export const UNDELEGATE_BASE_GAS = 300000;
-export const CLAIM_UNDELEGATE_BASE_GAS = 200000;
-export const CLAIM_REWARDS_BASE_GAS = 180000;
-export const RESTAKE_BASE_GAS = 220000;
-export const WITHDRAW_EPOCH_DELAY = 80;
+export const DELEGATE_BASE_GAS = 220000n;
+export const UNDELEGATE_BASE_GAS = 300000n;
+export const CLAIM_UNDELEGATE_BASE_GAS = 200000n;
+export const CLAIM_REWARDS_BASE_GAS = 180000n;
+export const RESTAKE_BASE_GAS = 220000n;
+export const WITHDRAW_EPOCH_DELAY = 80n;
 
 export const CHAIN = 'polygon';
 
-export const RPC_URL =
-  'https://mainnet.infura.io/v3/f583d4f04d384b9e8c59a7ff1c9f68f1';
+export const RPC_URL = 'https://ethereum-rpc.publicnode.com';

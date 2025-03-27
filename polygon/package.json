@@ -1,6 +1,6 @@
 {
   "name": "@everstake/wallet-sdk-polygon",
-  "version": "0.1.2",
+  "version": "1.0.0",
   "description": "Polygon - Everstake Wallet SDK",
   "publishConfig": {
     "access": "public"
@@ -24,7 +24,7 @@
     "prebuild": "pnpm run type-check && pnpm run lint"
   },
   "keywords": [
-    "berrachain",
+    "polygon",
     "blockchain",
     "everstake",
     "wallet sdk"

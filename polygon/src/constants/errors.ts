@@ -13,6 +13,8 @@ export const ERROR_MESSAGES = {
   GET_UNBOND_ERR: 'Could not get unbonding info.',
   GET_UNBOND_NONCE_ERR: 'Failed to get unbond nonce.',
   GET_REWARD_ERR: 'Could not fetch rewards.',
+  ALLOWANCE_ERR: 'Allowance less than amount',
+  DELEGATED_BALANCE_ERR: 'Delegated balance less than requested amount',
 };
 
 export const ORIGINAL_ERROR_MESSAGES = {};

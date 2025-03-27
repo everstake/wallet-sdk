@@ -31,6 +31,7 @@ import {
   WITHDRAW_EPOCH_DELAY,
 } from './constants';
 import BigNumber from 'bignumber.js';
+import { TransactionRequest, UnbondInfo } from './types';
 
 /**
  * The `Polygon` class extends the `Blockchain` class and provides methods for interacting with the Polygon network.
@@ -93,7 +94,9 @@ export class Polygon extends Blockchain {
    * @throws {Error} Throws an error with code `'TRANSACTION_LOADING_ERR'` if an issue occurs while fetching the transaction status.
    *
    */
-  public async isTransactionLoading(hash: string) {
+  public async isTransactionLoading(
+    hash: string,
+  ): Promise<{ result: boolean }> {
     try {
       const result = await this.web3.eth.getTransactionReceipt(hash);
       if (result && result.status) {
@@ -109,11 +112,23 @@ export class Polygon extends Blockchain {
   }
   /** approve returns TX loading status
    * @param {string} address - user's address
-   * @param {string|number} amount - amount for approve
+   * @param {string} amount - amount for approve
    * @param {boolean} isPOL - is POL token (false - old MATIC)
    * @returns {Promise<Object>} Promise object the result of boolean type
    */
-  public async approve(address: string, amount: string, isPOL = false) {
+  public async approve(
+    address: string,
+    amount: string,
+    isPOL = false,
+  ): Promise<
+    | {
+        from: string;
+        to: string | undefined;
+        gasLimit: bigint;
+        data: string;
+      }
+    | undefined
+  > {
     const amountWei = await this.web3.utils.toWei(amount.toString(), 'ether');
 
     if (new BigNumber(amountWei).isLessThan(MIN_AMOUNT)) {
@@ -147,7 +162,7 @@ export class Polygon extends Blockchain {
   /** delegate makes unsigned delegation TX
    * @param {string} token - auth token
    * @param {string} address - user's address
-   * @param {string|number} amount - amount for approve
+   * @param {string} amount - amount for approve
    * @param {boolean} isPOL - is POL token (false - old MATIC)
    * @returns {Promise<Object>} Promise object represents the unsigned TX object
    */
@@ -156,7 +171,7 @@ export class Polygon extends Blockchain {
     address: string,
     amount: string,
     isPOL = false,
-  ) {
+  ): Promise<TransactionRequest | undefined> {
     if (await CheckToken(token)) {
       const amountWei = await this.web3.utils.toWei(amount.toString(), 'ether');
       if (new BigNumber(amountWei).isLessThan(MIN_AMOUNT))
@@ -166,9 +181,9 @@ export class Polygon extends Blockchain {
         const allowedAmount = await this.getAllowance(address);
         if (
           allowedAmount &&
-          new BigNumber(allowedAmount).isLessThan(amountWei)
+          new BigNumber(allowedAmount.toString()).isLessThan(amountWei)
         ) {
-          throw new Error(`Allowance less than amount`);
+          this.throwError('ALLOWANCE_ERR');
         }
 
         const methods = this.contract_buy?.methods;
@@ -206,7 +221,7 @@ export class Polygon extends Blockchain {
   /** undelegate makes unsigned undelegate TX
    * @param {string} token - auth token
    * @param {string} address - user's address
-   * @param {string|number} amount - amount for approve
+   * @param {string} amount - amount for approve
    * @param {boolean} isPOL - is POL token (false - old MATIC)
    * @returns {Promise<Object>} Promise object represents the unsigned TX object
    */
@@ -215,7 +230,7 @@ export class Polygon extends Blockchain {
     address: string,
     amount: string,
     isPOL = false,
-  ) {
+  ): Promise<TransactionRequest | undefined> {
     if (await CheckToken(token)) {
       try {
         const amountWei = await this.web3.utils.toWei(
@@ -228,7 +243,7 @@ export class Polygon extends Blockchain {
           delegatedBalance &&
           delegatedBalance.isLessThan(BigNumber(amount))
         ) {
-          throw new Error(`Delegated balance less than requested amount`);
+          this.throwError('DELEGATED_BALANCE_ERR');
         }
 
         const methods = this.contract_buy.methods;
@@ -265,15 +280,15 @@ export class Polygon extends Blockchain {
 
   /** claimUndelegate makes unsigned claim undelegate TX
    * @param {string} address - user's address
-   * @param {number} unbondNonce - unbound nonce
+   * @param {bigint} unbondNonce - unbound nonce
    * @param {boolean} isPOL - is POL token (false - old MATIC)
    * @returns {Promise<Object>} Promise object represents the unsigned TX object
    */
   public async claimUndelegate(
     address: string,
-    unbondNonce = 0,
+    unbondNonce = 0n,
     isPOL = false,
-  ) {
+  ): Promise<TransactionRequest | undefined> {
     const unbond = await this.getUnbond(address, unbondNonce);
     if (unbond == null) return;
 
@@ -283,8 +298,10 @@ export class Polygon extends Blockchain {
     if (currentEpoch == null) return;
 
     if (
-      BigNumber(currentEpoch).isLessThan(
-        BigNumber(unbond.withdrawEpoch).plus(BigNumber(WITHDRAW_EPOCH_DELAY)),
+      BigNumber(currentEpoch.toString()).isLessThan(
+        BigNumber(unbond.withdrawEpoch.toString()).plus(
+          BigNumber(WITHDRAW_EPOCH_DELAY.toString()),
+        ),
       )
     ) {
       throw new Error(`Current epoch less than withdraw delay`);
@@ -312,7 +329,10 @@ export class Polygon extends Blockchain {
    * @param {boolean} isPOL - is POL token (false - old MATIC)
    * @returns {Promise<Object>} Promise object represents the unsigned TX object
    */
-  public async reward(address: string, isPOL = false) {
+  public async reward(
+    address: string,
+    isPOL = false,
+  ): Promise<TransactionRequest | undefined> {
     const methods = this.contract_buy.methods;
     if (!methods.withdrawRewardsPOL || !methods.withdrawRewards) return;
 
@@ -334,7 +354,10 @@ export class Polygon extends Blockchain {
    * @param {boolean} isPOL - is POL token (false - old MATIC)
    * @returns {Promise<Object>} Promise object represents the unsigned TX object
    */
-  public async restake(address: string, isPOL = false) {
+  public async restake(
+    address: string,
+    isPOL = false,
+  ): Promise<TransactionRequest | undefined> {
     const methods = this.contract_buy.methods;
     if (!methods.restakePOL || !methods.restake) return;
 
@@ -353,7 +376,7 @@ export class Polygon extends Blockchain {
    * @param {string} address - user's address
    * @returns {Promise<BigNumber>} Promise with number of the reward
    */
-  public async getReward(address: string) {
+  public async getReward(address: string): Promise<BigNumber | undefined> {
     try {
       const methods = this.contract_buy.methods;
       if (!methods.getLiquidRewards) return;
@@ -369,15 +392,15 @@ export class Polygon extends Blockchain {
 
   /** getAllowance returns allowed number for spender
    * @param {string} owner - tokens owner
-   * @param {string} spender - contract spender
    * @param {boolean} isPOL - is POL token (false - old MATIC)
-   * @returns {Promise<string>} Promise allowed number for spender
+   * @param {string} spender - contract spender
+   * @returns {Promise<bigint>} Promise allowed bigint for spender
    */
   public async getAllowance(
     owner: string,
-    spender = ADDRESS_CONTRACT_STAKING,
     isPOL = false,
-  ): Promise<string | undefined> {
+    spender = ADDRESS_CONTRACT_STAKING,
+  ): Promise<bigint | undefined> {
     const contract = isPOL ? this.contract_approve_pol : this.contract_approve;
     if (!contract.methods.allowance) return;
 
@@ -390,9 +413,11 @@ export class Polygon extends Blockchain {
 
   /** getTotalDelegate returns total delegated number
    * @param {string} address - user's address
-   * @returns {Promise<BigNumber>} Promise with number of the delegation
+   * @returns {Promise<BigNumber>} Promise with BigNumber of the delegation
    */
-  public async getTotalDelegate(address: string) {
+  public async getTotalDelegate(
+    address: string,
+  ): Promise<BigNumber | undefined> {
     try {
       const methods = this.contract_buy.methods;
       if (!methods.getTotalStake) return;
@@ -409,30 +434,36 @@ export class Polygon extends Blockchain {
 
   /** getUnbond returns unbound data
    * @param {string} address - user's address
-   * @param {number} unbondNonce - unbound nonce
+   * @param {bigint} unbondNonce - unbound nonce
    * @returns {Promise<Object>} Promise Object with unbound data
    */
-  public async getUnbond(address: string, unbondNonce = 0) {
+  public async getUnbond(
+    address: string,
+    unbondNonce = 0n,
+  ): Promise<UnbondInfo | undefined> {
     try {
       const methods = this.contract_buy.methods;
       if (!methods.unbondNonces || !methods.unbonds_new) return;
 
+      const unbondNoncesRes: bigint = await methods
+        .unbondNonces(address)
+        .call();
+
       // Get recent nonces if not provided
-      const unbondNonces =
-        unbondNonce === 0
-          ? await methods.unbondNonces(address).call()
-          : unbondNonce;
+      const unbondNonces = unbondNonce === 0n ? unbondNoncesRes : unbondNonce;
+
       const result = await methods.unbonds_new(address, unbondNonces).call();
 
       const res0 = result?.[0];
       const res1 = result?.[1];
 
-      if (res0 == null || res1 == null) return;
+      if (res0 == null || res1 == null || typeof unbondNonce !== 'bigint')
+        return;
 
       return {
         amount: new BigNumber(this.web3.utils.fromWei(res0, 'ether')),
         withdrawEpoch: res1,
-        unbondNonces: unbondNonces,
+        unbondNonces,
       };
     } catch (error) {
       throw this.handleError('GET_UNBOND_ERR', error);
@@ -441,9 +472,9 @@ export class Polygon extends Blockchain {
 
   /** getUnbondNonces returns unbound nonce
    * @param {string} address - user's address
-   * @returns {Promise<string>} Promise with unbound nonce number
+   * @returns {Promise<bigint>} Promise with unbound nonce bigint
    */
-  public async getUnbondNonces(address: string) {
+  public async getUnbondNonces(address: string): Promise<bigint | undefined> {
     try {
       const methods = this.contract_buy.methods;
       if (!methods.unbondNonces) return;
@@ -455,9 +486,9 @@ export class Polygon extends Blockchain {
   }
 
   /** getCurrentEpoch returns current epoch
-   * @returns {Promise<string>} Promise with current epoch number
+   * @returns {Promise<bigint>} Promise with current epoch bigint
    */
-  public async getCurrentEpoch(): Promise<string | undefined> {
+  public async getCurrentEpoch(): Promise<bigint | undefined> {
     const methods = this.contract_staking.methods;
 
     if (!methods.currentEpoch) return;
