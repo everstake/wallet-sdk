@@ -12,9 +12,6 @@ importers:
 
   .:
     dependencies:
-      '@mysten/sui':
-        specifier: ^1.24.0
-        version: 1.24.0(typescript@5.5.3)
       '@solana/web3.js':
         specifier: 1.95.8
         version: 1.95.8(bufferutil@4.0.8)(utf-8-validate@5.0.10)
