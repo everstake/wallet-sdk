@@ -25,7 +25,7 @@ import type {
   AggregatedBalances,
 } from './types';
 import { ValidatorStatus } from './types';
-import { Blockchain } from '../utils';
+import { Blockchain } from '../../utils';
 
 /**
  * The `Ethereum` class extends the `Blockchain` class and provides methods for interacting with the Ethereum network.

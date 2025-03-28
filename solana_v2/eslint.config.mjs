@@ -18,6 +18,6 @@ export default [
     },
   },
   {
-    ignores: ["src/temp/**"]
-  }
+    ignores: ['src/temp/**'],
+  },
 ];
