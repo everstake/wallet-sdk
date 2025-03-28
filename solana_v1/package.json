@@ -1,6 +1,6 @@
 {
   "name": "@everstake/wallet-sdk-solana",
-  "version": "2.1.1",
+  "version": "1.0.0",
   "description": "Solana - Everstake Wallet SDK",
   "publishConfig": {
     "access": "public"
@@ -40,15 +40,15 @@
   },
   "homepage": "https://github.com/everstake/wallet-sdk#readme",
   "dependencies": {
-    "@solana-program/compute-budget": "^0.7.0",
-    "@solana-program/system": "^0.7.0",
-    "@solana-program/stake": "^0.2.0",
-    "@solana/kit": "^2.1.0"
+    "@solana/web3.js": "1.95.8",
+    "bignumber.js": "9.1.2",
+    "superstruct": "2.0.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.7.0",
     "@jest/types": "^29.6.3",
     "@types/jest": "^29.5.12",
+    "@types/node": "^22.13.5",
     "eslint": "9.x",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.2.1",
