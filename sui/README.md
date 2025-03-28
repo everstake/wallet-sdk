@@ -17,13 +17,13 @@ You can install and import Wallet SDK for Javascript/TypeScript.
 Install the npm library by copying the code below.
 
 ```sh
-$ npm install @everstake/wallet-sdk-sui-v1
+$ npm install @everstake/wallet-sdk-sui
 ```
 
 or you can also use yarn
 
 ```sh
-$ yarn add @everstake/wallet-sdk-sui-v1
+$ yarn add @everstake/wallet-sdk-sui
 ```
 
 ### Step. 2: Import Wallet SDK
@@ -34,14 +34,14 @@ After installing the package, you can import the Sui module and use the SDK:
 
 ```ts
 // import module
-import { Sui } from '@everstake/wallet-sdk-sui-v1';
+import { Sui } from '@everstake/wallet-sdk-sui';
 // or you can also use
-import * as Sui from '@everstake/wallet-sdk-sui-v1';
+import * as Sui from '@everstake/wallet-sdk-sui';
 ```
 
 #### Import ES5
 
 ```ts
 // import module
-const { Sui } = require("@everstake/wallet-sdk-sui-v1");
+const { Sui } = require("@everstake/wallet-sdk-sui");
 ```

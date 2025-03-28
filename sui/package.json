@@ -1,5 +1,5 @@
 {
-    "name": "@everstake/wallet-sdk-sui-v1",
+    "name": "@everstake/wallet-sdk-sui",
     "version": "1.0.0",
     "description": "Sui - Everstake Wallet SDK",
     "publishConfig": {
