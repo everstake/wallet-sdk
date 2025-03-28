@@ -11,9 +11,6 @@ importers:
       '@mysten/sui':
         specifier: ^1.24.0
         version: 1.24.0(typescript@5.8.2)
-      bignumber.js:
-        specifier: 9.1.2
-        version: 9.1.2
       superstruct:
         specifier: 2.0.2
         version: 2.0.2
@@ -935,9 +932,6 @@ packages:
 
   balanced-match@1.0.2:
     resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
-
-  bignumber.js@9.1.2:
-    resolution: {integrity: sha512-2/mKyZH9K85bzOEfhXDBFZTGd1CTs+5IHpeFQo9luiBG7hghdC851Pj2WAhb6E3R6b9tZj/XKhbg4fum+Kepug==}
 
   brace-expansion@1.1.11:
     resolution: {integrity: sha512-iCuPHDFgrHX7H2vEI/5xpz07zSHB00TpugqhmYtVmMO6518mCuRMoOYFldEBl0g187ufozdaHgWKcYFb61qGiA==}
@@ -3164,8 +3158,6 @@ snapshots:
       babel-preset-current-node-syntax: 1.1.0(@babel/core@7.26.10)
 
   balanced-match@1.0.2: {}
-
-  bignumber.js@9.1.2: {}
 
   brace-expansion@1.1.11:
     dependencies:

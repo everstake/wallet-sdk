@@ -3,7 +3,6 @@
  * Licensed under the BSD-3-Clause License. See LICENSE file for details.
  */
 
-import BigNumber from 'bignumber.js';
 import { SuiNetworkAddressesMap } from '../types';
 
 export const SUI_NETWORK_ADDRESSES: SuiNetworkAddressesMap = {
@@ -20,6 +19,6 @@ export const SUI_NETWORK_ADDRESSES: SuiNetworkAddressesMap = {
 };
 
 // 1 sui
-export const SUI_BASE_NUM = new BigNumber(1000000000);
+export const SUI_BASE_NUM = 1000000000n;
 
-export const SUI_MIN_AMOUNT_FOR_STAKE = 1;
+export const SUI_MIN_AMOUNT_FOR_STAKE = SUI_BASE_NUM; // 1 SUI
