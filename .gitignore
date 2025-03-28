@@ -2,7 +2,7 @@
 node_modules
 /dist
 solana_v2/dist
-sui_v1/dist
+sui/dist
 
 # local env files
 .env.local
