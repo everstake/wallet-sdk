@@ -28,37 +28,7 @@ export class Sui extends Blockchain {
 
   constructor(network: SuiNetworkType = 'mainnet', url?: string) {
     super();
-    this.initializeNetwork(network, url);
-  }
 
-  /**
-   * Selects and initializes a new network.
-   *
-   * This method calls `initializeNetwork` with the provided parameters and returns the current instance,
-   * allowing for method chaining.
-   *
-   * @param network - The network type. This should be one of the keys in `SUI_NETWORK_ADDRESSES`.
-   * @param url - The RPC URL of the network. If not provided, the method will use the URL from `SUI_NETWORK_ADDRESSES`.
-   *
-   * @returns The current instance of the `Sui` class.
-   */
-  public selectNetwork(network: SuiNetworkType, url?: string): Sui {
-    this.initializeNetwork(network, url);
-
-    return this;
-  }
-
-  /**
-   * Initializes the network.
-   *
-   * This method sets the validator address and initializes the SuiClient with the appropriate RPC URL.
-   *
-   * @param network - The network type. This should be one of the keys in `SUI_NETWORK_ADDRESSES`.
-   * @param url - The RPC URL of the network. If not provided, the method will use the URL from `SUI_NETWORK_ADDRESSES`.
-   *
-   * @throws Will throw an error if the provided network is not supported (i.e., not a key in `SUI_NETWORK_ADDRESSES`).
-   */
-  private initializeNetwork(network: SuiNetworkType, url?: string) {
     const networkAddresses = SUI_NETWORK_ADDRESSES[network];
 
     if (!networkAddresses) {
@@ -162,15 +132,16 @@ export class Sui extends Blockchain {
    * @throws Will throw an error if the amount is less than the minimum required for staking
    * or if the transaction preparation fails.
    */
-  public async stake(amount: string) {
-    if (+amount < SUI_MIN_AMOUNT_FOR_STAKE) {
+  public async stake(amount: string): Promise<Transaction> {
+    const amountBn = new BigNumber(amount);
+    if (amountBn.lt(SUI_MIN_AMOUNT_FOR_STAKE)) {
       this.throwError('MIN_STAKE_AMOUNT_ERROR');
     }
 
     try {
       const tx = new Transaction();
       const stakeCoin = tx.splitCoins(tx.gas, [
-        SUI_BASE_NUM.multipliedBy(amount).toString(),
+        SUI_BASE_NUM.multipliedBy(amountBn).toString(),
       ]);
 
       tx.moveCall({

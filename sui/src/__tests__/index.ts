@@ -19,17 +19,13 @@ describe('selectNetwork', () => {
       const sui = new Sui(args.network as SuiNetworkType);
 
       expect(sui.validatorAddress).toBe(result.validatorAddress);
-
-      const suiInstance = sui.selectNetwork(args.network as SuiNetworkType);
-
-      expect(suiInstance.validatorAddress).toBe(result.validatorAddress);
     });
   });
 
   selectNetworErrorkFixture.forEach(({ description, args, error }) => {
     it(description, () => {
       expect(() =>
-        new Sui().selectNetwork(args.network as SuiNetworkType),
+        new Sui(args.network as SuiNetworkType)
       ).toThrow(error);
     });
   });
