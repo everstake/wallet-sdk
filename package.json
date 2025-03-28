@@ -44,7 +44,6 @@
   },
   "homepage": "https://github.com/everstake/wallet-sdk#readme",
   "dependencies": {
-    "@mysten/sui": "^1.24.0",
     "@solana/web3.js": "1.95.8",
     "bignumber.js": "9.1.2",
     "ethereum-multicall": "^2.26.0",
