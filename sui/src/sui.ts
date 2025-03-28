@@ -12,7 +12,6 @@ import {
 } from './constants';
 import { ERROR_MESSAGES, ORIGINAL_ERROR_MESSAGES } from './constants/error';
 import { SuiNetworkType } from './types';
-import BigNumber from 'bignumber.js';
 import {
   isValidSuiAddress,
   SUI_SYSTEM_STATE_OBJECT_ID,
@@ -75,7 +74,7 @@ export class Sui extends Blockchain {
    *
    * @throws Will throw an error if the address is not valid or if the API call fails.
    */
-  public async getBalanceByAddress(address: string): Promise<BigNumber> {
+  public async getBalanceByAddress(address: string): Promise<BigInt> {
     if (!this.isAddress(address)) {
       this.throwError('ADDRESS_FORMAT_ERROR');
     }
@@ -83,7 +82,7 @@ export class Sui extends Blockchain {
     try {
       const balance = await this.client.getBalance({ owner: address });
 
-      return new BigNumber(balance.totalBalance);
+      return BigInt(balance.totalBalance);
     } catch (error) {
       throw this.handleError('USER_BALANCES_ERROR', error);
     }
@@ -93,7 +92,7 @@ export class Sui extends Blockchain {
    * Creates a transaction to transfer SUI tokens to a recipient.
    *
    * @param recipientAddress - The address of the recipient.
-   * @param amount - The amount of SUI tokens to transfer as a string.
+   * @param amountInMist - The amount in MIST to transfer as a string.
    *
    * @returns A promise that resolves to a Transaction object ready to be signed and executed.
    *
@@ -101,8 +100,9 @@ export class Sui extends Blockchain {
    */
   public async sendTransfer(
     recipientAddress: string,
-    amount: string,
+    amountInMist: string,
   ): Promise<Transaction> {
+    const amountBn = BigInt(amountInMist);
     if (!this.isAddress(recipientAddress)) {
       this.throwError('ADDRESS_FORMAT_ERROR');
     }
@@ -111,7 +111,7 @@ export class Sui extends Blockchain {
       const tx = new Transaction();
 
       const coin = tx.splitCoins(tx.gas, [
-        SUI_BASE_NUM.multipliedBy(amount).toString(),
+        amountBn.toString(),
       ]);
 
       tx.transferObjects([coin], recipientAddress);
@@ -125,23 +125,23 @@ export class Sui extends Blockchain {
   /**
    * Creates a transaction to stake SUI tokens with a validator.
    *
-   * @param amount - The amount of SUI tokens to stake as a string.
+   * @param amountInMist - The amount in MIST to stake as a string.
    *
    * @returns A promise that resolves to a Transaction object ready to be signed and executed.
    *
    * @throws Will throw an error if the amount is less than the minimum required for staking
    * or if the transaction preparation fails.
    */
-  public async stake(amount: string): Promise<Transaction> {
-    const amountBn = new BigNumber(amount);
-    if (amountBn.lt(SUI_MIN_AMOUNT_FOR_STAKE)) {
+  public async stake(amountInMist: string): Promise<Transaction> {
+    const amountBn = BigInt(amountInMist);
+    if (amountBn < SUI_MIN_AMOUNT_FOR_STAKE) {
       this.throwError('MIN_STAKE_AMOUNT_ERROR');
     }
 
     try {
       const tx = new Transaction();
       const stakeCoin = tx.splitCoins(tx.gas, [
-        SUI_BASE_NUM.multipliedBy(amountBn).toString(),
+        amountBn.toString(),
       ]);
 
       tx.moveCall({

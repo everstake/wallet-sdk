@@ -42,7 +42,7 @@ export const stakeAmount = [
   {
     description: 'amount is less than SUI_MIN_AMOUNT_FOR_STAKE',
     args: {
-      amount: '0.5',
+      amount: '500000000',
     },
     error: {
       message: ERROR_MESSAGES.MIN_STAKE_AMOUNT_ERROR,
@@ -52,14 +52,14 @@ export const stakeAmount = [
   {
     description: 'amount is equal to SUI_MIN_AMOUNT_FOR_STAKE',
     args: {
-      amount: '1',
+      amount: '1000000000',
     },
     error: {},
   },
   {
     description: 'amount is greater than SUI_MIN_AMOUNT_FOR_STAKE',
     args: {
-      amount: '2',
+      amount: '2000000000',
     },
     error: {},
   },
