@@ -5,11 +5,7 @@
 
 import { DelegatedStake, SuiClient } from '@mysten/sui/client';
 import { Blockchain } from './utils';
-import {
-  SUI_BASE_NUM,
-  SUI_MIN_AMOUNT_FOR_STAKE,
-  SUI_NETWORK_ADDRESSES,
-} from './constants';
+import { SUI_MIN_AMOUNT_FOR_STAKE, SUI_NETWORK_ADDRESSES } from './constants';
 import { ERROR_MESSAGES, ORIGINAL_ERROR_MESSAGES } from './constants/error';
 import { SuiNetworkType } from './types';
 import {
@@ -74,7 +70,7 @@ export class Sui extends Blockchain {
    *
    * @throws Will throw an error if the address is not valid or if the API call fails.
    */
-  public async getBalanceByAddress(address: string): Promise<BigInt> {
+  public async getBalanceByAddress(address: string): Promise<bigint> {
     if (!this.isAddress(address)) {
       this.throwError('ADDRESS_FORMAT_ERROR');
     }
@@ -110,9 +106,7 @@ export class Sui extends Blockchain {
     try {
       const tx = new Transaction();
 
-      const coin = tx.splitCoins(tx.gas, [
-        amountBn.toString(),
-      ]);
+      const coin = tx.splitCoins(tx.gas, [amountBn.toString()]);
 
       tx.transferObjects([coin], recipientAddress);
 
@@ -140,9 +134,7 @@ export class Sui extends Blockchain {
 
     try {
       const tx = new Transaction();
-      const stakeCoin = tx.splitCoins(tx.gas, [
-        amountBn.toString(),
-      ]);
+      const stakeCoin = tx.splitCoins(tx.gas, [amountBn.toString()]);
 
       tx.moveCall({
         target: '0x3::sui_system::request_add_stake',
