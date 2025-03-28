@@ -24,9 +24,7 @@ describe('selectNetwork', () => {
 
   selectNetworErrorkFixture.forEach(({ description, args, error }) => {
     it(description, () => {
-      expect(() =>
-        new Sui(args.network as SuiNetworkType)
-      ).toThrow(error);
+      expect(() => new Sui(args.network as SuiNetworkType)).toThrow(error);
     });
   });
 });
