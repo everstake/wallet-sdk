@@ -3,6 +3,7 @@ node_modules
 /dist
 solana_v2/dist
 sui/dist
+ethereum/dist
 solana_v1/dist
 
 # local env files

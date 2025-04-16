@@ -3,17 +3,17 @@
  * Licensed under the BSD-3-Clause License. See LICENSE file for details.
  */
 
-export * from './ethereum';
+export * from '../ethereum/src';
 export * from './solana';
 export * from './solana/stakeAccount';
 
 export * from '../utils';
 export * from '../utils/api';
 
-export * from './ethereum/constants';
+export * from '../ethereum/src/constants';
 export * from './solana/constants';
 
-export * from './ethereum/types';
+export * from '../ethereum/src/types';
 export * from './solana/types';
 
-export * from './ethereum/abi';
+export * from '../ethereum/src/abi';
