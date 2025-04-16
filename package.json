@@ -50,6 +50,10 @@
     "superstruct": "2.0.2",
     "web3": "4.16.0"
   },
+  "overrides": {
+    "ws": "^8.0.0",
+    "elliptic": "6.6.1"
+  },
   "pnpm": {
     "overrides": {
       "ws": "^8.0.0",
