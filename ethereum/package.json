@@ -1,6 +1,6 @@
 {
   "name": "@everstake/wallet-sdk-ethereum",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Ethereum - Everstake Wallet SDK",
   "publishConfig": {
     "access": "public"
