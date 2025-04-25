@@ -291,10 +291,9 @@ export class Ethereum extends Blockchain {
    */
   public async getPoolFee(): Promise<BigNumber> {
     try {
-      const result = await this.contractAccounting.methods
-        .getPoolFee()
-        .call()
-        .toString();
+      const poolFee = await this.contractAccounting.methods.getPoolFee().call();
+
+      const result = poolFee.toString();
 
       return new BigNumber(result).div(10000);
     } catch (error) {
