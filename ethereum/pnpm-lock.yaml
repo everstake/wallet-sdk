@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       bignumber.js:
-        specifier: 9.1.2
-        version: 9.1.2
+        specifier: ^9.3.0
+        version: 9.3.0
       ethereum-multicall:
         specifier: ^2.26.0
         version: 2.26.0
@@ -1023,8 +1023,8 @@ packages:
   bech32@1.1.4:
     resolution: {integrity: sha512-s0IrSOzLlbvX7yp4WBfPITzpAU8sqQcpsmwXDiKwrG4r491vwCO/XpejasRNl0piBMe/DvP4Tz0mIS/X1DPJBQ==}
 
-  bignumber.js@9.1.2:
-    resolution: {integrity: sha512-2/mKyZH9K85bzOEfhXDBFZTGd1CTs+5IHpeFQo9luiBG7hghdC851Pj2WAhb6E3R6b9tZj/XKhbg4fum+Kepug==}
+  bignumber.js@9.3.0:
+    resolution: {integrity: sha512-EM7aMFTXbptt/wZdMlBv2t8IViwQL+h6SLHosp8Yf0dqJMTnY6iL32opnAB6kAdL0SZPuvcAzFr31o0c/R3/RA==}
 
   bn.js@4.12.1:
     resolution: {integrity: sha512-k8TVBiPkPJT9uHLdOKfFpqcfprwBFOAAXXozRubr7R7PfIuKvQlzcI4M0pALeqXN09vdaMbUdUj+pass+uULAg==}
@@ -3754,7 +3754,7 @@ snapshots:
 
   bech32@1.1.4: {}
 
-  bignumber.js@9.1.2: {}
+  bignumber.js@9.3.0: {}
 
   bn.js@4.12.1: {}
 
