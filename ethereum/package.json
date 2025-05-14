@@ -1,6 +1,6 @@
 {
   "name": "@everstake/wallet-sdk-ethereum",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Ethereum - Everstake Wallet SDK",
   "publishConfig": {
     "access": "public"
@@ -40,7 +40,7 @@
   },
   "homepage": "https://github.com/everstake/wallet-sdk#readme",
   "dependencies": {
-    "bignumber.js": "9.1.2",
+    "bignumber.js": "^9.3.0",
     "ethereum-multicall": "^2.26.0",
     "web3": "4.16.0"
   },
