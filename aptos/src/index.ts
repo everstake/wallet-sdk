@@ -329,15 +329,6 @@ export class Aptos extends Blockchain {
       );
     }
 
-    const pending = new BigNumber(balance.pending_inactive);
-    const pendingAfter = pending.plus(amountBN);
-
-    if (pendingAfter.lt(MIN_AMOUNT) && !pendingAfter.isEqualTo(0)) {
-      throw new Error(
-        `pending inactive stake should be more than ${MIN_AMOUNT.toString()}`,
-      );
-    }
-
     try {
       await SetStats({
         token,
