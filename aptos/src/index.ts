@@ -9,6 +9,7 @@ import {
   MoveFunctionId,
   MoveValue,
   InputViewFunctionData,
+  Network,
 } from '@aptos-labs/ts-sdk';
 
 import { Blockchain } from '../../utils';
@@ -51,7 +52,7 @@ export class Aptos extends Blockchain {
 
   constructor(rpc: string = RPC_URL) {
     super();
-    const config = new AptosConfig({ fullnode: rpc });
+    const config = new AptosConfig({ fullnode: rpc, network: Network.MAINNET });
     this.client = new AptosSDK(config);
   }
 
