@@ -1,3 +1,5 @@
+export type Network = 'mainnet' | 'testnet';
+
 export type StakeActionParams = {
   token: string;
   address: string;

@@ -6,9 +6,10 @@
 import {
   Aptos as AptosSDK,
   AptosConfig,
+  InputViewFunctionData,
   MoveFunctionId,
   MoveValue,
-  InputViewFunctionData,
+  Network as NetworkAPT,
 } from '@aptos-labs/ts-sdk';
 
 import { Blockchain } from '../../utils';
@@ -27,7 +28,7 @@ import {
 } from './constants';
 import BigNumber from 'bignumber.js';
 import { COMMON_ERROR_MESSAGES } from '../../utils/constants/errors';
-import { StakeActionParams, StakeBalance } from './types';
+import { Network, StakeActionParams, StakeBalance } from './types';
 
 /**
  * The `Aptos` class extends the `Blockchain` class and provides methods for interacting with the Aptos network.
@@ -49,9 +50,17 @@ export class Aptos extends Blockchain {
   protected ERROR_MESSAGES = ERROR_MESSAGES;
   protected ORIGINAL_ERROR_MESSAGES = ORIGINAL_ERROR_MESSAGES;
 
-  constructor(rpc: string = RPC_URL) {
+  constructor(rpc: string = RPC_URL, network: Network = 'mainnet') {
     super();
-    const config = new AptosConfig({ fullnode: rpc });
+    let n: NetworkAPT;
+    switch (network) {
+      case 'testnet':
+        n = NetworkAPT.TESTNET;
+        break;
+      default:
+        n = NetworkAPT.MAINNET;
+    }
+    const config = new AptosConfig({ fullnode: rpc, network: n });
     this.client = new AptosSDK(config);
   }
 
