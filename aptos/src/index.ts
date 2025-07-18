@@ -50,9 +50,9 @@ export class Aptos extends Blockchain {
   protected ERROR_MESSAGES = ERROR_MESSAGES;
   protected ORIGINAL_ERROR_MESSAGES = ORIGINAL_ERROR_MESSAGES;
 
-  constructor(rpc: string = RPC_URL) {
+  constructor(rpc: string = RPC_URL, network = Network.MAINNET) {
     super();
-    const config = new AptosConfig({ fullnode: rpc, network: Network.MAINNET });
+    const config = new AptosConfig({ fullnode: rpc, network: network });
     this.client = new AptosSDK(config);
   }
 
