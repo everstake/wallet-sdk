@@ -39,6 +39,11 @@
     "url": "https://github.com/everstake/wallet-sdk/issues"
   },
   "homepage": "https://github.com/everstake/wallet-sdk#readme",
+  "pnpm": {
+    "overrides": {
+      "form-data": "4.0.4"
+    }
+  },
   "dependencies": {
     "@aptos-labs/ts-sdk": "2.0.1",
     "bignumber.js": "^9.1.2"
