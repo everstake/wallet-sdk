@@ -131,7 +131,7 @@ export abstract class Blockchain {
     let urlClass;
     try {
       urlClass = new URL(url);
-    } catch (_) {
+    } catch {
       return false;
     }
 
