@@ -1,11 +1,13 @@
-export * from './koios';
-
 export type Network = 'mainnet' | 'preprod' | 'preview';
 
 export interface DelegationEpoch {
   stakeAddress: string;
+  delegatedPool?: string;
   currentEpoch: number;
-  targetEpoch: number;
-  epochsRemaining: number;
-  hoursRemaining: number;
+  activeEpoch?: number;
+  status: string;
+  epochsUntilActive?: number;
+  hoursUntilActive?: number;
+  epochsUntilRewards?: number;
+  hoursUntilRewards?: number;
 }

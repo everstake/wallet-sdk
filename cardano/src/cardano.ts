@@ -1,30 +1,21 @@
 import { Blockchain } from '../../utils';
 import { CardanoWeb3 } from 'cardano-web3-js';
 import {
-  ERROR_MESSAGES,
-  KOIOS_MAINNET,
-  KOIOS_PREPROD,
-  KOIOS_PREVIEW,
-  POOLS_LIST_URL,
-} from './constants';
-import {
-  AccountUpdates,
-  DelegationEpoch,
-  EpochReward,
-  KoiosPoolInfo,
-  Network,
-  StakeAddressInfo,
-  StakeHistory,
-  Tip,
-} from './types';
+  BlockFrostAPI,
+  BlockfrostServerError,
+} from '@blockfrost/blockfrost-js';
+import { ERROR_MESSAGES, POOLS_LIST_URL } from './constants';
+import { DelegationEpoch, Network } from './types';
+import { components } from '@blockfrost/openapi';
+import { PaginationOptions } from '@blockfrost/blockfrost-js/lib/types';
 
 /**
  * The `Cardano` class extends the `Blockchain` class and provides methods for
- * interacting with the Cardano network and KOIOS API.
+ * interacting with the Cardano network and BLOCKFROST API.
  *
  * @property network - specified cardano network.
  * @property paymentAddress - payment cardano address which related with staking address.
- * @property koiosAPI - KOIOS base URL API according to network.
+ * @property blockfrost - blockfrost base URL API according to network.
  * @property web3 - cardano web3 instance.
  * @property ORIGINAL_ERROR_MESSAGES - The original error messages for the Ethereum class.
  *
@@ -32,30 +23,30 @@ import {
 export class Cardano extends Blockchain {
   private readonly network: Network;
   private readonly paymentAddress: string;
-  private readonly koiosAPI: string;
+  private blockfrost: BlockFrostAPI;
   private web3: CardanoWeb3;
+  private pool: components['schemas']['pool'] | undefined;
 
   protected ERROR_MESSAGES = ERROR_MESSAGES;
   protected ORIGINAL_ERROR_MESSAGES = {};
 
-  constructor(network: Network, paymentAddress: string) {
+  constructor(
+    network: Network,
+    paymentAddress: string,
+    blockfrostProjectID: string,
+  ) {
     super();
     this.network = network;
     this.paymentAddress = paymentAddress;
-    switch (network) {
-      case 'preview':
-        this.koiosAPI = KOIOS_PREVIEW;
-        break;
-      case 'preprod':
-        this.koiosAPI = KOIOS_PREPROD;
-        break;
-      case 'mainnet':
-        this.koiosAPI = KOIOS_MAINNET;
-        break;
-      default:
-        throw new Error(`network ${network} not available`);
-    }
+    this.blockfrost = new BlockFrostAPI({
+      projectId: blockfrostProjectID,
+      network: network,
+    });
     this.web3 = new CardanoWeb3({ network: network });
+    const account = this.web3.account.fromAddress(this.paymentAddress);
+    if (!account.__config.stakingAddress) {
+      throw this.throwError('NO_STAKING_ADDRESS');
+    }
   }
 
   /**
@@ -67,7 +58,7 @@ export class Cardano extends Blockchain {
   public async registerAndDelegateCborHexTx(): Promise<string> {
     const account = this.web3.account.fromAddress(this.paymentAddress);
     const state = await account.getState();
-    const poolID = await this.selectPool();
+    const pool = await this.selectPool();
     if (!account.__config.stakingAddress) {
       throw this.throwError('NO_STAKING_ADDRESS');
     }
@@ -78,7 +69,7 @@ export class Cardano extends Blockchain {
         .setChangeAddress(account.__config.paymentAddress)
         .addInputs(state.utxos)
         .stake.register(account.__config.stakingAddress)
-        .stake.delegateTo(account.__config.stakingAddress, poolID)
+        .stake.delegateTo(account.__config.stakingAddress, pool.pool_id)
         .applyAndBuild();
 
       return tx_build.__tx.to_cbor_hex();
@@ -95,7 +86,7 @@ export class Cardano extends Blockchain {
   public async delegateCborHexTx(): Promise<string> {
     const account = this.web3.account.fromAddress(this.paymentAddress);
     const state = await account.getState();
-    const poolID = await this.selectPool();
+    const pool = await this.selectPool();
     if (!account.__config.stakingAddress) {
       throw this.throwError('NO_STAKING_ADDRESS');
     }
@@ -105,7 +96,7 @@ export class Cardano extends Blockchain {
         .createTx()
         .setChangeAddress(account.__config.paymentAddress)
         .addInputs(state.utxos)
-        .stake.delegateTo(account.__config.stakingAddress, poolID)
+        .stake.delegateTo(account.__config.stakingAddress, pool.pool_id)
         .applyAndBuild();
 
       return tx_build.__tx.to_cbor_hex();
@@ -169,106 +160,72 @@ export class Cardano extends Blockchain {
 
   /**
    * getStakeInfo gets info about stake using payment account. Info fetches
-   * from KOIOS API.
+   * from BLOCKFROST API.
    *
-   * @returns Promise with stake info
+   * @returns Promise with stake info or undefined if account is empty
    */
-  public async getStakeInfo(): Promise<StakeAddressInfo> {
+  public async getStakeInfo(): Promise<
+    components['schemas']['account_content'] | undefined
+  > {
     const account = this.web3.account.fromAddress(this.paymentAddress);
     if (!account.__config.stakingAddress) {
       throw this.throwError('NO_STAKING_ADDRESS');
     }
+    const stakingAddress: string = account.__config.stakingAddress;
 
-    let accountInfos: StakeAddressInfo[];
     try {
-      const res = await fetch(`${this.koiosAPI}/account_info`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          _stake_addresses: [account.__config.stakingAddress],
-        }),
-      });
-      accountInfos = (await res.json()) as StakeAddressInfo[];
+      return await this.blockfrost.accounts(stakingAddress);
     } catch (error) {
-      throw this.handleError('KOIOS_API', error);
+      if (error instanceof BlockfrostServerError && error.status_code === 404) {
+        return undefined;
+      }
+      throw this.handleError('BLOCKFROST_STAKING_INFO', error);
     }
-
-    if (
-      !accountInfos ||
-      accountInfos.length === 0 ||
-      accountInfos[0] === undefined
-    ) {
-      throw this.throwError('NO_KOIOS_STAKING_INFO');
-    }
-
-    return accountInfos[0];
   }
 
   /**
    * getRewardHistory gets rewards history using current payment account and
-   * according staking address. Info fetches from KOIOS API.
+   * according staking address. Info fetches from BLOCKFROST API.
    *
-   * @param epoch  - optional param to specify needed epoch.
+   * @param pagination - optional params for ordering and pagination
    *
    * @returns Promise with stake reward history
    */
   public async getRewardHistory(
-    epoch: number | undefined,
-  ): Promise<EpochReward[]> {
+    pagination: PaginationOptions,
+  ): Promise<components['schemas']['account_reward_content']> {
     const account = this.web3.account.fromAddress(this.paymentAddress);
     if (!account.__config.stakingAddress) {
       throw this.throwError('NO_STAKING_ADDRESS');
     }
-
-    let body: string;
-    if (epoch === undefined) {
-      body = JSON.stringify({
-        _stake_addresses: [account.__config.stakingAddress],
-      });
-    } else {
-      body = JSON.stringify({
-        _stake_addresses: [account.__config.stakingAddress],
-        _epoch_no: epoch,
-      });
-    }
+    const stakingAddress: string = account.__config.stakingAddress;
 
     try {
-      const res = await fetch(`${this.koiosAPI}/account_reward_history`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: body,
-      });
-
-      return (await res.json()) as EpochReward[];
+      return this.blockfrost.accountsRewards(stakingAddress, pagination);
     } catch (error) {
-      throw this.handleError('KOIOS_API', error);
+      throw this.handleError('BLOCKFROST_API', error);
     }
   }
 
   /**
-   * getStakeHistory gets stake history using current payment account and
-   * according staking address. Info fetches from KOIOS API.
+   * getDelegations gets delegations history using current payment account and
+   * according staking address. Info fetches from BLOCKFROST API.
    *
-   * @returns Promise with stake history
+   * @returns Promise with delegations history
    */
-  public async getStakeHistory(): Promise<StakeHistory[]> {
+  public async getDelegations(
+    pagination: PaginationOptions,
+  ): Promise<components['schemas']['account_delegation_content']> {
     const account = this.web3.account.fromAddress(this.paymentAddress);
     if (!account.__config.stakingAddress) {
       throw this.throwError('NO_STAKING_ADDRESS');
     }
+    const stakingAddress: string = account.__config.stakingAddress;
 
     try {
-      const res = await fetch(`${this.koiosAPI}/account_stake_history`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          _stake_addresses: [account.__config.stakingAddress],
-        }),
-      });
-
-      return (await res.json()) as StakeHistory[];
+      return this.blockfrost.accountsDelegations(stakingAddress, pagination);
     } catch (error) {
-      throw this.handleError('KOIOS_API', error);
+      throw this.handleError('BLOCKFROST_API', error);
     }
   }
 
@@ -281,35 +238,40 @@ export class Cardano extends Blockchain {
    */
   public async getPoolsInfos(
     poolBech32IDs: string[],
-  ): Promise<KoiosPoolInfo[]> {
+  ): Promise<components['schemas']['pool'][]> {
     try {
-      const res = await fetch(`${this.koiosAPI}/pool_info`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ _pool_bech32_ids: poolBech32IDs }),
-      });
+      const pools: components['schemas']['pool'][] = [];
 
-      return (await res.json()) as KoiosPoolInfo[];
+      for (const poolID of poolBech32IDs) {
+        const p = await this.blockfrost.poolsById(poolID);
+        pools.push(p as components['schemas']['pool']);
+      }
+
+      return pools;
     } catch (error) {
-      throw this.handleError('KOIOS_API', error);
+      throw this.handleError('BLOCKFROST_API', error);
     }
   }
 
-  private async selectPool(): Promise<string> {
+  /**
+   * selectPool gets info about selected pool.
+   * First call of selectPool methods select the lowest saturation, it takes somme time.
+   **
+   * @returns Promise with pool infos
+   */
+  public async selectPool(): Promise<components['schemas']['pool']> {
+    if (this.pool !== undefined) {
+      return this.pool;
+    }
+
     const poolIDs = await this.getPoolIDs();
     const poolsInfos = await this.getPoolsInfos(poolIDs);
-    const poolWithLowestSaturation = poolsInfos.reduce((min, current) => {
-      if (current.live_saturation === null) {
-        return min;
-      }
-      if (min.live_saturation === null) {
-        return current;
-      }
 
+    this.pool = poolsInfos.reduce((min, current) => {
       return current.live_saturation < min.live_saturation ? current : min;
     });
 
-    return poolWithLowestSaturation.pool_id_bech32;
+    return this.pool;
   }
 
   private async getPoolIDs(): Promise<string[]> {
@@ -324,8 +286,8 @@ export class Cardano extends Blockchain {
         }
       case 'preview':
         return new Promise<string[]>((resolve) =>
+          // random pools ID for tests
           resolve([
-            'pool12q7fskmv767qv8yn7mvcxj5azam9cdg0lpm3cajjqr2rqxc7y6a',
             'pool1gxhg7rr092n25gw2jw3es4773ds3g2t88wgr8guqh5tv7sg38fz',
             'pool1p79majfcn554nkl88auu5njmprfsx9jdkv29rtltkn44y2h04qy',
             'pool1et0z8df6yy5fj7hnfht5mswg6dcvf58ndmy0aq0a98j22ulksx6',
@@ -334,6 +296,7 @@ export class Cardano extends Blockchain {
       case 'preprod':
         return new Promise<string[]>((resolve) =>
           resolve([
+            // random pools ID for tests
             'pool1wf9j0stckxueuxtrkupzug7463el4mdwz3fwxwlsdr98q9292s8',
             'pool1yaap4p67ltp79m5na7s8qarszyz5d6n7ltqxlmf2apzsxmxlwzq',
             'pool1cpfq9p6f04yde2ms2ey4qmuj56t2wfkye5kj3adjsqgpk9re3zs',
@@ -353,61 +316,50 @@ export class Cardano extends Blockchain {
     if (!account.__config.stakingAddress) {
       throw this.throwError('NO_STAKING_ADDRESS');
     }
+    const stakingAddress: string = account.__config.stakingAddress;
 
-    let accountUpdates: AccountUpdates[];
-    try {
-      const res = await fetch(`${this.koiosAPI}/account_updates`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          _stake_addresses: [account.__config.stakingAddress],
-        }),
-      });
+    const delegations =
+      await this.blockfrost.accountsDelegations(stakingAddress);
+    const latestDelegation = delegations[0]; // newest first
 
-      accountUpdates = (await res.json()) as AccountUpdates[];
-    } catch (error) {
-      throw this.handleError('KOIOS_API', error);
+    // Get current epoch
+    const latestEpoch = await this.blockfrost.epochsLatest();
+
+    if (!latestDelegation) {
+      return {
+        stakeAddress: stakingAddress,
+        status: 'never-delegated',
+        currentEpoch: latestEpoch.epoch,
+      };
     }
 
-    const updates = accountUpdates[0]?.updates;
-    if (!updates || updates.length === 0) {
-      throw this.throwError('NO_KOIOS_DELEGATION_FOUND');
-    }
-
-    // Find the most recent delegation event
-    const lastDelegation = updates
-      .filter((u) => u.action_type === 'delegation_pool')
-      .pop();
-    if (!lastDelegation) {
-      throw this.throwError('NO_KOIOS_DELEGATION_FOUND');
-    }
-
-    const targetEpoch = lastDelegation.epoch_no; // Epoch when this delegation applies
-
-    // Fetch current epoch
-    let tipData: Tip[];
-    try {
-      const tipRes = await fetch(`${this.koiosAPI}/tip`);
-      tipData = (await tipRes.json()) as Tip[];
-    } catch (error) {
-      throw this.handleError('KOIOS_API', error);
-    }
-    if (!tipData || tipData.length === 0 || tipData[0] === undefined) {
-      throw this.throwError('KOIOS_EPOCH');
-    }
-
-    const currentEpoch = tipData[0].epoch_no;
-
-    const epochsRemaining = targetEpoch - currentEpoch;
+    const { pool_id, active_epoch } = latestDelegation;
     const hoursPerEpoch = this.getHoursPerEpoch();
-    const hoursRemaining = epochsRemaining * hoursPerEpoch;
+
+    const currentEpoch = latestEpoch.epoch;
+    const epochsUntilActive = Math.max(0, active_epoch - currentEpoch);
+    const hoursUntilActive = epochsUntilActive * hoursPerEpoch;
+
+    const epochsUntilRewards = Math.max(0, active_epoch + 2 - currentEpoch);
+    const hoursUntilRewards = epochsUntilRewards * hoursPerEpoch;
+
+    let status: string;
+    if (epochsUntilActive > 0) {
+      status = 'pending';
+    } else {
+      status = 'active';
+    }
 
     return {
-      stakeAddress: account.__config.stakingAddress,
+      stakeAddress: stakingAddress,
+      delegatedPool: pool_id,
       currentEpoch,
-      targetEpoch,
-      epochsRemaining,
-      hoursRemaining,
+      activeEpoch: active_epoch,
+      status,
+      epochsUntilActive,
+      hoursUntilActive,
+      epochsUntilRewards,
+      hoursUntilRewards,
     };
   }
 

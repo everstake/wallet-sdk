@@ -40,6 +40,8 @@
   },
   "homepage": "https://github.com/everstake/wallet-sdk#readme",
   "dependencies": {
+    "@blockfrost/blockfrost-js": "^6.0.0",
+    "@blockfrost/openapi": "^0.1.79",
     "cardano-web3-js": "^2.3.4"
   },
   "devDependencies": {
