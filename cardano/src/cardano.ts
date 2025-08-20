@@ -5,7 +5,7 @@ import {
   BlockfrostServerError,
 } from '@blockfrost/blockfrost-js';
 import { ERROR_MESSAGES, POOLS_LIST_URL } from './constants';
-import { DelegationEpoch, Network } from './types';
+import { Network, StakeActivation } from './types';
 import { components } from '@blockfrost/openapi';
 import { PaginationOptions } from '@blockfrost/blockfrost-js/lib/types';
 
@@ -80,6 +80,7 @@ export class Cardano extends Blockchain {
 
   /**
    * delegateCborHexTx make a new unsigned transaction that contains delegation.
+   * It can be used for redelegation.
    *
    * @returns Promise with cbor encoded hex data.
    */
@@ -321,7 +322,12 @@ export class Cardano extends Blockchain {
     return this.pool;
   }
 
-  private async getPoolIDs(): Promise<string[]> {
+  /**
+   * getPoolIDs fetches list of internal pools.
+   **
+   * @returns Promise with pool IDs
+   */
+  public async getPoolIDs(): Promise<string[]> {
     switch (this.network) {
       case 'mainnet':
         try {
@@ -353,71 +359,97 @@ export class Cardano extends Blockchain {
   }
 
   /**
-   * getDelegationEpoch gets an information about last delegation and how much time
+   * isInternalPoolDelegation check if current delegation is to internal pool.
+   **
+   * @returns Promise with boolean value.
+   */
+  public async isInternalPoolDelegation(): Promise<boolean> {
+    const poolIDs = await this.getPoolIDs();
+    const stake = await this.getStakeInfo();
+    if (!stake) {
+      return false;
+    }
+    const poolID = poolIDs.find((poolID) => {
+      return poolID === stake.pool_id ? poolID : undefined;
+    });
+
+    return poolID !== undefined;
+  }
+
+  /**
+   * getStakeActivation gets an information about last delegation and how much time
    * need to stake become active.
    *
    * @returns Promise with delegation epoch info
    */
-  public async getDelegationEpoch(): Promise<DelegationEpoch> {
+  public async getStakeActivation(): Promise<StakeActivation> {
     const account = this.web3.account.fromAddress(this.paymentAddress);
     if (!account.__config.stakingAddress) {
       throw this.throwError('NO_STAKING_ADDRESS');
     }
-    const stakingAddress: string = account.__config.stakingAddress;
+    const stakeAddress: string = account.__config.stakingAddress;
 
-    const delegations =
-      await this.blockfrost.accountsDelegations(stakingAddress);
-    const latestDelegation = delegations[0]; // newest first
+    const delegations = await this.blockfrost.accountsDelegations(
+      stakeAddress,
+      { order: 'desc' },
+    );
+    if (
+      !delegations ||
+      delegations.length === 0 ||
+      delegations[0] === undefined
+    ) {
+      const latest = await this.blockfrost.epochsLatest();
 
-    // Get current epoch
-    const latestEpoch = await this.blockfrost.epochsLatest();
-
-    if (!latestDelegation) {
       return {
-        stakeAddress: stakingAddress,
-        status: 'never-delegated',
-        currentEpoch: latestEpoch.epoch,
+        stakeAddress,
+        delegatedPool: '',
+        currentEpoch: Number(latest.epoch),
+        activeEpoch: Number(latest.epoch),
+        epochsUntilActive: 0,
+        hoursUntilActive: 0,
+        epochsUntilRewards: 0,
+        hoursUntilRewards: 0,
+        status: 'no-delegation',
       };
     }
 
-    const { pool_id, active_epoch } = latestDelegation;
-    const hoursPerEpoch = this.getHoursPerEpoch();
+    const { pool_id, active_epoch } = delegations[0];
+    const activeEpoch = active_epoch;
 
-    const currentEpoch = latestEpoch.epoch;
-    const epochsUntilActive = Math.max(0, active_epoch - currentEpoch);
-    const hoursUntilActive = epochsUntilActive * hoursPerEpoch;
+    const latest = await this.blockfrost.epochsLatest();
+    const currentEpoch = latest.epoch;
+    const now = Math.floor(Date.now() / 1000); // UNIX seconds
+    const secLeftInEpoch = Math.max(0, latest.end_time - now);
 
-    const epochsUntilRewards = Math.max(0, active_epoch + 2 - currentEpoch);
-    const hoursUntilRewards = epochsUntilRewards * hoursPerEpoch;
+    const secondsUntilEpoch = (target: number): number => {
+      const gap = target - currentEpoch;
+      if (gap <= 0) return 0;
+      if (gap === 1) return secLeftInEpoch;
 
-    let status: string;
-    if (epochsUntilActive > 0) {
-      status = 'pending';
-    } else {
-      status = 'active';
-    }
+      return secLeftInEpoch + (gap - 1) * (latest.end_time - latest.start_time);
+    };
+
+    const epochsUntilActive = Math.max(0, activeEpoch - currentEpoch);
+    const hoursUntilActive = Math.round(secondsUntilEpoch(activeEpoch) / 3600);
+
+    const firstRewardsEpoch = activeEpoch + 2;
+    const epochsUntilRewards = Math.max(0, firstRewardsEpoch - currentEpoch);
+    const hoursUntilRewards = Math.round(
+      secondsUntilEpoch(firstRewardsEpoch) / 3600,
+    );
+
+    const status = epochsUntilActive > 0 ? 'pending' : 'active';
 
     return {
-      stakeAddress: stakingAddress,
+      stakeAddress,
       delegatedPool: pool_id,
       currentEpoch,
-      activeEpoch: active_epoch,
-      status,
+      activeEpoch,
       epochsUntilActive,
       hoursUntilActive,
       epochsUntilRewards,
       hoursUntilRewards,
+      status,
     };
-  }
-
-  private getHoursPerEpoch(): number {
-    switch (this.network) {
-      case 'mainnet':
-        return 5 * 24;
-      case 'preprod':
-        return 5 * 24;
-      case 'preview':
-        return 24;
-    }
   }
 }
