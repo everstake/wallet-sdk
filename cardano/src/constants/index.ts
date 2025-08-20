@@ -10,4 +10,5 @@ export const ERROR_MESSAGES = {
     'There is no found any delegation using BLOCKFROST API',
   BLOCKFROST_EPOCH: 'There is no epoch info using BLOCKFROST API',
   FETCH_POOL_LIST: 'An error occurred while fetching pool list',
+  NO_REWARDS_YET: 'Account has no any rewards yet',
 };

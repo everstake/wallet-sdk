@@ -159,6 +159,53 @@ export class Cardano extends Blockchain {
   }
 
   /**
+   * withdrawRewardsCborHexTx make a new unsigned transaction that claim rewards.
+   * Cardano has auto compound so no need to claim rewards to increase APR. It should be call when need to spend it.
+   *
+   * @returns Promise with cbor encoded hex data
+   */
+  public async withdrawRewardsCborHexTx(): Promise<string> {
+    const account = this.web3.account.fromAddress(this.paymentAddress);
+    const state = await account.getState();
+    if (!account.__config.stakingAddress) {
+      throw this.throwError('NO_STAKING_ADDRESS');
+    }
+
+    const stakeInfo = await this.getStakeInfo();
+    if (stakeInfo === undefined) {
+      throw this.throwError('NO_BLOCKFROST_DELEGATION_FOUND');
+    }
+    if (stakeInfo?.rewards_sum === undefined) {
+      throw this.throwError('NO_REWARDS_YET');
+    }
+
+    const unclaimed =
+      BigInt(stakeInfo.rewards_sum) - BigInt(stakeInfo.withdrawals_sum);
+    if (unclaimed <= 0n) {
+      throw this.throwError('NO_REWARDS_YET');
+    }
+
+    try {
+      const tx_build = await this.web3
+        .createTx()
+        .setChangeAddress(account.__config.paymentAddress)
+        .addInputs(state.utxos)
+        .addOutputs([
+          {
+            address: account.__config.paymentAddress,
+            value: unclaimed,
+          },
+        ])
+        .stake.withdrawRewards(this.paymentAddress, unclaimed)
+        .applyAndBuild();
+
+      return tx_build.__tx.to_cbor_hex();
+    } catch (error) {
+      throw this.handleError('TX_BUILD', error);
+    }
+  }
+
+  /**
    * getStakeInfo gets info about stake using payment account. Info fetches
    * from BLOCKFROST API.
    *
