@@ -1,13 +1,15 @@
 export type Network = 'mainnet' | 'preprod' | 'preview';
 
-export interface DelegationEpoch {
+export type DelegationStatus = 'no-delegation' | 'pending' | 'active';
+
+export type StakeActivation = {
   stakeAddress: string;
-  delegatedPool?: string;
+  delegatedPool: string;
   currentEpoch: number;
-  activeEpoch?: number;
-  status: string;
-  epochsUntilActive?: number;
-  hoursUntilActive?: number;
-  epochsUntilRewards?: number;
-  hoursUntilRewards?: number;
-}
+  activeEpoch: number;
+  epochsUntilActive: number;
+  hoursUntilActive: number;
+  epochsUntilRewards: number;
+  hoursUntilRewards: number;
+  status: DelegationStatus;
+};
