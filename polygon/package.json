@@ -1,6 +1,6 @@
 {
   "name": "@everstake/wallet-sdk-polygon",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Polygon - Everstake Wallet SDK",
   "publishConfig": {
     "access": "public"
