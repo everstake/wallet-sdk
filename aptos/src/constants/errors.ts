@@ -11,7 +11,7 @@ export const ERROR_MESSAGES = {
   GET_MIN_STAKE_AMOUNT_ERR: 'Failed to get minimum stake amount',
   STAKE_ERR: 'Staking operation failed',
   REACTIVATE_ERR: 'Reactivation failed',
-  INVALID_APTOS_COIN_RECOURCE_FORMAT: 'Invalid APTOS_COIN resource format',
+  INVALID_BALANCE_RESULT: 'Invalid Aptos balance result',
   WRONG_TYPE_MESSAGE: 'Wrong input type',
 };
 

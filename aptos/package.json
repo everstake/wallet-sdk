@@ -1,6 +1,6 @@
 {
   "name": "@everstake/wallet-sdk-aptos",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "Aptos - Everstake Wallet SDK",
   "publishConfig": {
     "access": "public"

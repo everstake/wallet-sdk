@@ -10,6 +10,7 @@ import {
   MoveFunctionId,
   MoveValue,
   Network as NetworkAPT,
+  APTOS_COIN
 } from '@aptos-labs/ts-sdk';
 
 import { Blockchain } from '../../utils';
@@ -18,7 +19,6 @@ import { CheckToken, SetStats } from '../../utils/api';
 import { ERROR_MESSAGES, ORIGINAL_ERROR_MESSAGES } from './constants/errors';
 
 import {
-  APTOS_COIN_TYPE,
   CHAIN,
   DECIMAL,
   LOWER_AMOUNT,
@@ -137,18 +137,22 @@ export class Aptos extends Blockchain {
    */
   public async getBalanceByAddress(address: string): Promise<string> {
     try {
-      const resources = await this.client.getAccountResources({
-        accountAddress: address,
-      });
+      const func: MoveFunctionId = '0x1::coin::balance';
+      const arg = {
+        payload: {
+          function: func,
+          typeArguments: [APTOS_COIN],
+          functionArguments: [address],
+        },
+      };
+      const result = await this.client.view(arg);
 
-      const accountResource = resources.find((r) => r.type === APTOS_COIN_TYPE);
-      const { data } = accountResource ?? {};
-
-      if (!this.isAptosCoinData(data))
-        throw new Error(ERROR_MESSAGES.INVALID_APTOS_COIN_RECOURCE_FORMAT);
+      if (!result || result[0] == null) {
+        throw new Error(ERROR_MESSAGES.INVALID_BALANCE_RESULT);
+      }
 
       return this.SetDecimal(
-        new BigNumber(data?.coin.value.toString()),
+        new BigNumber(result[0].toString()),
         DECIMAL,
       ).toString();
     } catch (error) {
