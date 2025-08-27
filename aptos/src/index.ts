@@ -10,7 +10,7 @@ import {
   MoveFunctionId,
   MoveValue,
   Network as NetworkAPT,
-  APTOS_COIN
+  APTOS_COIN,
 } from '@aptos-labs/ts-sdk';
 
 import { Blockchain } from '../../utils';
