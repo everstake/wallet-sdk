@@ -1,174 +1,236 @@
 import { Blockchain } from '../../utils';
-import { CardanoWeb3 } from 'cardano-web3-js';
+import { BlockfrostServerError } from '@blockfrost/blockfrost-js';
 import {
-  BlockFrostAPI,
-  BlockfrostServerError,
-} from '@blockfrost/blockfrost-js';
-import { ERROR_MESSAGES, POOLS_LIST_URL } from './constants';
+  ERROR_MESSAGES,
+  MAINNET_DREP,
+  POOLS_LIST_URL,
+  PREPROD_DREP,
+  PREVIEW_DREP,
+} from './constants';
 import { Network, StakeActivation } from './types';
 import { components } from '@blockfrost/openapi';
 import { PaginationOptions } from '@blockfrost/blockfrost-js/lib/types';
+
+import {
+  BlockfrostProvider,
+  DRep,
+  MeshTxBuilder,
+  MeshWallet,
+} from '@meshsdk/core';
 
 /**
  * The `Cardano` class extends the `Blockchain` class and provides methods for
  * interacting with the Cardano network and BLOCKFROST API.
  *
  * @property network - specified cardano network.
- * @property paymentAddress - payment cardano address which related with staking address.
- * @property blockfrost - blockfrost base URL API according to network.
- * @property web3 - cardano web3 instance.
+ * @property provider - blockfrost API provider according to network.
+ * @property wallet - cardano MeshJS Wallet instance.
  * @property ORIGINAL_ERROR_MESSAGES - The original error messages for the Ethereum class.
  *
  */
 export class Cardano extends Blockchain {
   private readonly network: Network;
-  private readonly paymentAddress: string;
-  private blockfrost: BlockFrostAPI;
-  private web3: CardanoWeb3;
   private pool: components['schemas']['pool'] | undefined;
+
+  public provider: BlockfrostProvider;
+  private wallet: MeshWallet;
 
   protected ERROR_MESSAGES = ERROR_MESSAGES;
   protected ORIGINAL_ERROR_MESSAGES = {};
 
   constructor(
     network: Network,
-    paymentAddress: string,
+    baseAddress: string,
     blockfrostProjectID: string,
   ) {
     super();
     this.network = network;
-    this.paymentAddress = paymentAddress;
-    this.blockfrost = new BlockFrostAPI({
-      projectId: blockfrostProjectID,
-      network: network,
+    this.provider = new BlockfrostProvider(blockfrostProjectID);
+    this.wallet = new MeshWallet({
+      networkId: network === 'mainnet' ? 1 : 0,
+      fetcher: this.provider,
+      submitter: this.provider,
+      key: { type: 'address', address: baseAddress },
     });
-    this.web3 = new CardanoWeb3({ network: network });
-    const account = this.web3.account.fromAddress(this.paymentAddress);
-    if (!account.__config.stakingAddress) {
-      throw this.throwError('NO_STAKING_ADDRESS');
-    }
+  }
+
+  public async init() {
+    await this.wallet.init();
   }
 
   /**
-   * registerAndDelegateCborHexTx make a new unsigned transaction that contains
-   * register stake account and delegation together.
+   * getStakeInfo gets info about stake using payment account. Info fetches
+   * from BLOCKFROST API.
    *
-   * @returns Promise with cbor encoded hex data.
+   * @returns Promise with stake info or undefined if account is empty
    */
-  public async registerAndDelegateCborHexTx(): Promise<string> {
-    const account = this.web3.account.fromAddress(this.paymentAddress);
-    const state = await account.getState();
-    const pool = await this.selectPool();
-    if (!account.__config.stakingAddress) {
-      throw this.throwError('NO_STAKING_ADDRESS');
-    }
-
+  public async getStakeInfo(): Promise<
+    components['schemas']['account_content'] | undefined
+  > {
     try {
-      const tx_build = await this.web3
-        .createTx()
-        .setChangeAddress(account.__config.paymentAddress)
-        .addInputs(state.utxos)
-        .stake.register(account.__config.stakingAddress)
-        .stake.delegateTo(account.__config.stakingAddress, pool.pool_id)
-        .applyAndBuild();
-
-      return tx_build.__tx.to_cbor_hex();
+      return await this.provider.get(
+        '/accounts/' + this.wallet.addresses.rewardAddressBech32,
+      );
     } catch (error) {
-      throw this.handleError('TX_BUILD', error);
+      if (error instanceof BlockfrostServerError && error.status_code === 404) {
+        return undefined;
+      }
+      throw this.handleError('BLOCKFROST_STAKING_INFO', error);
     }
   }
 
   /**
-   * delegateCborHexTx make a new unsigned transaction that contains delegation.
+   * stakeTx it is universal method which includes register stake account, delegation
+   * and voting for DRep in one Tx. DRep is optional, constant by default.
+   *
+   * @returns Promise with encoded hex data.
+   */
+  public async stakeTx(dRepID?: DRep): Promise<string> {
+    if (!this.wallet.addresses.baseAddressBech32) {
+      throw this.throwError('INIT');
+    }
+    if (!this.wallet.addresses.rewardAddressBech32) {
+      throw this.throwError('NO_STAKING_ADDRESS');
+    }
+
+    const stakeInfo = await this.getStakeInfo();
+    if (!stakeInfo) {
+      throw this.throwError('BLOCKFROST_STAKING_INFO');
+    }
+
+    if (stakeInfo.pool_id !== null) {
+      throw this.throwError('ALREADY_STAKED');
+    }
+
+    const txBuilder = new MeshTxBuilder({
+      fetcher: this.provider,
+      verbose: true,
+    });
+
+    if (!stakeInfo.active) {
+      txBuilder.registerStakeCertificate(
+        this.wallet.addresses.rewardAddressBech32,
+      );
+    }
+
+    if (!stakeInfo.drep_id) {
+      txBuilder.voteDelegationCertificate(
+        dRepID == undefined ? { dRepId: this.getDRep() } : dRepID,
+        this.wallet.addresses.rewardAddressBech32,
+      );
+    }
+
+    const utxos = await this.wallet.getUtxos();
+    const pool = await this.selectPool();
+
+    return await txBuilder
+      .delegateStakeCertificate(
+        this.wallet.addresses.rewardAddressBech32,
+        pool.pool_id,
+      )
+      .selectUtxosFrom(utxos)
+      .changeAddress(this.wallet.addresses.baseAddressBech32)
+      .complete();
+  }
+
+  /**
+   * delegateTx make a new unsigned transaction that contains delegation.
    * It can be used for redelegation.
    *
-   * @returns Promise with cbor encoded hex data.
+   * @returns Promise with encoded hex data.
    */
-  public async delegateCborHexTx(): Promise<string> {
-    const account = this.web3.account.fromAddress(this.paymentAddress);
-    const state = await account.getState();
+  public async delegateTx(): Promise<string> {
+    if (!this.wallet.addresses.baseAddressBech32) {
+      throw this.throwError('INIT');
+    }
+    if (!this.wallet.addresses.rewardAddressBech32) {
+      throw this.throwError('NO_STAKING_ADDRESS');
+    }
+
+    const txBuilder = new MeshTxBuilder({
+      fetcher: this.provider,
+      verbose: true,
+    });
+
+    const utxos = await this.wallet.getUtxos();
     const pool = await this.selectPool();
-    if (!account.__config.stakingAddress) {
-      throw this.throwError('NO_STAKING_ADDRESS');
-    }
 
-    try {
-      const tx_build = await this.web3
-        .createTx()
-        .setChangeAddress(account.__config.paymentAddress)
-        .addInputs(state.utxos)
-        .stake.delegateTo(account.__config.stakingAddress, pool.pool_id)
-        .applyAndBuild();
-
-      return tx_build.__tx.to_cbor_hex();
-    } catch (error) {
-      throw this.handleError('TX_BUILD', error);
-    }
+    return await txBuilder
+      .delegateStakeCertificate(
+        this.wallet.addresses.rewardAddressBech32,
+        pool.pool_id,
+      )
+      .selectUtxosFrom(utxos)
+      .changeAddress(this.wallet.addresses.baseAddressBech32)
+      .complete();
   }
 
   /**
-   * delegateCborHexTx make a new unsigned transaction that contains registration.
+   * delegateTx make a new unsigned transaction that contains registration.
    *
-   * @returns Promise with cbor encoded hex data.
+   * @returns Promise with encoded hex data.
    */
-  public async registerCborHexTx(): Promise<string> {
-    const account = this.web3.account.fromAddress(this.paymentAddress);
-    const state = await account.getState();
-    if (!account.__config.stakingAddress) {
+  public async registerTx(): Promise<string> {
+    if (!this.wallet.addresses.baseAddressBech32) {
+      throw this.throwError('INIT');
+    }
+    if (!this.wallet.addresses.rewardAddressBech32) {
       throw this.throwError('NO_STAKING_ADDRESS');
     }
 
-    try {
-      const tx_build = await this.web3
-        .createTx()
-        .setChangeAddress(account.__config.paymentAddress)
-        .addInputs(state.utxos)
-        .stake.register(account.__config.stakingAddress)
-        .applyAndBuild();
+    const txBuilder = new MeshTxBuilder({
+      fetcher: this.provider,
+      verbose: true,
+    });
 
-      return tx_build.__tx.to_cbor_hex();
-    } catch (error) {
-      throw this.handleError('TX_BUILD', error);
-    }
+    const utxos = await this.wallet.getUtxos();
+
+    return await txBuilder
+      .registerStakeCertificate(this.wallet.addresses.rewardAddressBech32)
+      .selectUtxosFrom(utxos)
+      .changeAddress(this.wallet.addresses.baseAddressBech32)
+      .complete();
   }
 
   /**
-   * delegateCborHexTx make a new unsigned transaction that contains stake deregister.
+   * delegateTx make a new unsigned transaction that contains stake deregister.
    * This tx returns 2 deposit ADA and returns all stake and claim rewards to payment address.
    *
-   * @returns Promise with cbor encoded hex data
+   * @returns Promise with encoded hex data
    */
-  public async deregisterCborHexTx(): Promise<string> {
-    const account = this.web3.account.fromAddress(this.paymentAddress);
-    const state = await account.getState();
-    if (!account.__config.stakingAddress) {
+  public async deregisterTx(): Promise<string> {
+    if (!this.wallet.addresses.baseAddressBech32) {
+      throw this.throwError('INIT');
+    }
+    if (!this.wallet.addresses.rewardAddressBech32) {
       throw this.throwError('NO_STAKING_ADDRESS');
     }
 
-    try {
-      const tx_build = await this.web3
-        .createTx()
-        .setChangeAddress(account.__config.paymentAddress)
-        .addInputs(state.utxos)
-        .stake.deregister(account.__config.stakingAddress)
-        .applyAndBuild();
+    const txBuilder = new MeshTxBuilder({
+      fetcher: this.provider,
+      verbose: true,
+    });
 
-      return tx_build.__tx.to_cbor_hex();
-    } catch (error) {
-      throw this.handleError('TX_BUILD', error);
-    }
+    const utxos = await this.wallet.getUtxos();
+
+    return await txBuilder
+      .deregisterStakeCertificate(this.wallet.addresses.rewardAddressBech32)
+      .selectUtxosFrom(utxos)
+      .changeAddress(this.wallet.addresses.baseAddressBech32)
+      .complete();
   }
 
   /**
-   * withdrawRewardsCborHexTx make a new unsigned transaction that claim rewards.
+   * withdrawRewardsTx make a new unsigned transaction that claim rewards.
    * Cardano has auto compound so no need to claim rewards to increase APR. It should be call when need to spend it.
    *
-   * @returns Promise with cbor encoded hex data
+   * @returns Promise with encoded hex data
    */
-  public async withdrawRewardsCborHexTx(): Promise<string> {
-    const account = this.web3.account.fromAddress(this.paymentAddress);
-    const state = await account.getState();
-    if (!account.__config.stakingAddress) {
+  public async withdrawRewardsTx(): Promise<string> {
+    if (!this.wallet.addresses.baseAddressBech32) {
+      throw this.throwError('INIT');
+    }
+    if (!this.wallet.addresses.rewardAddressBech32) {
       throw this.throwError('NO_STAKING_ADDRESS');
     }
 
@@ -186,49 +248,21 @@ export class Cardano extends Blockchain {
       throw this.throwError('NO_REWARDS_YET');
     }
 
-    try {
-      const tx_build = await this.web3
-        .createTx()
-        .setChangeAddress(account.__config.paymentAddress)
-        .addInputs(state.utxos)
-        .addOutputs([
-          {
-            address: account.__config.paymentAddress,
-            value: unclaimed,
-          },
-        ])
-        .stake.withdrawRewards(this.paymentAddress, unclaimed)
-        .applyAndBuild();
+    const txBuilder = new MeshTxBuilder({
+      fetcher: this.provider,
+      verbose: true,
+    });
 
-      return tx_build.__tx.to_cbor_hex();
-    } catch (error) {
-      throw this.handleError('TX_BUILD', error);
-    }
-  }
+    const utxos = await this.wallet.getUtxos();
 
-  /**
-   * getStakeInfo gets info about stake using payment account. Info fetches
-   * from BLOCKFROST API.
-   *
-   * @returns Promise with stake info or undefined if account is empty
-   */
-  public async getStakeInfo(): Promise<
-    components['schemas']['account_content'] | undefined
-  > {
-    const account = this.web3.account.fromAddress(this.paymentAddress);
-    if (!account.__config.stakingAddress) {
-      throw this.throwError('NO_STAKING_ADDRESS');
-    }
-    const stakingAddress: string = account.__config.stakingAddress;
-
-    try {
-      return await this.blockfrost.accounts(stakingAddress);
-    } catch (error) {
-      if (error instanceof BlockfrostServerError && error.status_code === 404) {
-        return undefined;
-      }
-      throw this.handleError('BLOCKFROST_STAKING_INFO', error);
-    }
+    return await txBuilder
+      .withdrawal(
+        this.wallet.addresses.rewardAddressBech32,
+        unclaimed.toString(),
+      )
+      .selectUtxosFrom(utxos)
+      .changeAddress(this.wallet.addresses.baseAddressBech32)
+      .complete();
   }
 
   /**
@@ -242,14 +276,19 @@ export class Cardano extends Blockchain {
   public async getRewardHistory(
     pagination: PaginationOptions,
   ): Promise<components['schemas']['account_reward_content']> {
-    const account = this.web3.account.fromAddress(this.paymentAddress);
-    if (!account.__config.stakingAddress) {
+    if (!this.wallet.addresses.rewardAddressBech32) {
       throw this.throwError('NO_STAKING_ADDRESS');
     }
-    const stakingAddress: string = account.__config.stakingAddress;
+    const stakingAddress: string = this.wallet.addresses.rewardAddressBech32;
+
+    const url =
+      '/accounts/' +
+      stakingAddress +
+      '/rewards?' +
+      this.paginationToQuery(pagination);
 
     try {
-      return this.blockfrost.accountsRewards(stakingAddress, pagination);
+      return this.provider.get(url);
     } catch (error) {
       throw this.handleError('BLOCKFROST_API', error);
     }
@@ -264,14 +303,19 @@ export class Cardano extends Blockchain {
   public async getDelegations(
     pagination: PaginationOptions,
   ): Promise<components['schemas']['account_delegation_content']> {
-    const account = this.web3.account.fromAddress(this.paymentAddress);
-    if (!account.__config.stakingAddress) {
+    if (!this.wallet.addresses.rewardAddressBech32) {
       throw this.throwError('NO_STAKING_ADDRESS');
     }
-    const stakingAddress: string = account.__config.stakingAddress;
+    const stakingAddress: string = this.wallet.addresses.rewardAddressBech32;
+
+    const url =
+      '/accounts/' +
+      stakingAddress +
+      '/delegations?' +
+      this.paginationToQuery(pagination);
 
     try {
-      return this.blockfrost.accountsDelegations(stakingAddress, pagination);
+      return this.provider.get(url);
     } catch (error) {
       throw this.handleError('BLOCKFROST_API', error);
     }
@@ -291,8 +335,10 @@ export class Cardano extends Blockchain {
       const pools: components['schemas']['pool'][] = [];
 
       for (const poolID of poolBech32IDs) {
-        const p = await this.blockfrost.poolsById(poolID);
-        pools.push(p as components['schemas']['pool']);
+        const p: components['schemas']['pool'] = await this.provider.get(
+          '/pools/' + poolID,
+        );
+        pools.push(p);
       }
 
       return pools;
@@ -383,25 +429,25 @@ export class Cardano extends Blockchain {
    * @returns Promise with delegation epoch info
    */
   public async getStakeActivation(): Promise<StakeActivation> {
-    const account = this.web3.account.fromAddress(this.paymentAddress);
-    if (!account.__config.stakingAddress) {
+    if (!this.wallet.addresses.rewardAddressBech32) {
       throw this.throwError('NO_STAKING_ADDRESS');
     }
-    const stakeAddress: string = account.__config.stakingAddress;
+    const stakingAddress: string = this.wallet.addresses.rewardAddressBech32;
 
-    const delegations = await this.blockfrost.accountsDelegations(
-      stakeAddress,
-      { order: 'desc' },
-    );
+    const latest: components['schemas']['epoch_content'] =
+      await this.provider.get('/epochs/latest');
+
+    const delegations: components['schemas']['account_delegation_content'] =
+      await this.provider.get(
+        `/accounts/${stakingAddress}/delegations?order=desc`,
+      );
     if (
       !delegations ||
       delegations.length === 0 ||
       delegations[0] === undefined
     ) {
-      const latest = await this.blockfrost.epochsLatest();
-
       return {
-        stakeAddress,
+        stakeAddress: stakingAddress,
         delegatedPool: '',
         currentEpoch: Number(latest.epoch),
         activeEpoch: Number(latest.epoch),
@@ -416,7 +462,6 @@ export class Cardano extends Blockchain {
     const { pool_id, active_epoch } = delegations[0];
     const activeEpoch = active_epoch;
 
-    const latest = await this.blockfrost.epochsLatest();
     const currentEpoch = latest.epoch;
     const now = Math.floor(Date.now() / 1000); // UNIX seconds
     const secLeftInEpoch = Math.max(0, latest.end_time - now);
@@ -441,7 +486,7 @@ export class Cardano extends Blockchain {
     const status = epochsUntilActive > 0 ? 'pending' : 'active';
 
     return {
-      stakeAddress,
+      stakeAddress: stakingAddress,
       delegatedPool: pool_id,
       currentEpoch,
       activeEpoch,
@@ -451,5 +496,25 @@ export class Cardano extends Blockchain {
       hoursUntilRewards,
       status,
     };
+  }
+
+  private getDRep(): string {
+    switch (this.network) {
+      case 'mainnet':
+        return MAINNET_DREP;
+      case 'preview':
+        return PREVIEW_DREP;
+      case 'preprod':
+        return PREPROD_DREP;
+    }
+  }
+
+  private paginationToQuery(p: PaginationOptions): string {
+    return Object.entries(p)
+      .map(
+        ([key, value]) =>
+          `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`,
+      )
+      .join('&');
   }
 }

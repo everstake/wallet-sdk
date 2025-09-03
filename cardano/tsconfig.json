@@ -14,9 +14,5 @@
     "noEmit": true,
     "lib": ["es2022", "dom", "dom.iterable"]
   },
-  "ts-node": {
-    "esm": true,
-    "experimentalSpecifierResolution": "node"
-  },
   "include": ["src/**/*"]
 }
