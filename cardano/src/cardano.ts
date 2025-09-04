@@ -54,6 +54,11 @@ export class Cardano extends Blockchain {
     });
   }
 
+  /**
+   * init method must be called after the instance is created.
+   *
+   * @returns Promise void
+   */
   public async init() {
     await this.wallet.init();
   }
@@ -159,6 +164,36 @@ export class Cardano extends Blockchain {
       .delegateStakeCertificate(
         this.wallet.addresses.rewardAddressBech32,
         pool.pool_id,
+      )
+      .selectUtxosFrom(utxos)
+      .changeAddress(this.wallet.addresses.baseAddressBech32)
+      .complete();
+  }
+
+  /**
+   * voteDRep make a new unsigned transaction that vote for DRep.
+   *
+   * @returns Promise with encoded hex data.
+   */
+  public async voteDRep(dRepID: DRep): Promise<string> {
+    if (!this.wallet.addresses.baseAddressBech32) {
+      throw this.throwError('INIT');
+    }
+    if (!this.wallet.addresses.rewardAddressBech32) {
+      throw this.throwError('NO_STAKING_ADDRESS');
+    }
+
+    const txBuilder = new MeshTxBuilder({
+      fetcher: this.provider,
+      verbose: true,
+    });
+
+    const utxos = await this.wallet.getUtxos();
+
+    return await txBuilder
+      .voteDelegationCertificate(
+        dRepID,
+        this.wallet.addresses.rewardAddressBech32,
       )
       .selectUtxosFrom(utxos)
       .changeAddress(this.wallet.addresses.baseAddressBech32)
@@ -498,7 +533,12 @@ export class Cardano extends Blockchain {
     };
   }
 
-  private getDRep(): string {
+  /**
+   * getDRep return default DRep
+   *
+   * @returns DRepID string
+   */
+  public getDRep(): string {
     switch (this.network) {
       case 'mainnet':
         return MAINNET_DREP;
