@@ -1,5 +1,4 @@
 import { Blockchain } from '../../utils';
-import { BlockfrostServerError } from '@blockfrost/blockfrost-js';
 import {
   ERROR_MESSAGES,
   MAINNET_DREP,
@@ -7,9 +6,8 @@ import {
   PREPROD_DREP,
   PREVIEW_DREP,
 } from './constants';
-import { Network, StakeActivation } from './types';
+import { Network, StakeActivation, PaginationOptions } from './types';
 import { components } from '@blockfrost/openapi';
-import { PaginationOptions } from '@blockfrost/blockfrost-js/lib/types';
 
 import {
   BlockfrostProvider,
@@ -72,16 +70,9 @@ export class Cardano extends Blockchain {
   public async getStakeInfo(): Promise<
     components['schemas']['account_content'] | undefined
   > {
-    try {
-      return await this.provider.get(
-        '/accounts/' + this.wallet.addresses.rewardAddressBech32,
-      );
-    } catch (error) {
-      if (error instanceof BlockfrostServerError && error.status_code === 404) {
-        return undefined;
-      }
-      throw this.handleError('BLOCKFROST_STAKING_INFO', error);
-    }
+    return await this.provider.get(
+      '/accounts/' + this.wallet.addresses.rewardAddressBech32,
+    );
   }
 
   /**
