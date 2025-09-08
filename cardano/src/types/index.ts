@@ -13,3 +13,9 @@ export type StakeActivation = {
   hoursUntilRewards: number;
   status: DelegationStatus;
 };
+
+export type PaginationOptions = {
+  count?: number;
+  page?: number;
+  order?: 'asc' | 'desc';
+};
