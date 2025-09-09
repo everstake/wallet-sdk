@@ -1,8 +1,12 @@
-# Getting Started
+# Everstake Wallet SDK - Cardano
+
+## Getting Started
+
 You can use two different options to implement Cardano operations with the Everstake wallet SDK.
 
-## Option 1: REST API 
-You can use REST API to call methods which are described in [Swagger](https://wallet-sdk-api.everstake.one/swagger/#/Cardano) with detailed examples 
+## Option 1: REST API
+
+You can use REST API to call methods which are described in [Swagger](https://wallet-sdk-api.everstake.one/swagger/#/Cardano) with detailed examples
 
 ```
 https://wallet-sdk-api.everstake.one
@@ -43,5 +47,5 @@ import * as Cardano from '@everstake/wallet-sdk-cardano';
 
 ```ts
 // import module
-const { Cardano } = require("@everstake/wallet-sdk-cardano");
+const { Cardano } = require('@everstake/wallet-sdk-cardano');
 ```

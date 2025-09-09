@@ -1,8 +1,12 @@
-# Getting Started
+# Everstake Wallet SDK - Ethereum
+
+## Getting Started
+
 You can use two different options to implement Ethereum operations with the Everstake wallet SDK.
 
-## Option 1: REST API 
-You can use REST API to call methods which are described in [Swagger](https://wallet-sdk-api.everstake.one/swagger/#/Ethereum) with detailed examples 
+## Option 1: REST API
+
+You can use REST API to call methods which are described in [Swagger](https://wallet-sdk-api.everstake.one/swagger/#/Ethereum) with detailed examples
 
 ```
 https://wallet-sdk-api.everstake.one
@@ -43,5 +47,5 @@ import * as Ethereum from '@everstake/wallet-sdk-ethereum';
 
 ```ts
 // import module
-const { Ethereum } = require("@everstake/wallet-sdk-ethereum");
+const { Ethereum } = require('@everstake/wallet-sdk-ethereum');
 ```
