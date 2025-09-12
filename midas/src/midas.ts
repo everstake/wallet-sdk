@@ -120,6 +120,58 @@ export class Midas extends Blockchain {
     }
   }
 
+  /**
+   * Retrieves the liquidity available in the redemption vault contract.
+   * 
+   * @param outTokenAddress - Optional address of the output token to check liquidity for. 
+   * If not provided, defaults to the first supported redemption token.
+   * 
+   * @returns A promise that resolves to the liquidity amount as a number.
+   * @throws Will throw an error if the token is not supported or if the contract call fails.
+   */
+  public async redeemLiquidity(outTokenAddress?:string): Promise<number> {
+    try {
+      if (outTokenAddress && !this.supportedRedemptionTokensAddresses.includes(outTokenAddress)) {
+        this.throwError('TOKEN_NOT_SUPPORTED_BY_VAULT', outTokenAddress);
+      }
+      if (!outTokenAddress) {
+        outTokenAddress = this.supportedRedemptionTokensAddresses[0];
+      }
+      const liquidityProviderAddress = await this.contractRedemptionVault.methods.liquidityProvider().call();
+      if (!liquidityProviderAddress) {
+        return 0
+      }
+      const liquidityProviderErc20 = new this.web3.eth.Contract(ABI_ERC20, liquidityProviderAddress[0]);
+      const liquidity = await liquidityProviderErc20.methods.balanceOf(liquidityProviderAddress).call();
+      const decimals = await liquidityProviderErc20.methods.decimals().call();
+      return Number(liquidity) / (10 ** Number(decimals));
+    } catch (error) {
+      throw this.handleError('VAULT_LIQUIDITY_ERROR', error);
+    }
+  }
+
+  /**
+   * Retrieves the minimum deposit amount from the redemption vault contract.
+   * 
+   * @param outTokenAddress - Optional address of the output token to adjust decimals. 
+   * If not provided, defaults to 18 decimals.
+   * 
+   * @returns A promise that resolves to the minimum deposit amount as a number.
+   * @throws Will throw an error if the contract call fails.
+   */
+  public async minRedeemAmount(outTokenAddress?: string): Promise<number> {
+    try {
+      const minAmount = await this.contractRedemptionVault.methods.minAmount().call();
+      var decimals = 18;
+      if (outTokenAddress) {
+        const outTokenErc20 = new this.web3.eth.Contract(ABI_ERC20, outTokenAddress);
+        decimals = await outTokenErc20.methods.decimals().call(); 
+      }
+      return Number(minAmount) / decimals;
+    } catch (error) {
+      throw this.handleError('GET_MIN_REDEEM_AMOUNT_ERROR', error);
+    }
+  }
 
   /**
    * Retrieves the instant deposit fee from the issuance vault contract.
@@ -137,7 +189,6 @@ export class Midas extends Blockchain {
     }
   }
 
-
   /**
    * Retrieves the instant withdraw fee from the redemption vault contract.
    * 
@@ -154,7 +205,6 @@ export class Midas extends Blockchain {
     }
   }
 
-
   /**
    * Retrieves the price from the oracle contract.
    * @returns A promise that resolves to the price as a BigNumber.
@@ -169,7 +219,6 @@ export class Midas extends Blockchain {
       throw this.handleError('GET_PRICE_ERROR', error);
     }
   }
-
 
   /**
    * Retrieves the token balance of collateral for a given address.
@@ -186,7 +235,6 @@ export class Midas extends Blockchain {
       throw this.handleError('GET_BALANCE_ERROR', error);
     }
   }
-
 
   /**
    * Deposits tokens instantly with auto mint if account fits daily limit and token allowance.
@@ -227,7 +275,6 @@ export class Midas extends Blockchain {
     }
   }
 
-
   /**
    * Redeems mToken1 to tokenOut if daily limit and allowance not exceeded.
    * If contract doesn't have enough tokenOut, mToken1 will swap to mToken2 and redeem on mToken2 vault.
@@ -265,7 +312,6 @@ export class Midas extends Blockchain {
       throw this.handleError('GAS_ESTIMATE_FAILED', error);
     }
   }
-
 
   /**
    * Creates a redeem request if tokenOut is not fiat.
