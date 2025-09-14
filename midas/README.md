@@ -44,6 +44,13 @@ const { Ethereum } = require("@everstake/wallet-sdk-ethereum");
 
 ## Step 3: Using the library
 
+Initialize Midas object this way:
+
+```ts
+const midas = new Midas();
+await midas.init('eth_mainnet', 'mmev');
+```
+
 ### 3.1 Depositing to Issuance Vault 
 
 1. Increase allowance on supported token by calling `approveToIssuanceVault`
