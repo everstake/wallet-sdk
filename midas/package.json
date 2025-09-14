@@ -1,5 +1,5 @@
 {
-  "name": "midas",
+  "name": "@evertake/wallet-sdk-midas",
   "version": "1.0.0",
   "description": "Midas - Everstake Wallet SDK",
   "publishConfig": {
