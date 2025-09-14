@@ -6,8 +6,10 @@
 export const ERROR_MESSAGES = {
   NETWORK_NOT_SUPPORTED: 'Network not supported',
   VAULT_NOT_SUPPORTED: 'Vault not supported',
-  INVALID_VAULT_NETWORK: 'The selected vault does not support the chosen network',
-  TOKEN_NOT_SUPPORTED_BY_VAULT: 'The selected vault does not support this token',
+  INVALID_VAULT_NETWORK:
+    'The selected vault does not support the chosen network',
+  TOKEN_NOT_SUPPORTED_BY_VAULT:
+    'The selected vault does not support this token',
   GET_SUPPORTED_TOKENS_ERROR: 'Failed to get tokens supported by vault',
   GET_INSTANT_DEPOSIT_FEE_ERROR: 'Failed to get instant deposit fee',
   GET_INSTANT_WITHDRAW_FEE_ERROR: 'Failed to get instant withdraw fee',
@@ -16,6 +18,6 @@ export const ERROR_MESSAGES = {
   GAS_ESTIMATE_FAILED: 'Gas estimation failed',
   GET_MIN_REDEEM_AMOUNT_ERROR: 'Failed to get minimum redeem amount',
   VAULT_LIQUIDITY_ERROR: 'Failed to get vault liquidity',
-}
+};
 
-export const ORIGINAL_ERROR_MESSAGES = {}
+export const ORIGINAL_ERROR_MESSAGES = {};

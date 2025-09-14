@@ -33,13 +33,15 @@ export class Midas extends Blockchain {
   public addressRedemptionVault!: string;
   public addressOracle!: string;
   public addressToken!: string;
+  public supportedIssuanceTokensAddresses: string[] = [];
+  public supportedRedemptionTokensAddresses: string[] = [];
+
   public contractIssuanceVault!: Contract<typeof ABI_ISSUANCE_VAULT>;
   public contractRedemptionVault!: Contract<typeof ABI_REDEMPTION_VAULT>;
   public contractOracle!: Contract<typeof ABI_ORACLE>;
   public contractToken!: Contract<typeof ABI_ERC20>;
-  public supportedIssuanceTokensAddresses: string[] = [];
-  public supportedRedemptionTokensAddresses: string[] = [];
 
+  private tokenDecimalsStore: { [address: string]: number };
   private web3!: Web3;
   private rpcUrl!: Web3BaseProvider;
 
@@ -53,9 +55,9 @@ export class Midas extends Blockchain {
    * @param vault - The vault type.
    * @param url - Optional RPC URL for the network.
    */
-  constructor(network: NetworkType, vault: MidasVaultType, url?: string) {
+  constructor() {
     super();
-    this.initializeNetwork(network, vault, url);
+    this.tokenDecimalsStore = {};
   }
 
   /**
@@ -66,7 +68,7 @@ export class Midas extends Blockchain {
    * @param url - Optional RPC URL for the network.
    * @throws Will throw an error if the network or vault is not supported.
    */
-  private initializeNetwork(network: NetworkType, vaultType: MidasVaultType, url?: string) {
+  public async init(network: NetworkType, vaultType: MidasVaultType, url?: string) {
     const networkAddresses = NETWORKS[network];
     if (!networkAddresses) {
       this.throwError('NETWORK_NOT_SUPPORTED', network);
@@ -87,7 +89,6 @@ export class Midas extends Blockchain {
     this.addressRedemptionVault = midasAddresses.redemptionVaultAddress;
     this.addressOracle = midasAddresses.oracleAddress;
     this.addressToken = midasAddresses.tokenAddress;
-
     
     this.contractIssuanceVault = new this.web3.eth.Contract(
       ABI_ISSUANCE_VAULT,
@@ -107,21 +108,15 @@ export class Midas extends Blockchain {
     );
 
     try {
-      this.contractIssuanceVault.methods.getPaymentTokens().call()
-        .then((tokens: void | string[])  => {
-          this.supportedIssuanceTokensAddresses = tokens ?? [];
-        });
-      this.contractRedemptionVault.methods.getRedemptionTokens().call()
-        .then((tokens: void | string[])  => {
-          this.supportedRedemptionTokensAddresses = tokens ?? [];
-        });
+      this.supportedIssuanceTokensAddresses  = await this.contractIssuanceVault.methods.getPaymentTokens().call();
+      this.supportedRedemptionTokensAddresses =  await this.contractRedemptionVault.methods.getPaymentTokens().call()
     } catch (error) {
       this.throwError('GET_SUPPORTED_TOKENS_ERROR', (error as Error).message);
     }
   }
 
   /**
-   * Retrieves the liquidity available in the redemption vault contract.
+   * Retrieves the liquidity available for instant redemption in the redemption vault contract.
    * 
    * @param outTokenAddress - Optional address of the output token to check liquidity for. 
    * If not provided, defaults to the first supported redemption token.
@@ -129,7 +124,7 @@ export class Midas extends Blockchain {
    * @returns A promise that resolves to the liquidity amount as a number.
    * @throws Will throw an error if the token is not supported or if the contract call fails.
    */
-  public async redeemLiquidity(outTokenAddress?:string): Promise<number> {
+  public async getRedeemLiquidity(outTokenAddress?:string): Promise<BigNumber> {
     try {
       if (outTokenAddress && !this.supportedRedemptionTokensAddresses.includes(outTokenAddress)) {
         this.throwError('TOKEN_NOT_SUPPORTED_BY_VAULT', outTokenAddress);
@@ -138,13 +133,10 @@ export class Midas extends Blockchain {
         outTokenAddress = this.supportedRedemptionTokensAddresses[0];
       }
       const liquidityProviderAddress = await this.contractRedemptionVault.methods.liquidityProvider().call();
-      if (!liquidityProviderAddress) {
-        return 0
-      }
-      const liquidityProviderErc20 = new this.web3.eth.Contract(ABI_ERC20, liquidityProviderAddress[0]);
-      const liquidity = await liquidityProviderErc20.methods.balanceOf(liquidityProviderAddress).call();
-      const decimals = await liquidityProviderErc20.methods.decimals().call();
-      return Number(liquidity) / (10 ** Number(decimals));
+      const contractOutErc20 = new this.web3.eth.Contract(ABI_ERC20, outTokenAddress);
+      const liquidity = await contractOutErc20.methods.balanceOf(liquidityProviderAddress).call();
+      const decimals = await this.getDecimals(outTokenAddress);
+      return this.fromWeiToEther(liquidity, decimals.toString());
     } catch (error) {
       throw this.handleError('VAULT_LIQUIDITY_ERROR', error);
     }
@@ -159,15 +151,11 @@ export class Midas extends Blockchain {
    * @returns A promise that resolves to the minimum deposit amount as a number.
    * @throws Will throw an error if the contract call fails.
    */
-  public async minRedeemAmount(outTokenAddress?: string): Promise<number> {
+  public async minRedeemAmount(outTokenAddress?: string): Promise<BigNumber> {
     try {
       const minAmount = await this.contractRedemptionVault.methods.minAmount().call();
-      var decimals = 18;
-      if (outTokenAddress) {
-        const outTokenErc20 = new this.web3.eth.Contract(ABI_ERC20, outTokenAddress);
-        decimals = await outTokenErc20.methods.decimals().call(); 
-      }
-      return Number(minAmount) / decimals;
+      var decimals = await this.getDecimals();
+      return this.fromWeiToEther(minAmount, decimals.toString());
     } catch (error) {
       throw this.handleError('GET_MIN_REDEEM_AMOUNT_ERROR', error);
     }
@@ -195,7 +183,7 @@ export class Midas extends Blockchain {
    * @returns A promise that resolves to the instant withdraw fee as a number.
    * @throws Will throw an error if the contract call fails.
    */
-  public async getInstantWithdrawFee(): Promise<number> {
+  public async getInstantRedeemFee(): Promise<number> {
     try {
       const fee = await this.contractRedemptionVault.methods.instantFee().call();
       // 1% = 100
@@ -213,8 +201,8 @@ export class Midas extends Blockchain {
   public async getPrice(): Promise<BigNumber> {
     try {
       const price = await this.contractOracle.methods.lastAnswer().call() as number;
-      const decimals = await this.contractOracle.methods.decimals().call();
-      return BigNumber(price).div(10 ** Number(decimals));
+      const decimals = await this.getDecimals(this.addressOracle);
+      return this.fromWeiToEther(price, decimals);
     } catch (error) {
       throw this.handleError('GET_PRICE_ERROR', error);
     }
@@ -228,11 +216,76 @@ export class Midas extends Blockchain {
    */
   public async balanceOf(address: string): Promise<BigNumber> {
     try {
-      const balance = await this.contractToken.methods.balanceOf(address).call() as number;
-      const decimals = await this.contractToken.methods.decimals().call();
-      return BigNumber(balance).div(10 ** Number(decimals));
+      const balance = await this.contractToken.methods.balanceOf(address).call();
+      const decimals = await this.getDecimals(this.addressToken);
+      return this.fromWeiToEther(balance, decimals);
     } catch (error) {
       throw this.handleError('GET_BALANCE_ERROR', error);
+    }
+  }
+
+  /**
+   * Approves the redemption vault to spend a specified amount of the collateral token on behalf of the sender.
+   *
+   * @param sender - The address of the transaction sender.
+   * @param amount - The amount of tokens to approve.
+   * @returns A promise that resolves to an EthTransaction object.
+   * @throws Will throw an error if gas estimation fails.
+   */
+  public async approveToRedemptionVault(sender: string, amount: Numbers): Promise<EthTransaction> {
+    const tx = this.contractToken.methods.approve(
+      this.addressRedemptionVault,
+      this.web3.utils.toWei(amount.toString(), 'ether'),
+    );
+
+    try {
+      const gasLimit = await tx.estimateGas({ from: sender });
+
+      return {
+        from: sender,
+        to: this.addressToken,
+        value: 0,
+        gasLimit: this.calculateGasLimit(gasLimit),
+        data: tx.encodeABI(),
+      };
+    } catch (error) {
+      throw this.handleError('GAS_ESTIMATE_FAILED', error);
+    }
+  }
+  
+  /**
+   * Approves the issuance vault to spend a specified amount of a given token on behalf of the sender.
+   *
+   * @param sender - The address of the transaction sender.
+   * @param tokenAddress - The address of the ERC20 token to approve. 
+   * Must be one of tokens supported by the issuance vault.
+   * @param amount - The amount of tokens to approve.
+   * @returns A promise that resolves to an EthTransaction object.
+   * @throws Will throw an error if the token is not supported or gas estimation fails.
+   */
+  public async approveToIssuanceVault(sender: string, tokenAddress: string, amount: Numbers): Promise<EthTransaction> {
+    if (!this.supportedIssuanceTokensAddresses.includes(tokenAddress)) {
+      this.throwError('TOKEN_NOT_SUPPORTED_BY_VAULT', tokenAddress);
+    }
+  
+    const contract = new this.web3.eth.Contract(ABI_ERC20, tokenAddress);
+    const tx = contract.methods.approve(
+      this.addressIssuanceVault,
+      this.web3.utils.toWei(amount.toString(), 'ether'),
+    );
+  
+    try {
+      const gasLimit = await tx.estimateGas({ from: sender });
+  
+      return {
+        from: sender,
+        to: tokenAddress,
+        value: 0,
+        gasLimit: this.calculateGasLimit(gasLimit),
+        data: tx.encodeABI(),
+      };
+    } catch (error) {
+      throw this.handleError('GAS_ESTIMATE_FAILED', error);
     }
   }
 
@@ -349,6 +402,25 @@ export class Midas extends Blockchain {
   }
 
   /**
+   * Retrieves the number of decimals for a given ERC20 token.
+   *
+   * @param tokenAddress - The address of the ERC20 token.
+   * @returns A promise that resolves to the number of decimals.
+   */
+  private async getDecimals(tokenAddress?: string): Promise<number> {
+    if (!tokenAddress) {
+      return 18;
+    }
+    if (this.tokenDecimalsStore[tokenAddress]) {
+      return this.tokenDecimalsStore[tokenAddress];
+    }
+    const contract = new this.web3.eth.Contract(ABI_ERC20, tokenAddress);
+    const decimals = await contract.methods.decimals().call();
+    this.tokenDecimalsStore[tokenAddress] = Number(decimals);
+    return Number(decimals);
+  }
+
+  /**
    * Calculates the gas limit by adding a predefined GAS_RESERVE to the given gas consumption.
    *
    * @param gasConsumption - The amount of gas consumed.
@@ -358,5 +430,17 @@ export class Midas extends Blockchain {
     return new BigNumber(gasConsumption.toString())
       .plus(ETH_GAS_RESERVE)
       .toNumber();
+  }
+
+  /**
+   * Converts an amount from Wei to Ether based on the given decimals.
+   *
+   * @param amount - The amount without decimals.
+   * @param decimals - The number of decimals for the token.
+   * @returns The amount converted to Ether as a BigNumber.
+   */
+  private fromWeiToEther(amount: Numbers, decimals: Numbers): BigNumber {
+    const offset = new BigNumber(10).pow(decimals.toString());
+    return new BigNumber(amount.toString()).div(offset);
   }
 }
