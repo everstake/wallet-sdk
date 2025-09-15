@@ -3,8 +3,8 @@
  * Licensed under the BSD-3-Clause License. See LICENSE file for details.
  */
 
-import BigNumber from "bignumber.js";
-import type { NetworksMap, MidasVaultsMap } from "../types";
+import BigNumber from 'bignumber.js';
+import type { NetworksMap, MidasVaultsMap } from '../types';
 
 export const MIDAS_VAULTS_ADDRESSES: MidasVaultsMap = {
   mmev: {
@@ -13,14 +13,14 @@ export const MIDAS_VAULTS_ADDRESSES: MidasVaultsMap = {
     oracleAddress: '0x5f09Aff8B9b1f488B7d1bbaD4D89648579e55d61',
     tokenAddress: '0x030b69280892c888670EDCDCD8B69Fd8026A0BF3',
 
-    Network: "eth_mainnet",
-  }
-}
+    Network: 'eth_mainnet',
+  },
+};
 
 export const NETWORKS: NetworksMap = {
   eth_mainnet: {
     rpcUrl: 'https://mainnet.infura.io/v3/f583d4f04d384b9e8c59a7ff1c9f68f1',
-  }
-}
+  },
+};
 
 export const ETH_GAS_RESERVE = new BigNumber(220000);

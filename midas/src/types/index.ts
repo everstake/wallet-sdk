@@ -20,13 +20,13 @@ export interface MidasVaultAddresses {
   redemptionVaultAddress: string;
   oracleAddress: string;
   tokenAddress: string;
-  
+
   Network: NetworkType;
 }
 
 export type MidasVaultsMap = {
   [K in MidasVaultType]: MidasVaultAddresses;
-}
+};
 
 export type EthTransaction = {
   from: string;
