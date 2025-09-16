@@ -21,7 +21,9 @@
     "lint": "eslint 'src/**/*.{ts,tsx}'",
     "prettier": "prettier --write 'src/**/*.{ts,tsx}'",
     "test": "jest",
-    "prebuild": "pnpm run type-check && pnpm run lint"
+    "generate-typechain": "typechain --target=ethers-v6 --out-dir 'src/typechain-types' 'src/abi/*.json'",
+    "prebuild": "pnpm run type-check && pnpm run lint",
+    "postinstall": "pnpm run generate-typechain"
   },
   "keywords": [
     "midas",
@@ -40,9 +42,6 @@
     "url": "https://github.com/everstake/wallet-sdk/issues"
   },
   "homepage": "https://github.com/everstake/wallet-sdk#readme",
-  "dependencies": {
-    "web3": "^4.16.0"
-  },
   "devDependencies": {
     "@eslint/js": "^9.7.0",
     "@jest/types": "^29.6.3",
@@ -57,6 +56,10 @@
     "ts-node": "^10.9.2",
     "tsup": "^8.2.2",
     "typescript": "^5.5.3",
-    "typescript-eslint": "^8.38.0"
+    "typescript-eslint": "^8.38.0",
+    "@typechain/ethers-v6": "^0.5.1"
+  },
+  "dependencies": {
+    "ethers": "^6.15.0"
   }
 }
