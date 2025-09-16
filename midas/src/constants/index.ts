@@ -24,3 +24,6 @@ export const NETWORKS: NetworksMap = {
 };
 
 export const ETH_GAS_RESERVE = new BigNumber(220000);
+
+export const ZeroReferrer =
+  '0x0000000000000000000000000000000000000000000000000000000000000000';

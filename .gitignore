@@ -5,6 +5,7 @@ solana_v2/dist
 sui/dist
 ethereum/dist
 solana_v1/dist
+midas/dist
 
 # local env files
 .env.local
