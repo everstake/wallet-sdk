@@ -25,6 +25,7 @@ import {
   RedemptionVault__factory,
 } from './typechain-types';
 import { BigNumberish } from 'ethers';
+import { ContractTransaction } from 'ethers';
 
 /**
  * The `Midas` class extends the `Blockchain` class and provides methods for interacting with the Midas vault contracts.
@@ -333,13 +334,13 @@ export class Midas extends Blockchain {
     }
 
     try {
-      const gas = await this.provider.estimateGas(tx);
+      const gasLimit = await this.calculateGasLimit(sender, tx);
 
       return {
         from: sender,
         to: this.addressToken,
         value: 0,
-        gasLimit: this.calculateGasLimit(gas),
+        gasLimit: gasLimit,
         data: tx.data,
       };
     } catch (error) {
@@ -386,13 +387,13 @@ export class Midas extends Blockchain {
     }
 
     try {
-      const gas = await this.provider.estimateGas(tx);
+      const gasLimit = await this.calculateGasLimit(sender, tx);
 
       return {
         from: sender,
         to: tokenAddress,
         value: 0,
-        gasLimit: this.calculateGasLimit(gas),
+        gasLimit: gasLimit,
         data: tx.data,
       };
     } catch (error) {
@@ -441,13 +442,13 @@ export class Midas extends Blockchain {
     }
 
     try {
-      const gas = await this.provider.estimateGas(tx);
+      const gasLimit = await this.calculateGasLimit(sender, tx);
 
       return {
         from: sender,
         to: this.addressIssuanceVault,
         value: 0,
-        gasLimit: this.calculateGasLimit(gas),
+        gasLimit: gasLimit,
         data: tx.data,
       };
     } catch (error) {
@@ -497,13 +498,13 @@ export class Midas extends Blockchain {
     }
 
     try {
-      const gas = await this.provider.estimateGas(tx);
+      const gasLimit = await this.calculateGasLimit(sender, tx);
 
       return {
         from: sender,
         to: this.addressRedemptionVault,
         value: 0,
-        gasLimit: this.calculateGasLimit(gas),
+        gasLimit: gasLimit,
         data: tx.data,
       };
     } catch (error) {
@@ -549,13 +550,13 @@ export class Midas extends Blockchain {
     }
 
     try {
-      const gas = await this.provider.estimateGas(tx);
+      const gasLimit = await this.calculateGasLimit(sender, tx);
 
       return {
         from: sender,
         to: this.addressRedemptionVault,
         value: 0,
-        gasLimit: this.calculateGasLimit(gas),
+        gasLimit: gasLimit,
         data: tx.data,
       };
     } catch (error) {
@@ -589,10 +590,16 @@ export class Midas extends Blockchain {
    * @param gasConsumption - The amount of gas consumed.
    * @returns The calculated gas limit as a number.
    */
-  private calculateGasLimit(gasConsumption: bigint): number {
-    return new BigNumber(gasConsumption.toString())
-      .plus(ETH_GAS_RESERVE)
-      .toNumber();
+  private async calculateGasLimit(
+    sender: string,
+    tx: ContractTransaction,
+  ): Promise<number> {
+    const gas = await this.provider.estimateGas({
+      ...tx,
+      from: sender,
+    });
+
+    return new BigNumber(gas.toString()).plus(ETH_GAS_RESERVE).toNumber();
   }
 
   /**
