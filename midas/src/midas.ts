@@ -3,7 +3,6 @@
  * Licensed under the BSD-3-Clause License. See LICENSE file for details.
  */
 
-// import Web3, { Contract, HttpProvider, Numbers, Web3BaseProvider } from 'web3';
 import { ethers } from 'ethers';
 import { Blockchain } from '../../utils';
 
@@ -141,7 +140,7 @@ export class Midas extends Blockchain {
    * @returns A promise that resolves to the liquidity amount as a number.
    * @throws Will throw an error if the token is not supported or if the contract call fails.
    */
-  public async getRedeemLiquidity(
+  public async getInstantRedeemLiquidityAmount(
     outTokenAddress?: string,
   ): Promise<BigNumber> {
     try {

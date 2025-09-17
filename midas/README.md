@@ -7,39 +7,39 @@
 To use this module via SDK you need to install SDK:
 
 ```sh
-$ npm install @everstake/wallet-sdk-polygon
+$ npm install @everstake/wallet-sdk-midas
 ```
 
 or you can also use yarn
 
 ```sh
-$ yarn add @everstake/wallet-sdk-polygon
+$ yarn add @everstake/wallet-sdk-midas
 ```
 
 or you can use pnpm
 
 ```sh
-$ pnpm add @everstake/wallet-sdk-polygon
+$ pnpm add @everstake/wallet-sdk-midas
 ```
 
 ## Step 2: Importing The library
 
-After installing the package, you can import the Ethereum module and use the SDK:
+After installing the package, you can import the Midas module and use the SDK:
 
 #### Import ES6
 
 ```ts
 // import module
-import { Ethereum } from '@everstake/wallet-sdk-ethereum';
+import { Midas } from '@everstake/wallet-sdk-midas';
 // or you can also use
-import * as Ethereum from '@everstake/wallet-sdk-ethereum';
+import * as Midas from '@everstake/wallet-sdk-midas';
 ```
 
 #### Import ES5
 
 ```ts
 // import module
-const { Ethereum } = require("@everstake/wallet-sdk-ethereum");
+const { Midas } = require("@everstake/wallet-sdk-midas");
 ```
 
 ## Step 3: Using the library
