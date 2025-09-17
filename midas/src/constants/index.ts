@@ -3,7 +3,6 @@
  * Licensed under the BSD-3-Clause License. See LICENSE file for details.
  */
 
-import BigNumber from 'bignumber.js';
 import type { NetworksMap, MidasVaultsMap } from '../types';
 
 export const MIDAS_VAULTS_ADDRESSES: MidasVaultsMap = {
@@ -22,8 +21,6 @@ export const NETWORKS: NetworksMap = {
     rpcUrl: 'https://mainnet.infura.io/v3/f583d4f04d384b9e8c59a7ff1c9f68f1',
   },
 };
-
-export const ETH_GAS_RESERVE = new BigNumber(220000);
 
 export const ZeroReferrer =
   '0x0000000000000000000000000000000000000000000000000000000000000000';

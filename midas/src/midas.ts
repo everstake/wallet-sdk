@@ -9,10 +9,9 @@ import { Blockchain } from '../../utils';
 
 import { ERROR_MESSAGES, ORIGINAL_ERROR_MESSAGES } from './constants/errors';
 import { NetworkType, MidasVaultType, EthTransaction } from './types';
-import { ETH_GAS_RESERVE, MIDAS_VAULTS_ADDRESSES, NETWORKS } from './constants';
+import { MIDAS_VAULTS_ADDRESSES, NETWORKS } from './constants';
 import BigNumber from 'bignumber.js';
 import { containsCaseInsensitive } from './utils';
-import { JsonRpcApiProvider } from 'ethers';
 import { JsonRpcProvider } from 'ethers';
 import {
   Erc20,
@@ -24,8 +23,7 @@ import {
   RedemptionVault,
   RedemptionVault__factory,
 } from './typechain-types';
-import { BigNumberish } from 'ethers';
-import { ContractTransaction } from 'ethers';
+import { BigNumberish, ContractTransaction } from 'ethers';
 
 /**
  * The `Midas` class extends the `Blockchain` class and provides methods for interacting with the Midas vault contracts.
@@ -57,7 +55,7 @@ export class Midas extends Blockchain {
   public contractToken!: Erc20;
 
   private tokenDecimalsStore: { [address: string]: number };
-  private provider!: JsonRpcApiProvider;
+  private provider!: JsonRpcProvider;
 
   protected ERROR_MESSAGES = ERROR_MESSAGES;
   protected ORIGINAL_ERROR_MESSAGES = ORIGINAL_ERROR_MESSAGES;
@@ -599,7 +597,7 @@ export class Midas extends Blockchain {
       from: sender,
     });
 
-    return new BigNumber(gas.toString()).plus(ETH_GAS_RESERVE).toNumber();
+    return new BigNumber(gas.toString()).toNumber();
   }
 
   /**
