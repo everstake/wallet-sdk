@@ -1,4 +1,4 @@
-export * from './midas';
+export * from './hysp';
 
 export * from './constants';
 
