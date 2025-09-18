@@ -1,7 +1,7 @@
 {
-  "name": "@everstake/wallet-sdk-midas",
+  "name": "@everstake/wallet-sdk-hysp",
   "version": "1.0.0",
-  "description": "Midas - Everstake Wallet SDK",
+  "description": "HYSP - Everstake Wallet SDK",
   "publishConfig": {
     "access": "public"
   },
@@ -26,7 +26,7 @@
     "postinstall": "pnpm run generate-typechain"
   },
   "keywords": [
-    "midas",
+    "hysp",
     "vault",
     "blockchain",
     "everstake",

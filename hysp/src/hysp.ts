@@ -7,8 +7,8 @@ import { ethers } from 'ethers';
 import { Blockchain } from '../../utils';
 
 import { ERROR_MESSAGES, ORIGINAL_ERROR_MESSAGES } from './constants/errors';
-import { NetworkType, MidasVaultType, EthTransaction } from './types';
-import { MIDAS_VAULTS_ADDRESSES, NETWORKS } from './constants';
+import { NetworkType, HyspVaultType, EthTransaction } from './types';
+import { HYSP_VAULTS_ADDRESSES, NETWORKS } from './constants';
 import BigNumber from 'bignumber.js';
 import { containsCaseInsensitive } from './utils';
 import { JsonRpcProvider } from 'ethers';
@@ -25,7 +25,7 @@ import {
 import { BigNumberish, ContractTransaction } from 'ethers';
 
 /**
- * The `Midas` class extends the `Blockchain` class and provides methods for interacting with the Midas vault contracts.
+ * The `Hysp` class extends the `Blockchain` class and provides methods for interacting with the Hysp vault contracts.
  *
  * @property {string} addressIssuanceVault - The address of the issuance vault contract.
  * @property {string} addressRedemptionVault - The address of the redemption vault contract.
@@ -37,10 +37,10 @@ import { BigNumberish, ContractTransaction } from 'ethers';
  * @property {Contract} contractToken - The token contract instance.
  * @property {string[]} supportedIssuanceTokensAddresses - Tokens supported by deposit.
  * @property {string[]} supportedRedemptionTokensAddresses - Tokens supported by redeem.
- * @property ERROR_MESSAGES - The error messages for the Midas class.
- * @property ORIGINAL_ERROR_MESSAGES - The original error messages for the Midas class.
+ * @property ERROR_MESSAGES - The error messages for the Hysp class.
+ * @property ORIGINAL_ERROR_MESSAGES - The original error messages for the Hysp class.
  */
-export class Midas extends Blockchain {
+export class Hysp extends Blockchain {
   public addressIssuanceVault!: string;
   public addressRedemptionVault!: string;
   public addressOracle!: string;
@@ -60,7 +60,7 @@ export class Midas extends Blockchain {
   protected ORIGINAL_ERROR_MESSAGES = ORIGINAL_ERROR_MESSAGES;
 
   /**
-   * Constructs a new Midas instance and initializes the network and contracts.
+   * Constructs a new Hysp instance and initializes the network and contracts.
    *
    * @param network - The network type.
    * @param vault - The vault type.
@@ -81,28 +81,28 @@ export class Midas extends Blockchain {
    */
   public async init(
     network: NetworkType,
-    vaultType: MidasVaultType,
+    vaultType: HyspVaultType,
     url?: string,
   ) {
     const networkAddresses = NETWORKS[network];
     if (!networkAddresses) {
       this.throwError('NETWORK_NOT_SUPPORTED', network);
     }
-    const midasAddresses = MIDAS_VAULTS_ADDRESSES[vaultType];
-    if (!midasAddresses) {
+    const hyspAddresses = HYSP_VAULTS_ADDRESSES[vaultType];
+    if (!hyspAddresses) {
       this.throwError('VAULT_NOT_SUPPORTED', vaultType);
     }
-    if (midasAddresses.Network !== network) {
+    if (hyspAddresses.Network !== network) {
       this.throwError('INVALID_VAULT_NETWORK', `${vaultType} - ${network}`);
     }
 
     const providerUrl = url || networkAddresses.rpcUrl;
 
     this.provider = new JsonRpcProvider(providerUrl);
-    this.addressIssuanceVault = midasAddresses.issuanceVaultAddress;
-    this.addressRedemptionVault = midasAddresses.redemptionVaultAddress;
-    this.addressOracle = midasAddresses.oracleAddress;
-    this.addressToken = midasAddresses.tokenAddress;
+    this.addressIssuanceVault = hyspAddresses.issuanceVaultAddress;
+    this.addressRedemptionVault = hyspAddresses.redemptionVaultAddress;
+    this.addressOracle = hyspAddresses.oracleAddress;
+    this.addressToken = hyspAddresses.tokenAddress;
 
     this.contractIssuanceVault = IssuanceVault__factory.connect(
       this.addressIssuanceVault,

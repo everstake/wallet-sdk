@@ -3,9 +3,9 @@
  * Licensed under the BSD-3-Clause License. See LICENSE file for details.
  */
 
-import type { NetworksMap, MidasVaultsMap } from '../types';
+import type { NetworksMap, HyspVaultsMap } from '../types';
 
-export const MIDAS_VAULTS_ADDRESSES: MidasVaultsMap = {
+export const HYSP_VAULTS_ADDRESSES: HyspVaultsMap = {
   mmev: {
     issuanceVaultAddress: '0xE092737D412E0B290380F9c8548cB5A58174704f',
     redemptionVaultAddress: '0xac14a14f578C143625Fc8F54218911e8F634184D',

@@ -13,9 +13,9 @@ export type NetworksMap = {
   [K in NetworkType]: EthNetworkAddresses;
 };
 
-export type MidasVaultType = 'mmev';
+export type HyspVaultType = 'mmev';
 
-export interface MidasVaultAddresses {
+export interface HyspVaultAddresses {
   issuanceVaultAddress: string;
   redemptionVaultAddress: string;
   oracleAddress: string;
@@ -24,8 +24,8 @@ export interface MidasVaultAddresses {
   Network: NetworkType;
 }
 
-export type MidasVaultsMap = {
-  [K in MidasVaultType]: MidasVaultAddresses;
+export type HyspVaultsMap = {
+  [K in HyspVaultType]: HyspVaultAddresses;
 };
 
 export type EthTransaction = {

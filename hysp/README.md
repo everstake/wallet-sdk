@@ -1,4 +1,4 @@
-# Everstake Wallet SDK - Hysp Vaults
+# Everstake Wallet SDK - HYSP Vaults
 
 ## Getting Started
 
