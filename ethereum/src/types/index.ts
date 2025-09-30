@@ -3,7 +3,7 @@
  * Licensed under the BSD-3-Clause License. See LICENSE file for details.
  */
 
-export type EthNetworkType = 'mainnet' | 'holesky';
+export type EthNetworkType = 'mainnet' | 'holesky' | 'hoodi';
 
 export interface EthNetworkAddresses {
   addressContractAccounting: string;
