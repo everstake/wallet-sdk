@@ -13,7 +13,7 @@ export type NetworksMap = {
   [K in NetworkType]: EthNetworkAddresses;
 };
 
-export type HyspVaultType = 'mmev';
+export type HyspVaultType = 'mmev' | "mEVUSD";
 
 export interface HyspVaultAddresses {
   issuanceVaultAddress: string;
