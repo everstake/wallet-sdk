@@ -21,7 +21,7 @@ export const HYSP_VAULTS_ADDRESSES: HyspVaultsMap = {
     tokenAddress: '0x548857309BEfb6Fb6F20a9C5A56c9023D892785B',
 
     Network: 'eth_mainnet',
-  }
+  },
 };
 
 export const NETWORKS: NetworksMap = {
