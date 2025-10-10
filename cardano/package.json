@@ -39,6 +39,12 @@
     "url": "https://github.com/everstake/wallet-sdk/issues"
   },
   "homepage": "https://github.com/everstake/wallet-sdk#readme",
+  "pnpm": {
+    "overrides": {
+      "axios": ">=1.12.0",
+      "ip": ">=2.0.1"
+    }
+  },
   "dependencies": {
     "@blockfrost/openapi": "^0.1.79",
     "@meshsdk/core": "1.9.0-beta.72",

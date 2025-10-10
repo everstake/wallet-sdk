@@ -4,6 +4,10 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  axios: '>=1.12.0'
+  ip: '>=2.0.1'
+
 importers:
 
   .:
@@ -1588,8 +1592,8 @@ packages:
     resolution: {integrity: sha512-wvUjBtSGN7+7SjNpq/9M2Tg350UZD3q62IFZLbRAR1bSMlCo1ZaeW+BJ+D090e4hIIZLBcTDWe4Mh4jvUDajzQ==}
     engines: {node: '>= 0.4'}
 
-  axios@1.11.0:
-    resolution: {integrity: sha512-1Lx3WLFQWm3ooKDYZD1eXmoGO9fxYQjrycfHFC8P0sCfQVXyROp0p9PFWBehewBOdCwHc+f/b8I0fMto5eSfwA==}
+  axios@1.12.2:
+    resolution: {integrity: sha512-vMJzPewAlRyOgxV2dU0Cuz2O8zzzx9VYtbJOaBgXFeLc4IV/Eg50n4LowmehOOR61S8ZMpc2K5Sa7g6A4jfkUw==}
 
   b4a@1.6.7:
     resolution: {integrity: sha512-OnAYlL5b7LEkALw87fUVafQw5rVR9RjwGd4KUwNQ6DrrNmaVaUCgLipfVlzrPQ4tWOR9P0IXGNOx50jYCCdSJg==}
@@ -3738,8 +3742,8 @@ packages:
     peerDependencies:
       tailwindcss: '>=3.0.0 || insiders'
 
-  tar-fs@2.1.3:
-    resolution: {integrity: sha512-090nwYJDmlhwFwEW3QQl+vaNnxsO2yVsd45eTKRBzSzu+hlb1w2K9inVq5b0ngXuLVqQ4ApvsUHHnu/zQNkWAg==}
+  tar-fs@2.1.4:
+    resolution: {integrity: sha512-mDAjwmZdh7LTT6pNleZ05Yt65HC3E+NiQzl672vQG38jIrehtJk/J3mNwIg+vShQPcLF/LV7CMnDW6vjj6sfYQ==}
 
   tar-stream@2.2.0:
     resolution: {integrity: sha512-ujeqbceABgwMZxEJnk2HDY2DlnUZ+9oEcb1KzTVfYHio0UE6dG71n60d8D2I4qNvleWrrXpmjpt7vZeF1LnMZQ==}
@@ -5293,7 +5297,7 @@ snapshots:
       '@meshsdk/core-cst': 1.9.0-beta.68(@harmoniclabs/bytestring@1.0.0)(@harmoniclabs/crypto@0.2.5)(bufferutil@4.0.9)(rxjs@7.8.2)(utf-8-validate@6.0.5)
       '@utxorpc/sdk': 0.6.8(@bufbuild/protobuf@1.10.1)
       '@utxorpc/spec': 0.16.0
-      axios: 1.11.0
+      axios: 1.12.2
       cbor: 10.0.11
     transitivePeerDependencies:
       - '@bufbuild/protobuf'
@@ -5314,7 +5318,7 @@ snapshots:
       '@meshsdk/core-cst': 1.9.0-beta.72(@harmoniclabs/bytestring@1.0.0)(@harmoniclabs/crypto@0.2.5)(bufferutil@4.0.9)(rxjs@7.8.2)(utf-8-validate@6.0.5)
       '@utxorpc/sdk': 0.6.8(@bufbuild/protobuf@1.10.1)
       '@utxorpc/spec': 0.16.0
-      axios: 1.11.0
+      axios: 1.12.2
       cbor: 10.0.11
     transitivePeerDependencies:
       - '@bufbuild/protobuf'
@@ -5519,7 +5523,7 @@ snapshots:
       '@meshsdk/core-cst': 1.9.0-beta.53(@harmoniclabs/bytestring@1.0.0)(@harmoniclabs/crypto@0.2.5)(bufferutil@4.0.9)(rxjs@7.8.2)(utf-8-validate@6.0.5)
       '@meshsdk/wallet': 1.9.0-beta.53(@harmoniclabs/bytestring@1.0.0)(@harmoniclabs/crypto@0.2.5)(bufferutil@4.0.9)(rxjs@7.8.2)(utf-8-validate@6.0.5)
       '@peculiar/webcrypto': 1.5.0
-      axios: 1.11.0
+      axios: 1.12.2
       base32-encoding: 1.0.0
       uuid: 11.1.0
     transitivePeerDependencies:
@@ -5542,7 +5546,7 @@ snapshots:
       '@meshsdk/core-cst': 1.9.0-beta.68(@harmoniclabs/bytestring@1.0.0)(@harmoniclabs/crypto@0.2.5)(bufferutil@4.0.9)(rxjs@7.8.2)(utf-8-validate@6.0.5)
       '@meshsdk/wallet': 1.9.0-beta.68(@harmoniclabs/bytestring@1.0.0)(@harmoniclabs/crypto@0.2.5)(bufferutil@4.0.9)(rxjs@7.8.2)(utf-8-validate@6.0.5)
       '@peculiar/webcrypto': 1.5.0
-      axios: 1.11.0
+      axios: 1.12.2
       base32-encoding: 1.0.0
       uuid: 11.1.0
     transitivePeerDependencies:
@@ -6240,7 +6244,7 @@ snapshots:
     dependencies:
       possible-typed-array-names: 1.1.0
 
-  axios@1.11.0:
+  axios@1.12.2:
     dependencies:
       follow-redirects: 1.15.11
       form-data: 4.0.4
@@ -8195,7 +8199,7 @@ snapshots:
       pump: 3.0.3
       rc: 1.2.8
       simple-get: 4.0.1
-      tar-fs: 2.1.3
+      tar-fs: 2.1.4
       tunnel-agent: 0.6.0
 
   prelude-ls@1.2.1: {}
@@ -8585,7 +8589,7 @@ snapshots:
 
   tailwindcss-animate@1.0.7: {}
 
-  tar-fs@2.1.3:
+  tar-fs@2.1.4:
     dependencies:
       chownr: 1.1.4
       mkdirp-classic: 0.5.3
