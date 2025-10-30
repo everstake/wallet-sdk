@@ -6,26 +6,16 @@
 export type NetworkType = 'eth_mainnet';
 
 export interface EthNetworkAddresses {
-  rpcUrl: string;
-}
-
-export type NetworksMap = {
-  [K in NetworkType]: EthNetworkAddresses;
-};
-
-export type HyspVaultType = 'mEVUSD';
-
-export interface HyspVaultAddresses {
   issuanceVaultAddress: string;
   redemptionVaultAddress: string;
   oracleAddress: string;
   tokenAddress: string;
 
-  Network: NetworkType;
+  rpcUrl: string;
 }
 
-export type HyspVaultsMap = {
-  [K in HyspVaultType]: HyspVaultAddresses;
+export type NetworksMap = {
+  [K in NetworkType]: EthNetworkAddresses;
 };
 
 export type EthTransaction = {

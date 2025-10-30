@@ -7,8 +7,8 @@ import { ethers } from 'ethers';
 import { Blockchain } from '../../utils';
 
 import { ERROR_MESSAGES, ORIGINAL_ERROR_MESSAGES } from './constants/errors';
-import { NetworkType, HyspVaultType, EthTransaction } from './types';
-import { HYSP_VAULTS_ADDRESSES, NETWORKS } from './constants';
+import { EthTransaction, NetworkType } from './types';
+import { NETWORKS } from './constants';
 import BigNumber from 'bignumber.js';
 import { containsCaseInsensitive } from './utils';
 import { JsonRpcProvider } from 'ethers';
@@ -74,29 +74,16 @@ export class Hysp extends Blockchain {
   /**
    * Initializes the network, contract addresses, and contract instances.
    *
-   * @param network - The network type.
-   * @param vaultType - The vault type.
    * @param url - Optional RPC URL for the network.
-   * @throws Will throw an error if the network or vault is not supported.
+   * @throws Will throw an error if fails to fetch data from smart contracts or if invalid network is passed.
    */
-  public async init(
-    network: NetworkType = 'eth_mainnet',
-    vaultType: HyspVaultType = 'mEVUSD',
-    url?: string,
-  ) {
-    const networkAddresses = NETWORKS[network];
-    if (!networkAddresses) {
+  public async init(network: NetworkType = 'eth_mainnet', url?: string) {
+    const hyspAddresses = NETWORKS[network];
+    if (!hyspAddresses) {
       this.throwError('NETWORK_NOT_SUPPORTED', network);
     }
-    const hyspAddresses = HYSP_VAULTS_ADDRESSES[vaultType];
-    if (!hyspAddresses) {
-      this.throwError('VAULT_NOT_SUPPORTED', vaultType);
-    }
-    if (hyspAddresses.Network !== network) {
-      this.throwError('INVALID_VAULT_NETWORK', `${vaultType} - ${network}`);
-    }
 
-    const providerUrl = url || networkAddresses.rpcUrl;
+    const providerUrl = url || hyspAddresses.rpcUrl;
 
     this.provider = new JsonRpcProvider(providerUrl);
     this.addressIssuanceVault = hyspAddresses.issuanceVaultAddress;
