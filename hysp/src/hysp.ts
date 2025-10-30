@@ -80,8 +80,8 @@ export class Hysp extends Blockchain {
    * @throws Will throw an error if the network or vault is not supported.
    */
   public async init(
-    network: NetworkType,
-    vaultType: HyspVaultType,
+    network: NetworkType = 'eth_mainnet',
+    vaultType: HyspVaultType = 'mEVUSD',
     url?: string,
   ) {
     const networkAddresses = NETWORKS[network];
