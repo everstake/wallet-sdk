@@ -48,7 +48,7 @@ Initialize Hysp object this way:
 
 ```ts
 const hysp = new Hysp();
-await hysp.init('eth_mainnet', 'mEVUSD');
+await hysp.init();
 ```
 
 ### 3.1 Depositing to Issuance Vault 
