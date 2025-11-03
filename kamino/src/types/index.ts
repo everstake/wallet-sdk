@@ -3,14 +3,12 @@
  * Licensed under the BSD-3-Clause License. See LICENSE file for details.
  */
 
-// Note: Since Kamino SDK returns instructions rather than full transactions,
-// we don't need the complex transaction message types for now
-import { SupportedToken } from '../constants';
+import { Instruction } from "@solana/kit";
 
 export interface ApiResponse<T> {
   result: T;
 }
 export type TransactionResponse = {
-  instructions: any[];
+  instructions: Instruction[];
   userAddress: string;
 };

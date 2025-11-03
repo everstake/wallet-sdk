@@ -140,10 +140,10 @@ export class KaminoSDK extends Blockchain {
    *
    * @returns Returns a promise that resolves with the exchange rate as string.
    */
-  async getExchangeRate(): Promise<ApiResponse<string>> {
+  async getExchangeRate(): Promise<ApiResponse<Decimal>> {
     try {
       const rate = await this.vault.getExchangeRate();
-      return { result: rate.toString() };
+      return { result: rate };
     } catch (error) {
       throw this.handleError('VAULT_LOAD_ERROR', error);
     }
@@ -154,7 +154,7 @@ export class KaminoSDK extends Blockchain {
    *
    * @param userAddress - The public key of the user account.
    * @throws Throws an error if there's an issue fetching user shares.
-   * @returns Returns a promise that resolves with the user's shares information.
+   * @returns Returns a promise that resolves with the user's shares amount.
    */
   async getUserShares(userAddress: Address): Promise<ApiResponse<Decimal>> {
     try {
@@ -171,21 +171,26 @@ export class KaminoSDK extends Blockchain {
    * Creates a deposit transaction to the vault.
    *
    * @param userAddress - The public key of the user account.
-   * @param amount - The amount to deposit (accepts number, string, or bigint).
+   * @param amount - The amount to deposit.
    *
    * @throws Throws an error if there's an issue creating the deposit transaction.
    *
    * @returns Returns a promise that resolves with the deposit transaction response.
    */
-  async deposit(userAddress: Address, amount: number | string | bigint): Promise<TransactionResponse> {
+  async deposit(userAddress: Address, amount: number | string | bigint | Decimal): Promise<TransactionResponse> {
     try {
       const signer = createNoopSigner(userAddress);
-      const depositAmount = this.convertToDecimal(amount);
+      var decimalAmount: Decimal;
+      if (amount instanceof Decimal) {
+        decimalAmount = amount;
+      } else {
+        decimalAmount = this.convertToDecimal(amount);
+      }
       
-      const depositIxs = await this.vault.depositIxs(signer, depositAmount);
+      const depositIxs = await this.vault.depositIxs(signer, decimalAmount);
 
       return {
-        instructions: Array.isArray(depositIxs) ? depositIxs : [depositIxs],
+        instructions: [...depositIxs.depositIxs, ...depositIxs.stakeInFarmIfNeededIxs],
         userAddress: userAddress.toString(),
       };
     } catch (error) {
@@ -197,21 +202,26 @@ export class KaminoSDK extends Blockchain {
    * Creates a withdraw transaction from the vault.
    *
    * @param userAddress - The public key of the user account.
-   * @param sharesAmount - The amount of shares to withdraw (accepts number, string, or bigint).
+   * @param sharesAmount - The amount of shares to withdraw.
    *
    * @throws Throws an error if there's issue creating the withdraw transaction.
    *
    * @returns Returns a promise that resolves with the withdraw transaction response.
    */
-  async withdraw(userAddress: Address, sharesAmount: number | string | bigint): Promise<TransactionResponse> {
+  async withdraw(userAddress: Address, sharesAmount: number | string | bigint | Decimal): Promise<TransactionResponse> {
     try {
       const signer = createNoopSigner(userAddress);
-      const withdrawShares = this.convertToDecimal(sharesAmount);
-      
-      const withdrawIxs = await this.vault.withdrawIxs(signer, withdrawShares);
+      var sharesDecimal: Decimal;
+      if (sharesAmount instanceof Decimal) {
+        sharesDecimal = sharesAmount;
+      } else {
+        sharesDecimal = this.convertToDecimal(sharesAmount);
+      }
+
+      const withdrawIxs = await this.vault.withdrawIxs(signer, sharesDecimal);
 
       return {
-        instructions: Array.isArray(withdrawIxs) ? withdrawIxs : [withdrawIxs],
+        instructions:[...withdrawIxs.unstakeFromFarmIfNeededIxs, ...withdrawIxs.withdrawIxs, ...withdrawIxs.postWithdrawIxs],
         userAddress: userAddress.toString(),
       };
     } catch (error) {
