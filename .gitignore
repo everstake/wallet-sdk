@@ -1,12 +1,7 @@
 .DS_Store
 node_modules
-/dist
-solana_v2/dist
-sui/dist
-ethereum/dist
-solana_v1/dist
+**/dist
 
-hysp/dist
 hysp/src/typechain-types
 
 # local env files
