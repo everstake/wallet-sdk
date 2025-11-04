@@ -3,12 +3,19 @@
  * Licensed under the BSD-3-Clause License. See LICENSE file for details.
  */
 
-import { Instruction } from "@solana/kit";
+import { Blockhash } from "@solana/kit";
 
 export interface ApiResponse<T> {
   result: T;
 }
-export type TransactionResponse = {
-  instructions: Instruction[];
-  userAddress: string;
+
+export type Params = {
+  сomputeUnitPrice?: bigint;
+  computeUnitLimit?: number;
+  finalLatestBlockhash?: {
+    /** a Hash as base-58 encoded string */
+    blockhash: Blockhash;
+    /** last block height at which the blockhash will be valid */
+    lastValidBlockHeight: bigint;
+  };
 };

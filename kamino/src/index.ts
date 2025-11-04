@@ -10,5 +10,6 @@ export * from '../../utils';
 export * from './constants';
 
 export type {
-  TransactionResponse
+  Params,
+  ApiResponse
 } from './types';
