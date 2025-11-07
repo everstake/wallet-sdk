@@ -1,49 +1,49 @@
-# Everstake Wallet SDK - Kamino
+# Everstake Wallet SDK - HYSP Solana Vault 
 
 ## Getting Started
 
 ### Step 1: Installing the library
 
 ```sh
-$ npm install @everstake/wallet-sdk-kamino
+$ npm install @everstake/wallet-sdk-hysp-solana
 ```
 
 or you can also use yarn
 
 ```sh
-$ yarn add @everstake/wallet-sdk-kamino
+$ yarn add @everstake/wallet-sdk-hysp-solana
 ```
 
 or you can use pnpm
 
 ```sh
-$ pnpm add @everstake/wallet-sdk-kamino
+$ pnpm add @everstake/wallet-sdk-hysp-solana
 ```
 
 ## Step 2: Importing the library
 
-After installing the package, you can import the Kamino module and use the SDK:
+After installing the package, you can import the module and use the SDK:
 
 #### Import ES6
 
 ```ts
 // import module
-import { KaminoSDK } from '@everstake/wallet-sdk-kamino';
+import { HyspSolana } from '@everstake/wallet-sdk-hysp-solana';
 ```
 
 #### Import ES5
 
 ```ts
 // import module
-const { KaminoSDK } = require('@everstake/wallet-sdk-kamino');
+const { HyspSolana } = require('@everstake/wallet-sdk-hysp-solana');
 ```
 
 ## Step 3: Using the library
 
-Initialize Kamino SDK:
+Initialize vault object:
 
 ```ts
-const kamino = new KaminoSDK('USDC');
+const hysp = new HyspSolana('USDC');
 ```
 
 ### 3.1 Depositing to Vault

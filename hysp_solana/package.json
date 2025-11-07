@@ -1,7 +1,7 @@
 {
-  "name": "@everstake/wallet-sdk-kamino",
+  "name": "@everstake/wallet-sdk-hysp-solana",
   "version": "1.0.0",
-  "description": "Kamino - Everstake Wallet SDK",
+  "description": "HYSP Solana - Everstake Wallet SDK",
   "publishConfig": {
     "access": "public"
   },
@@ -24,8 +24,9 @@
     "prebuild": "pnpm run type-check && pnpm run lint"
   },
   "keywords": [
-    "kamino",
+    "hysp",
     "solana",
+    "vault",
     "blockchain",
     "everstake",
     "wallet sdk"

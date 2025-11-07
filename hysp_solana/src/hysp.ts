@@ -35,7 +35,7 @@ import {
 } from './types';
 
 /**
- * The `KaminoSDK` class extends the `Blockchain` class and provides methods for interacting with Kamino vaults on Solana.
+ * The `HyspSolana` class extends the `Blockchain` class and provides methods for interacting with Kamino vaults on Solana.
  * 
  * This SDK allows users to perform vault operations such as deposits, withdrawals, and retrieving vault information.
  *
@@ -46,7 +46,7 @@ import {
  * @property ORIGINAL_ERROR_MESSAGES - The original error messages for the Kamino class.
  *
  */
-export class KaminoSDK extends Blockchain {
+export class HyspSolana extends Blockchain {
   protected ERROR_MESSAGES = ERROR_MESSAGES;
   protected ORIGINAL_ERROR_MESSAGES = ERROR_MESSAGES;
   
