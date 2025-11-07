@@ -20,6 +20,7 @@ import {
   KaminoVault,
   VaultHoldings,
   VaultAPYs,
+  APY,
 } from '@kamino-finance/klend-sdk';
 
 import { Decimal } from 'decimal.js';
@@ -108,12 +109,12 @@ export class HyspSolana extends Blockchain {
    *
    * @throws Throws an error if there's an issue loading vault APYs.
    *
-   * @returns Returns a promise that resolves with the vault APY information.
+   * @returns Returns a promise that resolves with the vault actual APY information.
    */
-  async getVaultAPYs(): Promise<ApiResponse<VaultAPYs>> {
+  async getVaultAPYs(): Promise<ApiResponse<APY>> {
     try {
       const apys = await this.vault.getAPYs();
-      return { result: apys };
+      return { result: apys.actualAPY };
     } catch (error) {
       throw this.handleError('VAULT_LOAD_ERROR', error);
     }
