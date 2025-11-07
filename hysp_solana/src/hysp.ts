@@ -155,6 +155,26 @@ export class HyspSolana extends Blockchain {
   }
 
   /**
+   * Fetches a user's token balance in the current vault: shares * exchange rate.
+   * 
+   * @param userAddress - The public key of the user account.
+   * @throws Throws an error if there's an issue fetching user balance.
+   * @returns Returns a promise that resolves with the user's token balance amount.
+   */
+  async getUserBalance(userAddress: Address): Promise<ApiResponse<Decimal>> {
+    try {
+      const balance = await this.vault.getUserShares(userAddress);
+      const exchangeRate = await this.vault.getExchangeRate();
+      const tokenBalance = balance.totalShares.mul(exchangeRate);
+      return {
+        result: tokenBalance,
+      };
+    } catch (error) {
+      throw this.handleError('GET_BALANCE_ERROR', error);
+    }
+  }
+
+  /**
    * Creates a deposit transaction to the vault.
    *
    * @param userAddress - The public key of the user account.
