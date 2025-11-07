@@ -12,7 +12,7 @@ export type VaultsMap = {
 };
 
 export const VAULTS: VaultsMap = {
-  'USDC': address('HDsayqAsDWy3QvANGqh2yNraqcD8Fnjgh73Mhb3WRS5E'),
+  USDC: address('HDsayqAsDWy3QvANGqh2yNraqcD8Fnjgh73Mhb3WRS5E'),
 };
 
 export * from './errors';

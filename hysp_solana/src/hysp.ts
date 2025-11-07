@@ -14,44 +14,43 @@ import {
   setTransactionMessageLifetimeUsingBlockhash,
   appendTransactionMessageInstruction,
   TransactionMessage,
+  prependTransactionMessageInstruction,
+  CompilableTransactionMessage,
+  TransactionMessageWithBlockhashLifetime,
+  Rpc,
+  SolanaRpcApi,
 } from '@solana/kit';
 
 import {
-  KaminoVault,
-  VaultHoldings,
-  VaultAPYs,
-  APY,
-} from '@kamino-finance/klend-sdk';
+  getSetComputeUnitLimitInstruction,
+  getSetComputeUnitPriceInstruction,
+} from '@solana-program/compute-budget';
+
+import { KaminoVault, VaultHoldings, APY } from '@kamino-finance/klend-sdk';
 
 import { Decimal } from 'decimal.js';
 import { Blockchain } from '../../utils';
 import { ERROR_MESSAGES } from './constants/errors';
-import {
-  VAULTS,
-  SupportedToken,
-} from './constants';
-import {
-  ApiResponse,
-  Params
-} from './types';
+import { VAULTS, SupportedToken } from './constants';
+import { ApiResponse, Params } from './types';
 
 /**
- * The `HyspSolana` class extends the `Blockchain` class and provides methods for interacting with Kamino vaults on Solana.
- * 
+ * The `HyspSolana` class extends the `Blockchain` class and provides methods for interacting with vaults on Solana.
+ *
  * This SDK allows users to perform vault operations such as deposits, withdrawals, and retrieving vault information.
  *
  * @property connection - The connection to the Solana blockchain.
  * @property vault - The KaminoVault instance for vault operations.
  * @property tokenSymbol - The supported token symbol for the vault.
- * @property ERROR_MESSAGES - The error messages for the Kamino class.
- * @property ORIGINAL_ERROR_MESSAGES - The original error messages for the Kamino class.
+ * @property ERROR_MESSAGES - The error messages for the HYSP class.
+ * @property ORIGINAL_ERROR_MESSAGES - The original error messages for the HYSP class.
  *
  */
 export class HyspSolana extends Blockchain {
   protected ERROR_MESSAGES = ERROR_MESSAGES;
   protected ORIGINAL_ERROR_MESSAGES = ERROR_MESSAGES;
-  
-  private connection: any;
+
+  private connection: Rpc<SolanaRpcApi>;
   private vault: KaminoVault;
 
   /**
@@ -64,9 +63,9 @@ export class HyspSolana extends Blockchain {
    */
   constructor(tokenSymbol: SupportedToken, rpcUrl?: string) {
     super();
-    
+
     const vaultAddress = this.getVaultAddress(tokenSymbol);
-    
+
     try {
       const connectionUrl = rpcUrl || 'https://api.mainnet-beta.solana.com';
       this.connection = createSolanaRpc(connectionUrl);
@@ -81,6 +80,7 @@ export class HyspSolana extends Blockchain {
     if (!vaultAddress) {
       throw this.throwError('VAULT_NOT_FOUND_ERROR', tokenSymbol);
     }
+
     return vaultAddress;
   }
 
@@ -98,6 +98,7 @@ export class HyspSolana extends Blockchain {
   async getVaultHoldings(): Promise<ApiResponse<VaultHoldings>> {
     try {
       const holdings = await this.vault.getVaultHoldings();
+
       return { result: holdings };
     } catch (error) {
       throw this.handleError('VAULT_LOAD_ERROR', error);
@@ -114,6 +115,7 @@ export class HyspSolana extends Blockchain {
   async getVaultAPYs(): Promise<ApiResponse<APY>> {
     try {
       const apys = await this.vault.getAPYs();
+
       return { result: apys.actualAPY };
     } catch (error) {
       throw this.handleError('VAULT_LOAD_ERROR', error);
@@ -130,6 +132,7 @@ export class HyspSolana extends Blockchain {
   async getExchangeRate(): Promise<ApiResponse<Decimal>> {
     try {
       const rate = await this.vault.getExchangeRate();
+
       return { result: rate };
     } catch (error) {
       throw this.handleError('VAULT_LOAD_ERROR', error);
@@ -146,6 +149,7 @@ export class HyspSolana extends Blockchain {
   async getUserShares(userAddress: Address): Promise<ApiResponse<Decimal>> {
     try {
       const shares = await this.vault.getUserShares(userAddress);
+
       return {
         result: shares.totalShares,
       };
@@ -156,7 +160,7 @@ export class HyspSolana extends Blockchain {
 
   /**
    * Fetches a user's token balance in the current vault: shares * exchange rate.
-   * 
+   *
    * @param userAddress - The public key of the user account.
    * @throws Throws an error if there's an issue fetching user balance.
    * @returns Returns a promise that resolves with the user's token balance amount.
@@ -166,6 +170,7 @@ export class HyspSolana extends Blockchain {
       const balance = await this.vault.getUserShares(userAddress);
       const exchangeRate = await this.vault.getExchangeRate();
       const tokenBalance = balance.totalShares.mul(exchangeRate);
+
       return {
         result: tokenBalance,
       };
@@ -186,39 +191,42 @@ export class HyspSolana extends Blockchain {
    * @returns Returns a promise that resolves with the deposit transaction response.
    */
   async deposit(
-    userAddress: Address, 
+    userAddress: Address,
     amount: number | string | bigint | Decimal,
-    params?: Params
+    params?: Params,
   ): Promise<ApiResponse<TransactionMessage>> {
     try {
       const signer = createNoopSigner(userAddress);
-      var decimalAmount: Decimal;
+      let decimalAmount: Decimal;
       if (amount instanceof Decimal) {
         decimalAmount = amount;
       } else {
         decimalAmount = this.convertToDecimal(amount);
       }
-      
+
       const depositIxs = await this.vault.depositIxs(signer, decimalAmount);
 
-      let transactionMessage = await this.baseTx(userAddress.toString(), params);
-      
-      depositIxs.depositIxs.forEach(instruction => {
+      let transactionMessage = await this.baseTx(
+        userAddress.toString(),
+        params,
+      );
+
+      depositIxs.depositIxs.forEach((instruction) => {
         transactionMessage = appendTransactionMessageInstruction(
-          instruction, 
-          transactionMessage
-        ) as any;
+          instruction,
+          transactionMessage,
+        );
       });
 
-      depositIxs.stakeInFarmIfNeededIxs.forEach(instruction => {
+      depositIxs.stakeInFarmIfNeededIxs.forEach((instruction) => {
         transactionMessage = appendTransactionMessageInstruction(
-          instruction, 
-          transactionMessage
-        ) as any;
+          instruction,
+          transactionMessage,
+        );
       });
 
       return {
-        result: transactionMessage
+        result: transactionMessage,
       };
     } catch (error) {
       throw this.handleError('DEPOSIT_ERROR', error);
@@ -237,13 +245,13 @@ export class HyspSolana extends Blockchain {
    * @returns Returns a promise that resolves with the withdraw transaction response.
    */
   async withdraw(
-    userAddress: Address, 
+    userAddress: Address,
     sharesAmount: number | string | bigint | Decimal,
-    params?: Params
+    params?: Params,
   ): Promise<ApiResponse<TransactionMessage>> {
     try {
       const signer = createNoopSigner(userAddress);
-      var sharesDecimal: Decimal;
+      let sharesDecimal: Decimal;
       if (sharesAmount instanceof Decimal) {
         sharesDecimal = sharesAmount;
       } else {
@@ -252,31 +260,34 @@ export class HyspSolana extends Blockchain {
 
       const withdrawIxs = await this.vault.withdrawIxs(signer, sharesDecimal);
 
-      let transactionMessage = await this.baseTx(userAddress.toString(), params);
-      
-      withdrawIxs.unstakeFromFarmIfNeededIxs.forEach(instruction => {
+      let transactionMessage = await this.baseTx(
+        userAddress.toString(),
+        params,
+      );
+
+      withdrawIxs.unstakeFromFarmIfNeededIxs.forEach((instruction) => {
         transactionMessage = appendTransactionMessageInstruction(
-          instruction, 
-          transactionMessage
-        ) as any;
+          instruction,
+          transactionMessage,
+        );
       });
 
-      withdrawIxs.withdrawIxs.forEach(instruction => {
+      withdrawIxs.withdrawIxs.forEach((instruction) => {
         transactionMessage = appendTransactionMessageInstruction(
-          instruction, 
-          transactionMessage
-        ) as any;
+          instruction,
+          transactionMessage,
+        );
       });
 
-      withdrawIxs.postWithdrawIxs.forEach(instruction => {
+      withdrawIxs.postWithdrawIxs.forEach((instruction) => {
         transactionMessage = appendTransactionMessageInstruction(
-          instruction, 
-          transactionMessage
-        ) as any;
+          instruction,
+          transactionMessage,
+        );
       });
 
       return {
-        result: transactionMessage
+        result: transactionMessage,
       };
     } catch (error) {
       throw this.handleError('WITHDRAW_ERROR', error);
@@ -286,17 +297,48 @@ export class HyspSolana extends Blockchain {
   private async baseTx(
     sender: string,
     params?: Params,
-  ): Promise<TransactionMessage> {
+  ): Promise<
+    CompilableTransactionMessage & TransactionMessageWithBlockhashLifetime
+  > {
     const finalLatestBlockhash =
       params?.finalLatestBlockhash ||
       (await this.connection.getLatestBlockhash().send()).value;
 
-    let transactionMessage = pipe(
+    let transactionMessage: CompilableTransactionMessage = pipe(
       createTransactionMessage({ version: 0 }),
       (tx) => setTransactionMessageFeePayer(address(sender), tx),
       (tx) =>
         setTransactionMessageLifetimeUsingBlockhash(finalLatestBlockhash, tx),
     );
+
+    if (
+      params?.computeUnitLimit !== undefined &&
+      params?.computeUnitLimit > 0
+    ) {
+      const unitLimitInstruction = getSetComputeUnitLimitInstruction({
+        /** Transaction compute unit limit used for prioritization fees. */
+        units: params?.computeUnitLimit,
+      });
+
+      transactionMessage = prependTransactionMessageInstruction(
+        unitLimitInstruction,
+        transactionMessage,
+      );
+    }
+
+    if (
+      params?.сomputeUnitPrice !== undefined &&
+      params?.сomputeUnitPrice > 0
+    ) {
+      const unitPriceInstruction = getSetComputeUnitPriceInstruction({
+        /** Transaction compute unit price used for prioritization fees. */
+        microLamports: params?.сomputeUnitPrice,
+      });
+      transactionMessage = prependTransactionMessageInstruction(
+        unitPriceInstruction,
+        transactionMessage,
+      );
+    }
 
     return transactionMessage;
   }

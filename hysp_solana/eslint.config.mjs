@@ -15,6 +15,7 @@ export default [
         'error',
         { blankLine: 'always', prev: '*', next: 'return' },
       ],
+      '@typescript-eslint/unified-signatures': 'off',
     },
   },
 ];

@@ -9,7 +9,4 @@ export * from '../../utils';
 
 export * from './constants';
 
-export type {
-  Params,
-  ApiResponse
-} from './types';
+export type { Params, ApiResponse } from './types';
