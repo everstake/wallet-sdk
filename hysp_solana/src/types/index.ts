@@ -10,8 +10,6 @@ export interface ApiResponse<T> {
 }
 
 export type Params = {
-  сomputeUnitPrice?: bigint;
-  computeUnitLimit?: number;
   finalLatestBlockhash?: {
     /** a Hash as base-58 encoded string */
     blockhash: Blockhash;
