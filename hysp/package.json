@@ -1,6 +1,6 @@
 {
   "name": "@everstake/wallet-sdk-hysp",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "HYSP - Everstake Wallet SDK",
   "publishConfig": {
     "access": "public"
@@ -44,6 +44,7 @@
   "devDependencies": {
     "@eslint/js": "^9.7.0",
     "@jest/types": "^29.6.3",
+    "@typechain/ethers-v6": "^0.5.1",
     "@types/jest": "^29.5.12",
     "eslint": "^9.31.0",
     "eslint-config-prettier": "^10.1.8",
@@ -55,10 +56,10 @@
     "ts-node": "^10.9.2",
     "tsup": "^8.2.2",
     "typescript": "^5.5.3",
-    "typescript-eslint": "^8.38.0",
-    "@typechain/ethers-v6": "^0.5.1"
+    "typescript-eslint": "^8.38.0"
   },
   "dependencies": {
+    "bignumber.js": "^9.3.1",
     "ethers": "^6.15.0"
   }
 }
