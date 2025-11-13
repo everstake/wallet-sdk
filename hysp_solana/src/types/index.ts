@@ -3,7 +3,7 @@
  * Licensed under the BSD-3-Clause License. See LICENSE file for details.
  */
 
-import { Blockhash } from '@solana/kit';
+import { Blockhash, Instruction } from '@solana/kit';
 
 export interface ApiResponse<T> {
   result: T;
@@ -18,4 +18,6 @@ export type Params = {
     /** last block height at which the blockhash will be valid */
     lastValidBlockHeight: bigint;
   };
+  /** Instructions to be added after the main instructions  created by SDK */
+  afterInstructions?: Instruction[];
 };

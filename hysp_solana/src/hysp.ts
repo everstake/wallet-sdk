@@ -19,6 +19,7 @@ import {
   TransactionMessageWithBlockhashLifetime,
   Rpc,
   SolanaRpcApi,
+  Instruction,
 } from '@solana/kit';
 
 import {
@@ -206,24 +207,20 @@ export class HyspSolana extends Blockchain {
 
       const depositIxs = await this.vault.depositIxs(signer, decimalAmount);
 
-      let transactionMessage = await this.baseTx(
-        userAddress.toString(),
-        params,
-      );
+      const mergedDepositIxs: Instruction[] = [];
 
       depositIxs.depositIxs.forEach((instruction) => {
-        transactionMessage = appendTransactionMessageInstruction(
-          instruction,
-          transactionMessage,
-        );
+        mergedDepositIxs.push(instruction);
+      });
+      depositIxs.stakeInFarmIfNeededIxs.forEach((instruction) => {
+        mergedDepositIxs.push(instruction);
       });
 
-      depositIxs.stakeInFarmIfNeededIxs.forEach((instruction) => {
-        transactionMessage = appendTransactionMessageInstruction(
-          instruction,
-          transactionMessage,
-        );
-      });
+      const transactionMessage = await this.buildTx(
+        userAddress.toString(),
+        mergedDepositIxs,
+        params,
+      );
 
       return {
         result: transactionMessage,
@@ -260,31 +257,23 @@ export class HyspSolana extends Blockchain {
 
       const withdrawIxs = await this.vault.withdrawIxs(signer, sharesDecimal);
 
-      let transactionMessage = await this.baseTx(
-        userAddress.toString(),
-        params,
-      );
+      const mergedWithdrawIxs: Instruction[] = [];
 
       withdrawIxs.unstakeFromFarmIfNeededIxs.forEach((instruction) => {
-        transactionMessage = appendTransactionMessageInstruction(
-          instruction,
-          transactionMessage,
-        );
+        mergedWithdrawIxs.push(instruction);
       });
-
       withdrawIxs.withdrawIxs.forEach((instruction) => {
-        transactionMessage = appendTransactionMessageInstruction(
-          instruction,
-          transactionMessage,
-        );
+        mergedWithdrawIxs.push(instruction);
+      });
+      withdrawIxs.postWithdrawIxs.forEach((instruction) => {
+        mergedWithdrawIxs.push(instruction);
       });
 
-      withdrawIxs.postWithdrawIxs.forEach((instruction) => {
-        transactionMessage = appendTransactionMessageInstruction(
-          instruction,
-          transactionMessage,
-        );
-      });
+      const transactionMessage = await this.buildTx(
+        userAddress.toString(),
+        mergedWithdrawIxs,
+        params,
+      );
 
       return {
         result: transactionMessage,
@@ -294,8 +283,9 @@ export class HyspSolana extends Blockchain {
     }
   }
 
-  private async baseTx(
+  private async buildTx(
     sender: string,
+    instructions: Instruction[],
     params?: Params,
   ): Promise<
     CompilableTransactionMessage & TransactionMessageWithBlockhashLifetime
@@ -338,6 +328,22 @@ export class HyspSolana extends Blockchain {
         unitPriceInstruction,
         transactionMessage,
       );
+    }
+
+    for (const instruction of instructions) {
+      transactionMessage = appendTransactionMessageInstruction(
+        instruction,
+        transactionMessage,
+      );
+    }
+
+    if (params?.afterInstructions) {
+      for (const instruction of params.afterInstructions) {
+        transactionMessage = appendTransactionMessageInstruction(
+          instruction,
+          transactionMessage,
+        );
+      }
     }
 
     return transactionMessage;
