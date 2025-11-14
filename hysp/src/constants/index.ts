@@ -14,6 +14,14 @@ export const NETWORKS: NetworksMap = {
 
     rpcUrl: 'https://mainnet.infura.io/v3/f583d4f04d384b9e8c59a7ff1c9f68f1',
   },
+  base: {
+    issuanceVaultAddress: '0x5f09Aff8B9b1f488B7d1bbaD4D89648579e55d61',
+    redemptionVaultAddress: '0x9BF00b7CFC00D6A7a2e2C994DB8c8dCa467ee359',
+    oracleAddress: '0x4Fe7f62B2F4eF077aEd8f458c8B4652f5dE8080f',
+    tokenAddress: '0xccbad2823328BCcAEa6476Df3Aa529316aB7474A',
+
+    rpcUrl: 'https://go.getblock.io/b139646923054e4fa8b33933871ed308',
+  },
 };
 
 export const ZeroReferrer =

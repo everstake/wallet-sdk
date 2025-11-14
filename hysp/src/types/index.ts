@@ -3,7 +3,7 @@
  * Licensed under the BSD-3-Clause License. See LICENSE file for details.
  */
 
-export type NetworkType = 'eth_mainnet';
+export type NetworkType = 'eth_mainnet' | 'base';
 
 export interface EthNetworkAddresses {
   issuanceVaultAddress: string;
