@@ -1,0 +1,68 @@
+{
+  "name": "@everstake/wallet-sdk-hysp-solana",
+  "version": "1.0.0",
+  "description": "HYSP Solana - Everstake Wallet SDK",
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/index.js",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "sideEffects": false,
+  "scripts": {
+    "build": "pnpm run prebuild && tsup src/index.ts --format cjs,esm --dts",
+    "type-check": "tsc",
+    "lint": "eslint 'src/**/*.{ts,tsx}'",
+    "prettier": "prettier --write 'src/**/*.{ts,tsx}'",
+    "test": "jest",
+    "prebuild": "pnpm run type-check && pnpm run lint"
+  },
+  "keywords": [
+    "hysp",
+    "solana",
+    "vault",
+    "blockchain",
+    "everstake",
+    "wallet sdk"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/everstake/wallet-sdk.git"
+  },
+  "author": "Everstake",
+  "license": "BSD-3-Clause",
+  "bugs": {
+    "url": "https://github.com/everstake/wallet-sdk/issues"
+  },
+  "homepage": "https://github.com/everstake/wallet-sdk#readme",
+  "dependencies": {
+    "@kamino-finance/klend-sdk": "^7.2.4",
+    "@solana/kit": "^3.0.3",
+    "decimal.js": "^10.6.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.7.0",
+    "@jest/types": "^29.6.3",
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.14.10",
+    "@typescript-eslint/eslint-plugin": "^7.16.0",
+    "@typescript-eslint/parser": "^7.16.0",
+    "eslint": "^9.7.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.1.3",
+    "globals": "^16.5.0",
+    "jest": "^29.7.0",
+    "prettier": "^3.3.2",
+    "ts-jest": "^29.2.2",
+    "ts-node": "^10.9.2",
+    "tsup": "^8.1.0",
+    "typescript": "^5.5.3",
+    "typescript-eslint": "^8.46.2"
+  }
+}
