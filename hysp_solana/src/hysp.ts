@@ -13,10 +13,9 @@ import {
   setTransactionMessageFeePayer,
   setTransactionMessageLifetimeUsingBlockhash,
   appendTransactionMessageInstruction,
-  TransactionMessage,
   prependTransactionMessageInstruction,
-  CompilableTransactionMessage,
-  TransactionMessageWithBlockhashLifetime,
+  TransactionMessage,
+  TransactionMessageWithLifetime,
   Rpc,
   SolanaRpcApi,
   Instruction,
@@ -195,7 +194,7 @@ export class HyspSolana extends Blockchain {
     userAddress: Address,
     amount: number | string | bigint | Decimal,
     params?: Params,
-  ): Promise<ApiResponse<TransactionMessage>> {
+  ): Promise<ApiResponse<TransactionMessageWithLifetime>> {
     try {
       const signer = createNoopSigner(userAddress);
       let decimalAmount: Decimal;
@@ -245,7 +244,7 @@ export class HyspSolana extends Blockchain {
     userAddress: Address,
     sharesAmount: number | string | bigint | Decimal,
     params?: Params,
-  ): Promise<ApiResponse<TransactionMessage>> {
+  ): Promise<ApiResponse<TransactionMessageWithLifetime>> {
     try {
       const signer = createNoopSigner(userAddress);
       let sharesDecimal: Decimal;
@@ -287,18 +286,10 @@ export class HyspSolana extends Blockchain {
     sender: string,
     instructions: Instruction[],
     params?: Params,
-  ): Promise<
-    CompilableTransactionMessage & TransactionMessageWithBlockhashLifetime
-  > {
-    const finalLatestBlockhash =
-      params?.finalLatestBlockhash ||
-      (await this.connection.getLatestBlockhash().send()).value;
-
-    let transactionMessage: CompilableTransactionMessage = pipe(
+  ): Promise<TransactionMessageWithLifetime> {
+    let transactionMessage: TransactionMessage = pipe(
       createTransactionMessage({ version: 0 }),
       (tx) => setTransactionMessageFeePayer(address(sender), tx),
-      (tx) =>
-        setTransactionMessageLifetimeUsingBlockhash(finalLatestBlockhash, tx),
     );
 
     if (
@@ -346,6 +337,18 @@ export class HyspSolana extends Blockchain {
       }
     }
 
-    return transactionMessage;
+    const finalLatestBlockhash =
+      params?.finalLatestBlockhash ||
+      (await this.connection.getLatestBlockhash().send()).value;
+
+    const txMessageWithBlockhashLifetime =
+      setTransactionMessageLifetimeUsingBlockhash(
+        finalLatestBlockhash,
+        transactionMessage,
+      );
+    // (tx) =>
+    //   setTransactionMessageLifetimeUsingBlockhash(finalLatestBlockhash, tx),
+
+    return txMessageWithBlockhashLifetime;
   }
 }
