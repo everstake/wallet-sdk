@@ -12,7 +12,8 @@ export type VaultsMap = {
 };
 
 export const VAULTS: VaultsMap = {
-  USDC: address('HDsayqAsDWy3QvANGqh2yNraqcD8Fnjgh73Mhb3WRS5E'),
+  // Gauntlet USDC Prime
+  USDC: address('9E69U4GzWhryRaPe8DYpco6Z9vTZY6gg8w6W2QsBACEj'),
 };
 
 export * from './errors';

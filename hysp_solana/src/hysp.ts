@@ -346,8 +346,6 @@ export class HyspSolana extends Blockchain {
         finalLatestBlockhash,
         transactionMessage,
       );
-    // (tx) =>
-    //   setTransactionMessageLifetimeUsingBlockhash(finalLatestBlockhash, tx),
 
     return txMessageWithBlockhashLifetime;
   }
