@@ -179,6 +179,20 @@ export class HyspSolana extends Blockchain {
     }
   }
 
+  async getVaultLiquidityAmount(): Promise<ApiResponse<Decimal>> {
+    try {
+      const state = await this.vault.getState();
+      const liquidityAmount =
+        state.tokenAvailable / 10 ** state.tokenMintDecimals;
+
+      return {
+        result: this.convertToDecimal(liquidityAmount.toString()),
+      };
+    } catch (error) {
+      throw this.handleError('VAULT_LOAD_ERROR', error);
+    }
+  }
+
   /**
    * Creates a deposit transaction to the vault.
    *
