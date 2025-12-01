@@ -8,7 +8,7 @@ import { Blockchain } from '../../utils';
 
 import { ERROR_MESSAGES, ORIGINAL_ERROR_MESSAGES } from './constants/errors';
 import { EthTransaction, NetworkType } from './types';
-import { APY_API_URL, NETWORKS, APY_VAULT_KEY } from './constants';
+import { APY_API_ENDPOINT, NETWORKS, APY_VAULT_KEY } from './constants';
 import BigNumber from 'bignumber.js';
 import { containsCaseInsensitive } from './utils';
 import { JsonRpcProvider } from 'ethers';
