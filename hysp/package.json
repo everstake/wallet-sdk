@@ -1,6 +1,6 @@
 {
   "name": "@everstake/wallet-sdk-hysp",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "HYSP - Everstake Wallet SDK",
   "publishConfig": {
     "access": "public"
@@ -16,7 +16,7 @@
   },
   "sideEffects": false,
   "scripts": {
-    "build": "pnpm run prebuild && tsup src/index.ts --format cjs,esm --dts",
+    "build": "tsup src/index.ts --format cjs,esm --dts",
     "prebuild": " pnpm run generate-typechain && pnpm run type-check && pnpm run lint",
     "type-check": "tsc",
     "lint": "eslint 'src/**/*.{ts,tsx}'",

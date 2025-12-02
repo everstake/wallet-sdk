@@ -8,7 +8,7 @@ import { Blockchain } from '../../utils';
 
 import { ERROR_MESSAGES, ORIGINAL_ERROR_MESSAGES } from './constants/errors';
 import { EthTransaction, NetworkType } from './types';
-import { NETWORKS } from './constants';
+import { APY_API_ENDPOINT, NETWORKS, APY_VAULT_KEY } from './constants';
 import BigNumber from 'bignumber.js';
 import { containsCaseInsensitive } from './utils';
 import { JsonRpcProvider } from 'ethers';
@@ -545,6 +545,32 @@ export class Hysp extends Blockchain {
       };
     } catch (error) {
       throw this.handleError('GAS_ESTIMATE_FAILED', error);
+    }
+  }
+
+  /**
+   * Retrieves the APY (Annual Percentage Yield) of the vault from the Midas API.
+   *
+   * @returns A promise that resolves to the APY as a number (e.g., 0.05 for 5%).
+   * @throws Will throw an error if the API call fails or the vault key is not found.
+   */
+  public async getAPY(): Promise<number> {
+    try {
+      const response = await fetch(APY_API_ENDPOINT);
+      if (!response.ok) {
+        throw new Error(`HTTP error. status: ${response.status}`);
+      }
+      const data: Record<string, number> = await response.json();
+      const apy = data[APY_VAULT_KEY];
+      if (apy === undefined) {
+        throw new Error(`
+          Vault key '${APY_VAULT_KEY}' not found in API response
+        `);
+      }
+
+      return apy;
+    } catch (error) {
+      throw this.handleError('GET_APY_ERROR', error);
     }
   }
 

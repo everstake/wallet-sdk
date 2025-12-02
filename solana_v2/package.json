@@ -16,7 +16,7 @@
   },
   "sideEffects": false,
   "scripts": {
-    "build": "pnpm run prebuild && tsup src/index.ts --format cjs,esm --dts",
+    "build": "tsup src/index.ts --format cjs,esm --dts",
     "type-check": "tsc",
     "lint": "eslint 'src/**/*.{ts,tsx}'",
     "prettier": "prettier --write 'src/**/*.{ts,tsx}'",
