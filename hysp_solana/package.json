@@ -1,6 +1,6 @@
 {
   "name": "@everstake/wallet-sdk-hysp-solana",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "HYSP Solana - Everstake Wallet SDK",
   "publishConfig": {
     "access": "public"
@@ -42,7 +42,7 @@
   },
   "homepage": "https://github.com/everstake/wallet-sdk#readme",
   "dependencies": {
-    "@kamino-finance/klend-sdk": "^7.2.4",
+    "@kamino-finance/klend-sdk": "^7.3.4",
     "@solana-program/compute-budget": "^0.7.0",
     "@solana/kit": "^3.0.3",
     "decimal.js": "^10.6.0"
