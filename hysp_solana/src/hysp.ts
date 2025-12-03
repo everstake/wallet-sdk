@@ -178,15 +178,31 @@ export class HyspSolana extends Blockchain {
       throw this.handleError('GET_BALANCE_ERROR', error);
     }
   }
-
+  /**
+   * Fetches the maximum available liquidity amount in the vaults allocations' reserves.
+   *
+   * @throws Throws an error if there's an issue loading vault's state or reserves.
+   *
+   * @returns Returns a promise that resolves with the maximum available liquidity amount as Decimal.
+   */
   async getVaultLiquidityAmount(): Promise<ApiResponse<Decimal>> {
     try {
       const state = await this.vault.getState();
-      const liquidityAmount =
-        state.tokenAvailable / 10 ** state.tokenMintDecimals;
+      const reserves = await this.vault.client.loadVaultReserves(state);
+
+      let maxAvailableLiquidity = new Decimal(0);
+      let mintFactor = new Decimal(1);
+      for (const [, reserve] of reserves) {
+        const reserveLiquidity = reserve.getLiquidityAvailableAmount();
+        const reserveMintFactor = reserve.getMintFactor();
+        if (reserveLiquidity.greaterThan(maxAvailableLiquidity)) {
+          maxAvailableLiquidity = reserveLiquidity;
+          mintFactor = reserveMintFactor;
+        }
+      }
 
       return {
-        result: this.convertToDecimal(liquidityAmount.toString()),
+        result: maxAvailableLiquidity.div(mintFactor),
       };
     } catch (error) {
       throw this.handleError('VAULT_LOAD_ERROR', error);
