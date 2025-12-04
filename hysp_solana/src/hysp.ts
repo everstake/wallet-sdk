@@ -14,6 +14,8 @@ import {
   setTransactionMessageLifetimeUsingBlockhash,
   appendTransactionMessageInstruction,
   prependTransactionMessageInstruction,
+  compressTransactionMessageUsingAddressLookupTables,
+  fetchAddressesForLookupTables,
   TransactionMessage,
   TransactionMessageWithLifetime,
   Rpc,
@@ -232,6 +234,7 @@ export class HyspSolana extends Blockchain {
         decimalAmount = this.convertToDecimal(amount);
       }
 
+      const vaultState = await this.vault.getState();
       const depositIxs = await this.vault.depositIxs(signer, decimalAmount);
 
       const mergedDepositIxs: Instruction[] = [];
@@ -247,6 +250,7 @@ export class HyspSolana extends Blockchain {
         userAddress.toString(),
         mergedDepositIxs,
         params,
+        [vaultState.vaultLookupTable],
       );
 
       return {
@@ -282,6 +286,7 @@ export class HyspSolana extends Blockchain {
         sharesDecimal = this.convertToDecimal(sharesAmount);
       }
 
+      const vaultState = await this.vault.getState();
       const withdrawIxs = await this.vault.withdrawIxs(signer, sharesDecimal);
 
       const mergedWithdrawIxs: Instruction[] = [];
@@ -300,6 +305,7 @@ export class HyspSolana extends Blockchain {
         userAddress.toString(),
         mergedWithdrawIxs,
         params,
+        [vaultState.vaultLookupTable],
       );
 
       return {
@@ -314,12 +320,13 @@ export class HyspSolana extends Blockchain {
     sender: string,
     instructions: Instruction[],
     params?: Params,
+    lookupTableAddresses?: Address[],
   ): Promise<TransactionMessageWithLifetime> {
     let transactionMessage: TransactionMessage = pipe(
       createTransactionMessage({ version: 0 }),
       (tx) => setTransactionMessageFeePayer(address(sender), tx),
     );
-
+    
     if (
       params?.computeUnitLimit !== undefined &&
       params?.computeUnitLimit > 0
@@ -363,6 +370,17 @@ export class HyspSolana extends Blockchain {
           transactionMessage,
         );
       }
+    }
+
+    if (lookupTableAddresses && lookupTableAddresses.length > 0) {
+      const fetchedTables = await fetchAddressesForLookupTables(
+        lookupTableAddresses,
+        this.connection,
+      );
+      transactionMessage = compressTransactionMessageUsingAddressLookupTables(
+        transactionMessage,
+        fetchedTables,
+      );
     }
 
     const finalLatestBlockhash =
