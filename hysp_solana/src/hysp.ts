@@ -14,6 +14,8 @@ import {
   setTransactionMessageLifetimeUsingBlockhash,
   appendTransactionMessageInstruction,
   prependTransactionMessageInstruction,
+  compressTransactionMessageUsingAddressLookupTables,
+  fetchAddressesForLookupTables,
   TransactionMessage,
   TransactionMessageWithLifetime,
   Rpc,
@@ -178,15 +180,29 @@ export class HyspSolana extends Blockchain {
       throw this.handleError('GET_BALANCE_ERROR', error);
     }
   }
-
+  /**
+   * Fetches the maximum available liquidity amount in the vaults allocations' reserves.
+   *
+   * @throws Throws an error if there's an issue loading vault's state or reserves.
+   *
+   * @returns Returns a promise that resolves with the maximum available liquidity amount as Decimal.
+   */
   async getVaultLiquidityAmount(): Promise<ApiResponse<Decimal>> {
     try {
       const state = await this.vault.getState();
-      const liquidityAmount =
-        state.tokenAvailable / 10 ** state.tokenMintDecimals;
+      const reserves = await this.vault.client.loadVaultReserves(state);
+
+      const mintFactor = new Decimal(10).pow(
+        new Decimal(state.tokenMintDecimals.toString()),
+      );
+      let totalLiquiditty = new Decimal(state.tokenAvailable.toString());
+      for (const [, reserve] of reserves) {
+        const reserveLiquidity = reserve.getLiquidityAvailableAmount();
+        totalLiquiditty = totalLiquiditty.add(reserveLiquidity);
+      }
 
       return {
-        result: this.convertToDecimal(liquidityAmount.toString()),
+        result: totalLiquiditty.div(mintFactor),
       };
     } catch (error) {
       throw this.handleError('VAULT_LOAD_ERROR', error);
@@ -218,6 +234,7 @@ export class HyspSolana extends Blockchain {
         decimalAmount = this.convertToDecimal(amount);
       }
 
+      const vaultState = await this.vault.getState();
       const depositIxs = await this.vault.depositIxs(signer, decimalAmount);
 
       const mergedDepositIxs: Instruction[] = [];
@@ -233,6 +250,7 @@ export class HyspSolana extends Blockchain {
         userAddress.toString(),
         mergedDepositIxs,
         params,
+        [vaultState.vaultLookupTable],
       );
 
       return {
@@ -268,6 +286,7 @@ export class HyspSolana extends Blockchain {
         sharesDecimal = this.convertToDecimal(sharesAmount);
       }
 
+      const vaultState = await this.vault.getState();
       const withdrawIxs = await this.vault.withdrawIxs(signer, sharesDecimal);
 
       const mergedWithdrawIxs: Instruction[] = [];
@@ -286,6 +305,7 @@ export class HyspSolana extends Blockchain {
         userAddress.toString(),
         mergedWithdrawIxs,
         params,
+        [vaultState.vaultLookupTable],
       );
 
       return {
@@ -300,6 +320,7 @@ export class HyspSolana extends Blockchain {
     sender: string,
     instructions: Instruction[],
     params?: Params,
+    lookupTableAddresses?: Address[],
   ): Promise<TransactionMessageWithLifetime> {
     let transactionMessage: TransactionMessage = pipe(
       createTransactionMessage({ version: 0 }),
@@ -349,6 +370,17 @@ export class HyspSolana extends Blockchain {
           transactionMessage,
         );
       }
+    }
+
+    if (lookupTableAddresses && lookupTableAddresses.length > 0) {
+      const fetchedTables = await fetchAddressesForLookupTables(
+        lookupTableAddresses,
+        this.connection,
+      );
+      transactionMessage = compressTransactionMessageUsingAddressLookupTables(
+        transactionMessage,
+        fetchedTables,
+      );
     }
 
     const finalLatestBlockhash =
