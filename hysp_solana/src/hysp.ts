@@ -192,13 +192,13 @@ export class HyspSolana extends Blockchain {
       const state = await this.vault.getState();
       const reserves = await this.vault.client.loadVaultReserves(state);
 
-      let totalLiquiditty = new Decimal(0);
-      let mintFactor = new Decimal(1);
+      const mintFactor = new Decimal(10).pow(
+        new Decimal(state.tokenMintDecimals.toString()),
+      );
+      let totalLiquiditty = new Decimal(state.tokenAvailable.toString());
       for (const [, reserve] of reserves) {
         const reserveLiquidity = reserve.getLiquidityAvailableAmount();
-        const reserveMintFactor = reserve.getMintFactor();
         totalLiquiditty = totalLiquiditty.add(reserveLiquidity);
-        mintFactor = reserveMintFactor;
       }
 
       return {
@@ -326,7 +326,7 @@ export class HyspSolana extends Blockchain {
       createTransactionMessage({ version: 0 }),
       (tx) => setTransactionMessageFeePayer(address(sender), tx),
     );
-    
+
     if (
       params?.computeUnitLimit !== undefined &&
       params?.computeUnitLimit > 0
