@@ -25,3 +25,22 @@ export type EthTransaction = {
   gasLimit: number;
   data: string;
 };
+
+export interface ShareToken {
+  address: string;
+  symbol: string;
+  decimals: number;
+}
+
+export interface VaultContracts {
+  depositVault: string;
+  redemptionVault: string;
+  priceFeed: string;
+}
+
+export interface VaultMeta {
+  network: NetworkType;
+  vaultKey: string;
+  shareToken: ShareToken;
+  contracts: VaultContracts;
+}

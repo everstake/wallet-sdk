@@ -51,12 +51,27 @@ const hysp = new Hysp();
 await hysp.init();
 ```
 
-### 3.1 Depositing to Issuance Vault 
+### 3.1 Getting Vault Metadata
+
+After initialization, you can retrieve vault metadata using `getVaultMeta()`:
+
+```ts
+const hysp = new Hysp();
+await hysp.init('eth_mainnet');
+
+const meta = hysp.getVaultMeta();
+console.log('Share Token:', meta.shareToken.symbol, meta.shareToken.address);
+console.log('Deposit Vault:', meta.contracts.depositVault);
+console.log('Redemption Vault:', meta.contracts.redemptionVault);
+console.log('Price Feed:', meta.contracts.priceFeed);
+```
+
+### 3.2 Depositing to Issuance Vault 
 
 1. Increase allowance on supported token by calling `approveToIssuanceVault`
 2. Deposit using `depositInstant`
 
-### 3.2 Redeeming from Redemption Vault
+### 3.3 Redeeming from Redemption Vault
 
 1. Increase collateral token allowance to redemption vault by calling `approveToRedemptionVault`
 2. Withdraw using `redeemInstant` or `redeemRequest`
