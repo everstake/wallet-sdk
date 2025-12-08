@@ -31,8 +31,8 @@ import { KaminoVault, VaultHoldings, APY } from '@kamino-finance/klend-sdk';
 import { Decimal } from 'decimal.js';
 import { Blockchain } from '../../utils';
 import { ERROR_MESSAGES } from './constants/errors';
-import { VAULTS, SupportedToken } from './constants';
-import { ApiResponse, Params } from './types';
+import { VAULTS, SupportedToken, VaultInfo } from './constants';
+import { ApiResponse, Params, VaultMeta } from './types';
 
 /**
  * The `HyspSolana` class extends the `Blockchain` class and provides methods for interacting with vaults on Solana.
@@ -52,6 +52,8 @@ export class HyspSolana extends Blockchain {
 
   private connection: Rpc<SolanaRpcApi>;
   private vault: KaminoVault;
+  private vaultInfo: VaultInfo;
+  private tokenSymbol: SupportedToken;
 
   /**
    * Creates a new instance of the KaminoSDK.
@@ -64,24 +66,47 @@ export class HyspSolana extends Blockchain {
   constructor(tokenSymbol: SupportedToken, rpcUrl?: string) {
     super();
 
-    const vaultAddress = this.getVaultAddress(tokenSymbol);
+    this.tokenSymbol = tokenSymbol;
+    this.vaultInfo = this.getVaultInfo(tokenSymbol);
 
     try {
       const connectionUrl = rpcUrl || 'https://api.mainnet-beta.solana.com';
       this.connection = createSolanaRpc(connectionUrl);
-      this.vault = new KaminoVault(this.connection, vaultAddress);
+      this.vault = new KaminoVault(this.connection, this.vaultInfo.address);
     } catch (error) {
       throw this.handleError('INITIALIZATION_ERROR', error);
     }
   }
 
-  private getVaultAddress(tokenSymbol: SupportedToken) {
-    const vaultAddress = VAULTS[tokenSymbol];
-    if (!vaultAddress) {
+  private getVaultInfo(tokenSymbol: SupportedToken): VaultInfo {
+    const vaultInfo = VAULTS[tokenSymbol];
+    if (!vaultInfo) {
       throw this.throwError('VAULT_NOT_FOUND_ERROR', tokenSymbol);
     }
 
-    return vaultAddress;
+    return vaultInfo;
+  }
+
+  /**
+   * Retrieves the vault metadata including network, vault key, share token info, and contract addresses.
+   *
+   * @returns A promise that resolves with the vault metadata wrapped in ApiResponse.
+   */
+  getVaultMeta(): ApiResponse<VaultMeta> {
+    return {
+      result: {
+        network: 'solana_mainnet',
+        vaultKey: this.tokenSymbol,
+        shareToken: {
+          address: this.vaultInfo.shareTokenAddress.toString(),
+          symbol: this.vaultInfo.shareTokenSymbol,
+          decimals: this.vaultInfo.shareTokenDecimals,
+        },
+        contracts: {
+          vault: this.vaultInfo.address.toString(),
+        },
+      },
+    };
   }
 
   private convertToDecimal(amount: number | string | bigint): Decimal {

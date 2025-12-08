@@ -21,3 +21,20 @@ export type Params = {
   /** Instructions to be added after the main instructions  created by SDK */
   afterInstructions?: Instruction[];
 };
+
+export interface ShareToken {
+  address: string;
+  symbol: string;
+  decimals: number;
+}
+
+export interface VaultContracts {
+  vault: string;
+}
+
+export interface VaultMeta {
+  network: 'solana_mainnet';
+  vaultKey: string;
+  shareToken: ShareToken;
+  contracts: VaultContracts;
+}

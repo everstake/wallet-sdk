@@ -7,13 +7,25 @@ import { address, Address } from '@solana/kit';
 
 export type SupportedToken = 'USDC';
 
+export interface VaultInfo {
+  address: Address;
+  shareTokenAddress: Address;
+  shareTokenSymbol: string;
+  shareTokenDecimals: number;
+}
+
 export type VaultsMap = {
-  [K in SupportedToken]: Address;
+  [K in SupportedToken]: VaultInfo;
 };
 
 export const VAULTS: VaultsMap = {
   // Gauntlet USDC Prime
-  USDC: address('9E69U4GzWhryRaPe8DYpco6Z9vTZY6gg8w6W2QsBACEj'),
+  USDC: {
+    address: address('9E69U4GzWhryRaPe8DYpco6Z9vTZY6gg8w6W2QsBACEj'),
+    shareTokenAddress: address('32XLsweyeQwWgLKRVAzS72nxHGU1JmmNQQZ3C3q6fBjJ'),
+    shareTokenSymbol: 'Kamino Reserve Collateral (USDC) Token',
+    shareTokenDecimals: 6,
+  },
 };
 
 export * from './errors';
