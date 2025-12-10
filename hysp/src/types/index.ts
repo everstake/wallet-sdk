@@ -5,6 +5,8 @@
 
 export type NetworkType = 'eth_mainnet' | 'base';
 
+export type APYRange = 'weekly' | 'monthly';
+
 export interface EthNetworkAddresses {
   issuanceVaultAddress: string;
   redemptionVaultAddress: string;
