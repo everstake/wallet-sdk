@@ -26,3 +26,6 @@ export const NETWORKS: NetworksMap = {
 
 export const ZeroReferrer =
   '0x0000000000000000000000000000000000000000000000000000000000000000';
+
+export const SECONDS_IN_DAY = 86400;
+export const DAYS_IN_YEAR = 365;

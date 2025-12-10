@@ -8,7 +8,7 @@ import { Blockchain } from '../../utils';
 
 import { ERROR_MESSAGES, ORIGINAL_ERROR_MESSAGES } from './constants/errors';
 import { APYRange, EthTransaction, NetworkType } from './types';
-import { NETWORKS } from './constants';
+import { DAYS_IN_YEAR, NETWORKS, SECONDS_IN_DAY } from './constants';
 import BigNumber from 'bignumber.js';
 import { containsCaseInsensitive } from './utils';
 import { JsonRpcProvider } from 'ethers';
@@ -561,7 +561,7 @@ export class Hysp extends Blockchain {
 
       const latestRoundData = await this.contractOracle.latestRoundData();
       const timeSinceLastRound =
-        Number(latestRoundData.updatedAt) - limitInDays * 86400;
+        Number(latestRoundData.updatedAt) - limitInDays * SECONDS_IN_DAY;
 
       let roundId = latestRoundData.roundId;
 
@@ -587,14 +587,14 @@ export class Hysp extends Blockchain {
       const recentPrice = Number(latestRoundData.answer);
       const oldPrice = Number(roundData.answer);
 
-      const daysElapsed = (recentTimestamp - oldTimestamp) / 86400;
+      const daysElapsed = (recentTimestamp - oldTimestamp) / SECONDS_IN_DAY;
       if (daysElapsed < limitInDays) {
         return 0.0;
       }
 
       const growthFactor = recentPrice / oldPrice;
 
-      const apy = growthFactor ** (365 / daysElapsed) - 1;
+      const apy = growthFactor ** (DAYS_IN_YEAR / daysElapsed) - 1;
 
       return Number(apy.toFixed(4));
     } catch (error) {
