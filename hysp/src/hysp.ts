@@ -569,17 +569,13 @@ export class Hysp extends Blockchain {
       while (roundId > 0n) {
         roundId = roundId - 1n;
 
-        try {
-          const targetRoundData =
-            await this.contractOracle.getRoundData(roundId);
+        const targetRoundData = await this.contractOracle.getRoundData(roundId);
 
-          if (Number(targetRoundData.updatedAt) <= timeSinceLastRound) {
-            roundData = targetRoundData;
-            break;
-          }
-        } catch {
-          continue;
+        if (Number(targetRoundData.updatedAt) <= timeSinceLastRound) {
+          roundData = targetRoundData;
+          break;
         }
+        continue;
       }
 
       if (!roundData) {
