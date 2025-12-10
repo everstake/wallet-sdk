@@ -1,6 +1,6 @@
 {
   "name": "@everstake/wallet-sdk-hysp",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "HYSP - Everstake Wallet SDK",
   "publishConfig": {
     "access": "public"
