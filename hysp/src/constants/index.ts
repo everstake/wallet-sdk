@@ -27,5 +27,5 @@ export const NETWORKS: NetworksMap = {
 export const ZeroReferrer =
   '0x0000000000000000000000000000000000000000000000000000000000000000';
 
-export const APY_API_ENDPOINT = 'https://api-prod.midas.app/api/data/apys';
-export const APY_VAULT_KEY = 'mevusd';
+export const SECONDS_IN_DAY = 86400;
+export const DAYS_IN_YEAR = 365;
