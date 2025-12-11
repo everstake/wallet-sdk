@@ -7,8 +7,8 @@ import { ethers } from 'ethers';
 import { Blockchain } from '../../utils';
 
 import { ERROR_MESSAGES, ORIGINAL_ERROR_MESSAGES } from './constants/errors';
-import { EthTransaction, NetworkType, VaultMeta } from './types';
-import { APY_API_ENDPOINT, NETWORKS, APY_VAULT_KEY } from './constants';
+import { APYRange, EthTransaction, NetworkType, VaultMeta } from './types';
+import { DAYS_IN_YEAR, NETWORKS, SECONDS_IN_DAY } from './constants';
 import BigNumber from 'bignumber.js';
 import { containsCaseInsensitive } from './utils';
 import { JsonRpcProvider } from 'ethers';
@@ -133,7 +133,7 @@ export class Hysp extends Blockchain {
   public getVaultMeta(): VaultMeta {
     return {
       network: this.network,
-      vaultKey: APY_VAULT_KEY,
+      vaultKey: 'mEVUSD',
       shareToken: {
         address: this.addressToken,
         symbol: this.shareTokenSymbol,
@@ -578,26 +578,54 @@ export class Hysp extends Blockchain {
   }
 
   /**
-   * Retrieves the APY (Annual Percentage Yield) of the vault from the Midas API.
+   * Retrieves the APY (Annual Percentage Yield) calculated from on-chain oracle price data.
    *
+   * @param range - The time range to calculate APY for: 'weekly' (6 days) or 'monthly' (28 days).
    * @returns A promise that resolves to the APY as a number (e.g., 0.05 for 5%).
-   * @throws Will throw an error if the API call fails or the vault key is not found.
+   * @throws Will throw an error if insufficient historical data is available.
    */
-  public async getAPY(): Promise<number> {
+  public async getAPY(range: APYRange = 'weekly'): Promise<number> {
     try {
-      const response = await fetch(APY_API_ENDPOINT);
-      if (!response.ok) {
-        throw new Error(`HTTP error. status: ${response.status}`);
-      }
-      const data: Record<string, number> = await response.json();
-      const apy = data[APY_VAULT_KEY];
-      if (apy === undefined) {
-        throw new Error(`
-          Vault key '${APY_VAULT_KEY}' not found in API response
-        `);
+      const limitInDays = range === 'weekly' ? 6 : 28;
+
+      const latestRoundData = await this.contractOracle.latestRoundData();
+      const timeSinceLastRound =
+        Number(latestRoundData.updatedAt) - limitInDays * SECONDS_IN_DAY;
+
+      let roundId = latestRoundData.roundId;
+
+      let roundData: typeof latestRoundData | null = null;
+      while (roundId > 0n) {
+        roundId = roundId - 1n;
+
+        const targetRoundData = await this.contractOracle.getRoundData(roundId);
+
+        if (Number(targetRoundData.updatedAt) <= timeSinceLastRound) {
+          roundData = targetRoundData;
+          break;
+        }
+        continue;
       }
 
-      return apy;
+      if (!roundData) {
+        return 0.0;
+      }
+
+      const recentTimestamp = Number(latestRoundData.updatedAt);
+      const oldTimestamp = Number(roundData.updatedAt);
+      const recentPrice = Number(latestRoundData.answer);
+      const oldPrice = Number(roundData.answer);
+
+      const daysElapsed = (recentTimestamp - oldTimestamp) / SECONDS_IN_DAY;
+      if (daysElapsed < limitInDays) {
+        return 0.0;
+      }
+
+      const growthFactor = recentPrice / oldPrice;
+
+      const apy = growthFactor ** (DAYS_IN_YEAR / daysElapsed) - 1;
+
+      return Number(apy.toFixed(4));
     } catch (error) {
       throw this.handleError('GET_APY_ERROR', error);
     }

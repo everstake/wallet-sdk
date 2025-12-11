@@ -19,7 +19,7 @@ export const ERROR_MESSAGES = {
   GET_MIN_REDEEM_AMOUNT_ERROR: 'Failed to get minimum redeem amount',
   VAULT_LIQUIDITY_ERROR: 'Failed to get vault liquidity',
   FAILED_TO_BUILD_TRANSACTION: 'Failed to build transaction',
-  GET_APY_ERROR: 'Failed to get APY from API',
+  GET_APY_ERROR: 'Failed to get APY',
 };
 
 export const ORIGINAL_ERROR_MESSAGES = {};
