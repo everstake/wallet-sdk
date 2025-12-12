@@ -46,14 +46,26 @@ Initialize vault object:
 const hysp = new HyspSolana('USDC');
 ```
 
-### 3.1 Depositing to Vault
+### 3.1 Getting Vault Metadata
+
+Retrieve vault metadata using `getVaultMeta()`:
+
+```ts
+const hysp = new HyspSolana('USDC');
+
+const { result: meta } = hysp.getVaultMeta();
+console.log('Share Token:', meta.shareToken.symbol, meta.shareToken.address);
+console.log('Vault:', meta.contracts.vault);
+```
+
+### 3.2 Depositing to Vault
 
 Use `deposit` method to create deposit to vault transaction instructions.
 
-### 3.2 Withdrawing from Vault
+### 3.3 Withdrawing from Vault
 
 Use `withdraw` method to create withdraw from vault transaction instructions.
 
-### 3.3 Checking Balance
+### 3.4 Checking Balance
 
 Use `getUserShares` method to get user's vault shares balance.

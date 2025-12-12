@@ -7,7 +7,7 @@ import { ethers } from 'ethers';
 import { Blockchain } from '../../utils';
 
 import { ERROR_MESSAGES, ORIGINAL_ERROR_MESSAGES } from './constants/errors';
-import { APYRange, EthTransaction, NetworkType } from './types';
+import { APYRange, EthTransaction, NetworkType, VaultMeta } from './types';
 import { DAYS_IN_YEAR, NETWORKS, SECONDS_IN_DAY } from './constants';
 import BigNumber from 'bignumber.js';
 import { containsCaseInsensitive } from './utils';
@@ -55,6 +55,9 @@ export class Hysp extends Blockchain {
 
   private tokenDecimalsStore: { [address: string]: number };
   private provider!: JsonRpcProvider;
+  private network!: NetworkType;
+  private shareTokenSymbol!: string;
+  private shareTokenDecimals!: number;
 
   protected ERROR_MESSAGES = ERROR_MESSAGES;
   protected ORIGINAL_ERROR_MESSAGES = ORIGINAL_ERROR_MESSAGES;
@@ -83,6 +86,7 @@ export class Hysp extends Blockchain {
       this.throwError('NETWORK_NOT_SUPPORTED', network);
     }
 
+    this.network = network;
     const providerUrl = url || hyspAddresses.rpcUrl;
 
     this.provider = new JsonRpcProvider(providerUrl);
@@ -113,9 +117,34 @@ export class Hysp extends Blockchain {
         await this.contractIssuanceVault.getPaymentTokens();
       this.supportedRedemptionTokensAddresses =
         await this.contractRedemptionVault.getPaymentTokens();
+
+      this.shareTokenSymbol = await this.contractToken.symbol();
+      this.shareTokenDecimals = Number(await this.contractToken.decimals());
     } catch (error) {
       this.throwError('GET_SUPPORTED_TOKENS_ERROR', (error as Error).message);
     }
+  }
+
+  /**
+   * Retrieves the vault metadata including network, vault key, share token info, and contract addresses.
+   *
+   * @returns The vault metadata object containing network, vaultKey, shareToken, and contracts.
+   */
+  public getVaultMeta(): VaultMeta {
+    return {
+      network: this.network,
+      vaultKey: 'mEVUSD',
+      shareToken: {
+        address: this.addressToken,
+        symbol: this.shareTokenSymbol,
+        decimals: this.shareTokenDecimals,
+      },
+      contracts: {
+        depositVault: this.addressIssuanceVault,
+        redemptionVault: this.addressRedemptionVault,
+        priceFeed: this.addressOracle,
+      },
+    };
   }
 
   /**
