@@ -1,6 +1,6 @@
 {
   "name": "@everstake/wallet-sdk-solana",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Solana - Everstake Wallet SDK",
   "publishConfig": {
     "access": "public"
@@ -51,9 +51,16 @@
   },
   "pnpm": {
     "overrides": {
-      "ws": "^8.0.0",
       "elliptic": "6.6.1",
-      "base-x": "3.0.11"
+      "base-x": "3.0.11",
+      "ws": "^8.0.0",
+      "@babel/runtime@<7.26.10": ">=7.26.10",
+      "@babel/helpers@<7.26.10": ">=7.26.10",
+      "brace-expansion@>=1.0.0 <=1.1.11": ">=1.1.12",
+      "brace-expansion@>=2.0.0 <=2.0.1": ">=2.0.2",
+      "js-yaml@<3.14.2": ">=3.14.2",
+      "js-yaml@>=4.0.0 <4.1.1": ">=4.1.1",
+      "glob@>=10.2.0 <10.5.0": ">=10.5.0"
     }
   },
   "resolutions": {
