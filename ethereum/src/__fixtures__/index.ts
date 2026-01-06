@@ -230,9 +230,9 @@ export const unstakeSuccessFixture = [
     description:
       'should return a transaction object when unstake is successful',
     args: {
-      network: 'holesky',
-      address: '0x057f0F0ba2e2f818c6fD4CA4A235F068495B6654',
-      amount: '0.0000001',
+      network: 'hoodi',
+      address: '0xea8561756516a3f48d3ecf2229a8a07f5916a39c',
+      amount: '0.01',
       allowedInterchangeNum: 0,
       source: '0',
     },
@@ -240,10 +240,10 @@ export const unstakeSuccessFixture = [
     result: {
       mockGasConsumption: 21000,
       expectedTx: {
-        from: '0x057f0F0ba2e2f818c6fD4CA4A235F068495B6654',
-        to: '0xAFA848357154a6a624686b348303EF9a13F63264',
+        from: '0xea8561756516a3f48d3ecf2229a8a07f5916a39c',
+        to: '0x7967AcFc9EB46cA2d20076B61B05e224F2d0B8b3',
         value: 0,
-        data: '0x76ec871c000000000000000000000000000000000000000000000000000000174876e80000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000', // replace with the encoded ABI of the unstake method
+        data: '0x76ec871c000000000000000000000000000000000000000000000000002386f26fc1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000', // replace with the encoded ABI of the unstake method
       },
     },
   },

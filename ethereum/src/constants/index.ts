@@ -24,9 +24,10 @@ export const ETH_NETWORK_ADDRESSES: EthNetworkAddressesMap = {
   hoodi: {
     addressContractAccounting: '0x6Cf2F03804b171ef9CAFC71e302CA0e08A3FDC28',
     addressContractPool: '0x7967AcFc9EB46cA2d20076B61B05e224F2d0B8b3',
-    addressContractWithdrawTreasury: '0xCDd543223b6ef6CE26E7f80F7837c5C1A88aF683',
+    addressContractWithdrawTreasury:
+      '0xCDd543223b6ef6CE26E7f80F7837c5C1A88aF683',
     rpcUrl: 'https://ethereum-hoodi-rpc.publicnode.com',
-  }
+  },
 };
 
 export const ETH_GAS_RESERVE = new BigNumber(220000);
