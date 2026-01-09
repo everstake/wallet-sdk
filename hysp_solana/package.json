@@ -21,7 +21,7 @@
     "lint": "eslint 'src/**/*.{ts,tsx}'",
     "prettier": "prettier --write 'src/**/*.{ts,tsx}'",
     "test": "jest",
-    "prebuild": "pnpm run type-check && pnpm run lint"
+    "prebuild": "pnpm run type-check && pnpm run lint && npm run test"
   },
   "keywords": [
     "hysp",

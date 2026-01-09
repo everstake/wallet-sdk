@@ -348,7 +348,7 @@ export class HyspSolana extends Blockchain {
    * @param memo - Input memo text
    * @returns Memo instruction
    */
-  private processMemo(memo?: string): Instruction {
+  protected processMemo(memo?: string): Instruction {
     // Process memo text
     let processedMemo: string;
     if (!memo || memo.trim() === '') {
@@ -366,19 +366,20 @@ export class HyspSolana extends Blockchain {
 
     // Validate memo
     if (processedMemo.length > 64) {
-      throw new Error(`
-        Invalid memo: "${processedMemo}". Must be max 64 characters`);
+      throw new Error(
+        `Invalid memo: "${processedMemo}". Must be max 64 characters`,
+      );
     }
 
     const validPattern = /^[A-Za-z0-9:_-]*$/;
     if (!validPattern.test(processedMemo)) {
-      throw new Error(`
-        Invalid memo: "${processedMemo}". Must contain only [A-Za-z0-9:_-] characters`);
+      throw new Error(
+        `Invalid memo: "${processedMemo}". Must contain only [A-Za-z0-9:_-] characters`,
+      );
     }
 
     return getAddMemoInstruction({ memo: processedMemo });
   }
-
 
   private async buildTx(
     sender: string,
@@ -427,11 +428,14 @@ export class HyspSolana extends Blockchain {
       );
     }
 
-    const memoInstruction = this.processMemo(params?.memo);
-    transactionMessage = appendTransactionMessageInstruction(
-      memoInstruction,
-      transactionMessage,
-    );
+    // Add memo instruction if memo is provided in params
+    if (params?.memo !== undefined) {
+      const memoInstruction = this.processMemo(params.memo);
+      transactionMessage = appendTransactionMessageInstruction(
+        memoInstruction,
+        transactionMessage,
+      );
+    }
 
     if (params?.afterInstructions) {
       for (const instruction of params.afterInstructions) {
