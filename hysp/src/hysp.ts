@@ -439,6 +439,10 @@ export class Hysp extends Blockchain {
       this.throwError('TOKEN_NOT_SUPPORTED_BY_VAULT', tokenIn);
     }
 
+    if (referrerId == '') {
+      referrerId = 'SDK';
+    }
+
     let tx;
     try {
       tx = await this.contractIssuanceVault.depositInstant.populateTransaction(
