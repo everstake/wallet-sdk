@@ -20,6 +20,8 @@ export type Params = {
   };
   /** Instructions to be added after the main instructions  created by SDK */
   afterInstructions?: Instruction[];
+  /** Memo text to be included in the transaction */
+  memo?: string;
 };
 
 export interface ShareToken {

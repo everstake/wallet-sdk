@@ -28,6 +28,8 @@ import {
   getSetComputeUnitPriceInstruction,
 } from '@solana-program/compute-budget';
 
+import { getAddMemoInstruction } from '@solana-program/memo';
+
 import { KaminoVault, VaultHoldings, APY } from '@kamino-finance/klend-sdk';
 
 import { Decimal } from 'decimal.js';
@@ -341,6 +343,44 @@ export class HyspSolana extends Blockchain {
     }
   }
 
+  /**
+   * Processes and creates a memo instruction according to SDK requirements
+   * @param memo - Input memo text
+   * @returns Memo instruction
+   */
+  protected processMemo(memo?: string): Instruction {
+    // Process memo text
+    let processedMemo: string;
+    if (!memo || memo.trim() === '') {
+      processedMemo = 'SDK';
+    } else {
+      const trimmedMemo = memo.trim();
+      if (trimmedMemo === 'SDK') {
+        processedMemo = trimmedMemo;
+      } else if (!trimmedMemo.startsWith('SDK:')) {
+        processedMemo = `SDK:${trimmedMemo}`;
+      } else {
+        processedMemo = trimmedMemo;
+      }
+    }
+
+    // Validate memo
+    if (processedMemo.length > 64) {
+      throw new Error(
+        `Invalid memo: "${processedMemo}". Must be max 64 characters`,
+      );
+    }
+
+    const validPattern = /^[A-Za-z0-9:_-]*$/;
+    if (!validPattern.test(processedMemo)) {
+      throw new Error(
+        `Invalid memo: "${processedMemo}". Must contain only [A-Za-z0-9:_-] characters`,
+      );
+    }
+
+    return getAddMemoInstruction({ memo: processedMemo });
+  }
+
   private async buildTx(
     sender: string,
     instructions: Instruction[],
@@ -384,6 +424,15 @@ export class HyspSolana extends Blockchain {
     for (const instruction of instructions) {
       transactionMessage = appendTransactionMessageInstruction(
         instruction,
+        transactionMessage,
+      );
+    }
+
+    // Add memo instruction if memo is provided in params
+    if (params?.memo !== undefined) {
+      const memoInstruction = this.processMemo(params.memo);
+      transactionMessage = appendTransactionMessageInstruction(
+        memoInstruction,
         transactionMessage,
       );
     }

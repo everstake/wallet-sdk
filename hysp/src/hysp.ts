@@ -415,6 +415,46 @@ export class Hysp extends Blockchain {
   }
 
   /**
+   * Processes and validates memo string for referrerId parameter.
+   *
+   * @param memo - The memo string to process.
+   * @returns The processed memo string with SDK prefix if needed.
+   * @throws Will throw an error if memo validation fails.
+   */
+  private processMemo(memo?: string): string {
+    // Process memo text
+    let processedMemo: string;
+    if (!memo || memo.trim() === '') {
+      processedMemo = 'SDK';
+    } else {
+      const trimmedMemo = memo.trim();
+      if (trimmedMemo === 'SDK') {
+        processedMemo = trimmedMemo;
+      } else if (!trimmedMemo.startsWith('SDK:')) {
+        processedMemo = `SDK:${trimmedMemo}`;
+      } else {
+        processedMemo = trimmedMemo;
+      }
+    }
+
+    // Validate memo with 32 character limit for Ethereum bytes32
+    if (processedMemo.length > 32) {
+      throw new Error(
+        `Invalid memo: "${processedMemo}". Must be max 32 characters`,
+      );
+    }
+
+    const validPattern = /^[A-Za-z0-9:_-]*$/;
+    if (!validPattern.test(processedMemo)) {
+      throw new Error(
+        `Invalid memo: "${processedMemo}". Must contain only [A-Za-z0-9:_-] characters`,
+      );
+    }
+
+    return processedMemo;
+  }
+
+  /**
    * Deposits tokens instantly with auto mint if account fits daily limit and token allowance.
    * Transfers token from the user, fee in tokenIn to feeReceiver, and mints mToken to user.
    *
@@ -422,7 +462,7 @@ export class Hysp extends Blockchain {
    * @param tokenIn - The token address to deposit.
    * @param amount - The amount to deposit.
    * @param minReceiveAmount - The minimum amount to receive.
-   * @param referrerId - The referrer ID as bytes32.
+   * @param referrerId - The memo string (will be processed and converted to bytes32 referrerId).
    * @returns A promise that resolves to an EthTransaction object.
    * @throws Will throw an error if the token is not supported or gas estimation fails.
    */
@@ -439,6 +479,8 @@ export class Hysp extends Blockchain {
       this.throwError('TOKEN_NOT_SUPPORTED_BY_VAULT', tokenIn);
     }
 
+    const processedReferrerId = this.processMemo(referrerId);
+
     let tx;
     try {
       tx = await this.contractIssuanceVault.depositInstant.populateTransaction(
@@ -448,7 +490,7 @@ export class Hysp extends Blockchain {
           minReceiveAmount.toString(),
           await this.getDecimals(this.addressToken),
         ),
-        referrerId,
+        ethers.encodeBytes32String(processedReferrerId),
       );
     } catch (error) {
       throw this.handleError('FAILED_TO_BUILD_TRANSACTION', error);
