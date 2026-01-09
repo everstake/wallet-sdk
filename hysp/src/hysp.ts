@@ -452,7 +452,7 @@ export class Hysp extends Blockchain {
           minReceiveAmount.toString(),
           await this.getDecimals(this.addressToken),
         ),
-        referrerId,
+        ethers.encodeBytes32String(referrerId),
       );
     } catch (error) {
       throw this.handleError('FAILED_TO_BUILD_TRANSACTION', error);

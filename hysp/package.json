@@ -17,7 +17,7 @@
   "sideEffects": false,
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts",
-    "prebuild": " pnpm run generate-typechain && pnpm run type-check && pnpm run lint",
+    "prebuild": " pnpm run generate-typechain && pnpm run type-check && pnpm run lint && npm run test",
     "type-check": "tsc",
     "lint": "eslint 'src/**/*.{ts,tsx}'",
     "prettier": "prettier --write 'src/**/*.{ts,tsx}'",
