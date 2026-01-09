@@ -60,7 +60,7 @@ describe('Hysp referrerId (memo) functionality', () => {
     const actualReferrerIdBytes = decoded?.args[3];
     const actualReferrerId = ethers.decodeBytes32String(actualReferrerIdBytes);
 
-    expect(actualReferrerId).toBe(userReferrerId);
+    expect(actualReferrerId).toBe(`SDK:${userReferrerId}`);
   });
 
   it('should use SDK when referrer id is empty string', async () => {
@@ -89,5 +89,37 @@ describe('Hysp referrerId (memo) functionality', () => {
     const actualReferrerId = ethers.decodeBytes32String(actualReferrerIdBytes);
 
     expect(actualReferrerId).toBe('SDK');
+  });
+
+  it('should throw error when memo exceeds 32 characters', async () => {
+    const longMemo = 'this_is_a_very_long_memo_that_exceeds_32_characters';
+
+    await expect(
+      hysp.depositInstant(
+        realSender,
+        tokenIn,
+        mockAmount,
+        mockMinReceive,
+        longMemo,
+      ),
+    ).rejects.toThrow(
+      'Invalid memo: "SDK:this_is_a_very_long_memo_that_exceeds_32_characters". Must be max 32 characters',
+    );
+  });
+
+  it('should throw error when memo contains invalid characters', async () => {
+    const invalidMemo = 'user@123'; // @ is not allowed
+
+    await expect(
+      hysp.depositInstant(
+        realSender,
+        tokenIn,
+        mockAmount,
+        mockMinReceive,
+        invalidMemo,
+      ),
+    ).rejects.toThrow(
+      'Invalid memo: "SDK:user@123". Must contain only [A-Za-z0-9:_-] characters',
+    );
   });
 });
