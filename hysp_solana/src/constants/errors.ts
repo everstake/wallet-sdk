@@ -11,4 +11,5 @@ export const ERROR_MESSAGES = {
   GET_BALANCE_ERROR: 'An error occurred while fetching user token balance',
   VAULT_LOAD_ERROR: 'An error occurred while loading vault info',
   VAULT_NOT_FOUND_ERROR: 'Vault not found for token: {0}',
+  TX_TOO_LARGE: 'Transaction exceeds the maximum size limit of 1232 bytes',
 };
