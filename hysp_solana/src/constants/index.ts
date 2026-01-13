@@ -28,4 +28,6 @@ export const VAULTS: VaultsMap = {
   },
 };
 
+export const MAX_TRANSACTION_SIZE = 1232;
+
 export * from './errors';
