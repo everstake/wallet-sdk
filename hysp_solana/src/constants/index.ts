@@ -21,7 +21,7 @@ export type VaultsMap = {
 export const VAULTS: VaultsMap = {
   // Gauntlet USDC Prime
   USDC: {
-    address: address('9E69U4GzWhryRaPe8DYpco6Z9vTZY6gg8w6W2QsBACEj'),
+    address: address('HptboyAsrs3xPQUMDT31gHLW3tzrq6p6As56EK7VXMcL'),
     shareTokenAddress: address('32XLsweyeQwWgLKRVAzS72nxHGU1JmmNQQZ3C3q6fBjJ'),
     shareTokenSymbol: 'Kamino Reserve Collateral (USDC) Token',
     shareTokenDecimals: 6,
