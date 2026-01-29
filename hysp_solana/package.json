@@ -1,6 +1,6 @@
 {
   "name": "@everstake/wallet-sdk-hysp-solana",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "HYSP Solana - Everstake Wallet SDK",
   "publishConfig": {
     "access": "public"

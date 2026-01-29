@@ -8,7 +8,6 @@ import {
   Address,
   createNoopSigner,
   address,
-  pipe,
   createTransactionMessage,
   setTransactionMessageFeePayer,
   setTransactionMessageLifetimeUsingBlockhash,
@@ -21,6 +20,8 @@ import {
   Rpc,
   SolanaRpcApi,
   Instruction,
+  compileTransaction,
+  getTransactionEncoder,
 } from '@solana/kit';
 
 import {
@@ -35,6 +36,7 @@ import { KaminoVault, VaultHoldings, APY } from '@kamino-finance/klend-sdk';
 import { Decimal } from 'decimal.js';
 import { Blockchain } from '../../utils';
 import { ERROR_MESSAGES } from './constants/errors';
+import { MAX_TRANSACTION_SIZE } from './constants';
 import { VAULTS, SupportedToken, VaultInfo } from './constants';
 import { ApiResponse, Params, VaultMeta } from './types';
 
@@ -387,10 +389,9 @@ export class HyspSolana extends Blockchain {
     params?: Params,
     lookupTableAddresses?: Address[],
   ): Promise<TransactionMessageWithLifetime> {
-    let transactionMessage: TransactionMessage = pipe(
-      createTransactionMessage({ version: 0 }),
-      (tx) => setTransactionMessageFeePayer(address(sender), tx),
-    );
+    let transactionMessage: TransactionMessage = createTransactionMessage({
+      version: 0,
+    });
 
     if (
       params?.computeUnitLimit !== undefined &&
@@ -457,6 +458,11 @@ export class HyspSolana extends Blockchain {
       );
     }
 
+    const txWithFeePayer = setTransactionMessageFeePayer(
+      address(sender),
+      transactionMessage,
+    );
+
     const finalLatestBlockhash =
       params?.finalLatestBlockhash ||
       (await this.connection.getLatestBlockhash().send()).value;
@@ -464,8 +470,16 @@ export class HyspSolana extends Blockchain {
     const txMessageWithBlockhashLifetime =
       setTransactionMessageLifetimeUsingBlockhash(
         finalLatestBlockhash,
-        transactionMessage,
+        txWithFeePayer,
       );
+
+    const compiledTx = compileTransaction(txMessageWithBlockhashLifetime);
+    const serializedTx = getTransactionEncoder().encode(compiledTx);
+    const txSize = serializedTx.length;
+
+    if (txSize > MAX_TRANSACTION_SIZE) {
+      throw this.throwError('TX_TOO_LARGE');
+    }
 
     return txMessageWithBlockhashLifetime;
   }
