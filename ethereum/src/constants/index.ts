@@ -14,13 +14,6 @@ export const ETH_NETWORK_ADDRESSES: EthNetworkAddressesMap = {
       '0x19449f0f696703Aa3b1485DfA2d855F33659397a',
     rpcUrl: 'https://mainnet.infura.io/v3/f583d4f04d384b9e8c59a7ff1c9f68f1',
   },
-  holesky: {
-    addressContractAccounting: '0x624087DD1904ab122A32878Ce9e933C7071F53B9',
-    addressContractPool: '0xAFA848357154a6a624686b348303EF9a13F63264',
-    addressContractWithdrawTreasury:
-      '0x66cb3AeD024740164EBcF04e292dB09b5B63A2e1',
-    rpcUrl: 'https://ethereum-holesky.publicnode.com',
-  },
   hoodi: {
     addressContractAccounting: '0x6Cf2F03804b171ef9CAFC71e302CA0e08A3FDC28',
     addressContractPool: '0x7967AcFc9EB46cA2d20076B61B05e224F2d0B8b3',
