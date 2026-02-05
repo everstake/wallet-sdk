@@ -184,7 +184,7 @@ export const stakeSuccessFixture = [
   {
     description: 'should return a transaction object when stake is successful',
     args: {
-      network: 'holesky',
+      network: 'hoodi',
       address: '0x057f0F0ba2e2f818c6fD4CA4A235F068495B6654',
       amount: '0.1',
       source: '0',
