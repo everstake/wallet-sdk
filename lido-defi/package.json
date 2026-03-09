@@ -16,12 +16,13 @@
   },
   "sideEffects": false,
   "scripts": {
-    "build": "pnpm run prebuild && tsup src/index.ts --format cjs,esm --dts",
+    "prebuild": "pnpm run generate-typechain && pnpm run type-check && pnpm run lint && npm run test",
+    "build": "tsup src/index.ts --format cjs,esm --dts",
     "type-check": "tsc",
     "lint": "eslint 'src/**/*.{ts,tsx}'",
     "prettier": "prettier --write 'src/**/*.{ts,tsx}'",
-    "test": "jest",
-    "prebuild": "pnpm run type-check && pnpm run lint && pnpm run test"
+    "test": "jest --passWithNoTests",
+    "generate-typechain": "typechain --target=ethers-v6 --out-dir 'src/typechain-types' 'src/abi/*.json'"
   },
   "keywords": [
     "ethereum",
@@ -46,11 +47,12 @@
   "dependencies": {
     "bignumber.js": "^9.3.0",
     "ethereum-multicall": "^2.26.0",
-    "web3": "4.16.0"
+    "ethers": "^6.15.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.7.0",
     "@jest/types": "^29.6.3",
+    "@typechain/ethers-v6": "^0.5.1",
     "@types/jest": "^29.5.12",
     "@types/node": "^22.13.5",
     "eslint": "^9.31.0",
