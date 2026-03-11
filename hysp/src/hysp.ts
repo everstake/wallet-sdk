@@ -181,13 +181,24 @@ export class Hysp extends Blockchain {
 
       const liquidityProviderAddress =
         await this.contractRedemptionVault.liquidityProvider();
+
+      const mTbillRedemptionVaultAddress =
+        this.contractRedemptionVault.mTbillRedemptionVault();
       const contractOutErc20 = Erc20__factory.connect(
         outTokenAddress,
         this.provider,
       );
-      const liquidity = await contractOutErc20.balanceOf(
+      const redemptionVaultLiquidity = await contractOutErc20.balanceOf(
         liquidityProviderAddress,
       );
+      const mTbillRedemptionVaultLiquidity = await contractOutErc20.balanceOf(
+        mTbillRedemptionVaultAddress,
+      );
+      const liquidity =
+        redemptionVaultLiquidity > mTbillRedemptionVaultLiquidity
+          ? redemptionVaultLiquidity
+          : mTbillRedemptionVaultLiquidity;
+
       const decimals = await this.getDecimals(outTokenAddress);
 
       return this.fromWeiToEther(liquidity, decimals.toString());
