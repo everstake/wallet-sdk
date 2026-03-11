@@ -8,8 +8,10 @@ export type VaultType = 'mainnet' | 'hoodi';
 export interface VaultAddresses {
   // poolType = StvStrategyPool
   addressStrategy: string;
+  addressOracle: string; // lazyOracle
   addressPool: string;
   addressLido: string; // v3
+  addressVaultHub: string;
   rpcUrl: string;
 }
 
@@ -22,6 +24,18 @@ export type EthTransaction = {
   gasLimit: number;
   data: string;
 };
+
+export type BalanceData = {
+  totalUserValueInEth: string;
+
+}
+
+export type ReportData = {
+  timestamp: bigint;
+  refSlot: bigint;
+  treeRoot: string;
+  reportCid: string;
+}
 
 export interface PendingDepositRequest {
   assets: string;

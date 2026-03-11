@@ -12,22 +12,30 @@ import {
   AbiCoder,
 } from 'ethers';
 import {
+  LazyOracle,
+  LazyOracle__factory,
   Lido,
   Lido__factory,
   StvPool,
   StvPool__factory,
+  VaultHub,
+  VaultHub__factory,
 } from './typechain-types';
 
 import { Blockchain } from '../../utils';
 
 import { NETWORK_ADDRESSES } from './constants';
 import { ERROR_MESSAGES, ORIGINAL_ERROR_MESSAGES } from './constants/errors';
-import type { VaultType, EthTransaction, PendingDepositRequest } from './types';
+import type { VaultType, EthTransaction, PendingDepositRequest, ReportData } from './types';
 
 export class StrategyVault extends Blockchain {
   public addressStrategy!: string;
+  public addressOracle!: string;
+
   public contractStrategy!: StvPool;
   public contractLido!: Lido;
+  public contractOracle!: LazyOracle;
+  public contractVaultHub!: VaultHub;
 
   private rpc!: JsonRpcProvider;
 
@@ -51,7 +59,9 @@ export class StrategyVault extends Blockchain {
     }
     const providerUrl = url ?? networkAddresses.rpcUrl;
     this.rpc = new JsonRpcProvider(providerUrl);
+
     this.addressStrategy = networkAddresses.addressStrategy;
+    this.addressOracle = networkAddresses.addressOracle;
 
     this.contractStrategy = StvPool__factory.connect(
       networkAddresses.addressStrategy,
@@ -61,6 +71,112 @@ export class StrategyVault extends Blockchain {
       networkAddresses.addressLido,
       this.rpc,
     );
+    this.contractOracle = LazyOracle__factory.connect(
+      networkAddresses.addressOracle,
+      this.rpc,
+    );
+    this.contractVaultHub = VaultHub__factory.connect(
+      networkAddresses.addressVaultHub,
+      this.rpc,
+    );
+  }
+
+  // onchain oracle report state
+  private getLatestReportData(): Promise<ReportData> {
+    return this.contractOracle.latestReportData();
+  }
+
+  /**
+   * Updates the oracle report data on-chain.
+   * Fetches the latest report from IPFS, finds the vault's data, and generates a Merkle proof.
+   *
+   * @param sender - User address initiating the transaction
+   * @returns unsigned ETH transaction object for updateVaultData.
+   */
+  private async updateReportTx(sender: string, reportCid?: string): Promise<EthTransaction> {
+    if (!this.isAddress(sender)) {
+      this.throwError('ADDRESS_FORMAT_ERROR');
+    }
+
+    try {
+      if (!reportCid) {
+        const info = await this.getLatestReportData();
+        reportCid = info.reportCid;
+      }
+      const url = `https://ipfs.io/ipfs/${reportCid}`;
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch report from IPFS: ${response.statusText}`);
+      }
+      const report = await response.json();
+
+      if (report.format !== 'standard-v1') {
+        throw new Error(`Unsupported report format: ${report.format}`);
+      }
+
+      const vaultLower = this.contractStrategy.target.toString().toLowerCase();
+      const vaultEntry = report.values.find((v: any) => v.value[0].toLowerCase() === vaultLower);
+
+      if (!vaultEntry) {
+        throw new Error(`Vault ${this.contractStrategy.target} not found in report`);
+      }
+
+      const proof = this.merkleProof(report.tree, vaultEntry.treeIndex);
+
+      const populatedTx = await this.contractOracle.updateVaultData.populateTransaction(
+        vaultEntry.value[0],
+        vaultEntry.value[1],
+        vaultEntry.value[2],
+        vaultEntry.value[3],
+        vaultEntry.value[4],
+        vaultEntry.value[5],
+        proof
+      );
+
+      const gasConsumption = await this.rpc.estimateGas({
+        ...populatedTx,
+        from: sender,
+      });
+
+      return {
+        from: sender,
+        to: await this.contractOracle.getAddress(),
+        value: 0n,
+        gasLimit: this.calculateGasLimit(gasConsumption),
+        data: populatedTx.data,
+      };
+    } catch (error) {
+      throw this.handleError('StrategyVault: oracle report update failed', error);
+    }
+  }
+
+  private merkleProof(tree: string[], leafIndex: number): string[] {
+    const proof: string[] = [];
+    let i = leafIndex;
+    while (i > 0) {
+      const sibling = i % 2 === 1 ? i + 1 : i - 1;
+      const node = tree[sibling];
+      if (node !== undefined) {
+        proof.push(node);
+      }
+      i = Math.floor((i - 1) / 2);
+    }
+    return proof;
+  }
+
+  /**
+   * Prepares the report transaction if needed
+   *
+   * @param sender - User address initiating the transaction
+   * @returns unsigned ETH transaction object for updateVaultData or undefined if no need to update report.
+   */
+  public async prepareReportTx(sender: string): Promise<EthTransaction | undefined> {
+    let isFresh = await this.contractVaultHub.isReportFresh(this.contractStrategy.target);
+    if (isFresh) {
+      return;
+    }
+
+    return this.updateReportTx(sender)
   }
 
   /**
@@ -234,6 +350,38 @@ export class StrategyVault extends Blockchain {
       };
     } catch (error) {
       throw this.handleError('PENDING_DEPOSIT_REQUESTS_ERROR', error);
+    }
+  }
+
+  /**
+   * Claims shares from the strategy pool. 
+   *
+   * @param sender - User address initiating the transaction
+   *
+   * @returns unsigned ETH transaction object.
+   */
+  public async claim(sender: string): Promise<EthTransaction> {
+    if (!this.isAddress(sender)) {
+      this.throwError('ADDRESS_FORMAT_ERROR');
+    }
+
+    try {
+      const populatedTx = await this.contractStrategy.claimShares.populateTransaction();
+
+      const gasConsumption = await this.rpc.estimateGas({
+        ...populatedTx,
+        from: sender,
+      });
+
+      return {
+        from: sender,
+        to: this.addressStrategy,
+        value: 0n,
+        gasLimit: this.calculateGasLimit(gasConsumption),
+        data: populatedTx.data,
+      };
+    } catch (error) {
+      throw this.handleError('CLAIM_ERROR', error);
     }
   }
 
