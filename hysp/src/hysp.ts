@@ -21,6 +21,8 @@ import {
   Oracle__factory,
   RedemptionVault,
   RedemptionVault__factory,
+  TBillDataFeed,
+  TBillDataFeed__factory,
 } from './typechain-types';
 import { BigNumberish, ContractTransaction } from 'ethers';
 
@@ -45,12 +47,17 @@ export class Hysp extends Blockchain {
   public addressRedemptionVault!: string;
   public addressOracle!: string;
   public addressToken!: string;
+  public addressLp!: string;
+  public addressTBill!: string;
+  public addressTBillDataFeed!: string;
+  public addressUsdc!: string;
   public supportedIssuanceTokensAddresses: string[] = [];
   public supportedRedemptionTokensAddresses: string[] = [];
 
   public contractIssuanceVault!: IssuanceVault;
   public contractRedemptionVault!: RedemptionVault;
   public contractOracle!: Oracle;
+  public contractTBillDataFeed!: TBillDataFeed;
   public contractToken!: Erc20;
 
   private tokenDecimalsStore: { [address: string]: number };
@@ -94,6 +101,10 @@ export class Hysp extends Blockchain {
     this.addressRedemptionVault = hyspAddresses.redemptionVaultAddress;
     this.addressOracle = hyspAddresses.oracleAddress;
     this.addressToken = hyspAddresses.tokenAddress;
+    this.addressLp = hyspAddresses.lpAddress;
+    this.addressTBill = hyspAddresses.tBillAddress;
+    this.addressTBillDataFeed = hyspAddresses.tBillDataFeed;
+    this.addressUsdc = hyspAddresses.usdcAddress;
 
     this.contractIssuanceVault = IssuanceVault__factory.connect(
       this.addressIssuanceVault,
@@ -109,6 +120,10 @@ export class Hysp extends Blockchain {
     );
     this.contractToken = Erc20__factory.connect(
       this.addressToken,
+      this.provider,
+    );
+    this.contractTBillDataFeed = TBillDataFeed__factory.connect(
+      this.addressTBillDataFeed,
       this.provider,
     );
 

@@ -12,6 +12,10 @@ export interface EthNetworkAddresses {
   redemptionVaultAddress: string;
   oracleAddress: string;
   tokenAddress: string;
+  tBillAddress: string;
+  tBillDataFeed: string;
+  lpAddress: string;
+  usdcAddress: string;
 
   rpcUrl: string;
 }
