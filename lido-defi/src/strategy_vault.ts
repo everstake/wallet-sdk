@@ -20,22 +20,31 @@ import {
   StvPool__factory,
   VaultHub,
   VaultHub__factory,
+  Wrapper,
+  Wrapper__factory,
 } from './typechain-types';
-
 import { Blockchain } from '../../utils';
+import { minBN, maxBN } from './utils';
 
 import { NETWORK_ADDRESSES } from './constants';
 import { ERROR_MESSAGES, ORIGINAL_ERROR_MESSAGES } from './constants/errors';
-import type { VaultType, EthTransaction, PendingDepositRequest, ReportData } from './types';
+import type {
+  VaultType,
+  EthTransaction,
+  PendingDepositRequest,
+  ReportData,
+  BalanceData,
+} from './types';
 
 export class StrategyVault extends Blockchain {
-  public addressStrategy!: string;
+  public addressVault!: string;
   public addressOracle!: string;
 
-  public contractStrategy!: StvPool;
+  public contractVault!: StvPool;
   public contractLido!: Lido;
   public contractOracle!: LazyOracle;
   public contractVaultHub!: VaultHub;
+  public contractWrapper!: Wrapper;
 
   private rpc!: JsonRpcProvider;
 
@@ -60,11 +69,11 @@ export class StrategyVault extends Blockchain {
     const providerUrl = url ?? networkAddresses.rpcUrl;
     this.rpc = new JsonRpcProvider(providerUrl);
 
-    this.addressStrategy = networkAddresses.addressStrategy;
+    this.addressVault = networkAddresses.addressVault;
     this.addressOracle = networkAddresses.addressOracle;
 
-    this.contractStrategy = StvPool__factory.connect(
-      networkAddresses.addressStrategy,
+    this.contractVault = StvPool__factory.connect(
+      networkAddresses.addressVault,
       this.rpc,
     );
     this.contractLido = Lido__factory.connect(
@@ -77,6 +86,10 @@ export class StrategyVault extends Blockchain {
     );
     this.contractVaultHub = VaultHub__factory.connect(
       networkAddresses.addressVaultHub,
+      this.rpc,
+    );
+    this.contractWrapper = Wrapper__factory.connect(
+      networkAddresses.addressWrapper,
       this.rpc,
     );
   }
@@ -93,7 +106,10 @@ export class StrategyVault extends Blockchain {
    * @param sender - User address initiating the transaction
    * @returns unsigned ETH transaction object for updateVaultData.
    */
-  private async updateReportTx(sender: string, reportCid?: string): Promise<EthTransaction> {
+  private async updateReportTx(
+    sender: string,
+    reportCid?: string,
+  ): Promise<EthTransaction> {
     if (!this.isAddress(sender)) {
       this.throwError('ADDRESS_FORMAT_ERROR');
     }
@@ -106,7 +122,9 @@ export class StrategyVault extends Blockchain {
       const url = `https://ipfs.io/ipfs/${reportCid}`;
       const response = await fetch(url);
       if (!response.ok) {
-        throw new Error(`Failed to fetch report from IPFS: ${response.statusText}`);
+        throw new Error(
+          `Failed to fetch report from IPFS: ${response.statusText}`,
+        );
       }
       const report = await response.json();
 
@@ -114,24 +132,30 @@ export class StrategyVault extends Blockchain {
         throw new Error(`Unsupported report format: ${report.format}`);
       }
 
-      const vaultLower = this.contractStrategy.target.toString().toLowerCase();
-      const vaultEntry = report.values.find((v: any) => v.value[0].toLowerCase() === vaultLower);
+      const vaultLower = this.contractVault.target.toString().toLowerCase();
+      const vaultEntry = report.values.find(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (v: any) => v.value[0].toLowerCase() === vaultLower,
+      );
 
       if (!vaultEntry) {
-        throw new Error(`Vault ${this.contractStrategy.target} not found in report`);
+        throw new Error(
+          `Vault ${this.contractVault.target} not found in report`,
+        );
       }
 
       const proof = this.merkleProof(report.tree, vaultEntry.treeIndex);
 
-      const populatedTx = await this.contractOracle.updateVaultData.populateTransaction(
-        vaultEntry.value[0],
-        vaultEntry.value[1],
-        vaultEntry.value[2],
-        vaultEntry.value[3],
-        vaultEntry.value[4],
-        vaultEntry.value[5],
-        proof
-      );
+      const populatedTx =
+        await this.contractOracle.updateVaultData.populateTransaction(
+          vaultEntry.value[0],
+          vaultEntry.value[1],
+          vaultEntry.value[2],
+          vaultEntry.value[3],
+          vaultEntry.value[4],
+          vaultEntry.value[5],
+          proof,
+        );
 
       const gasConsumption = await this.rpc.estimateGas({
         ...populatedTx,
@@ -146,7 +170,10 @@ export class StrategyVault extends Blockchain {
         data: populatedTx.data,
       };
     } catch (error) {
-      throw this.handleError('StrategyVault: oracle report update failed', error);
+      throw this.handleError(
+        'StrategyVault: oracle report update failed',
+        error,
+      );
     }
   }
 
@@ -161,6 +188,7 @@ export class StrategyVault extends Blockchain {
       }
       i = Math.floor((i - 1) / 2);
     }
+
     return proof;
   }
 
@@ -170,32 +198,198 @@ export class StrategyVault extends Blockchain {
    * @param sender - User address initiating the transaction
    * @returns unsigned ETH transaction object for updateVaultData or undefined if no need to update report.
    */
-  public async prepareReportTx(sender: string): Promise<EthTransaction | undefined> {
-    let isFresh = await this.contractVaultHub.isReportFresh(this.contractStrategy.target);
+  public async prepareReportTx(
+    sender: string,
+  ): Promise<EthTransaction | undefined> {
+    const isFresh = await this.contractVaultHub.isReportFresh(
+      this.contractVault.target,
+    );
     if (isFresh) {
       return;
     }
 
-    return this.updateReportTx(sender)
+    return this.updateReportTx(sender);
   }
 
   /**
-   * Fetches the user's wstETH balance in the strategy pool
+   * Fetches the user's Detailed balance data from the strategy pool.
    *
-   * @param address - The address to perform the check for.
-   * @returns A Promise that resolves to the strategy pool balance in ether.
+   * @param address - The user's wallet address.
+   * @returns A Promise that resolves to the BalanceData.
    */
-  public async balance(address: string): Promise<BigNumber> {
-    try {
-      if (!this.isAddress(address)) {
-        this.throwError('ADDRESS_FORMAT_ERROR');
-      }
-      const result = await this.contractStrategy.wstethOf(address);
-
-      return this.fromWeiToEther(result);
-    } catch (error) {
-      throw this.handleError('BALANCE_ERROR', error);
+  public async balance(address: string): Promise<BalanceData> {
+    if (!this.isAddress(address)) {
+      this.throwError('ADDRESS_FORMAT_ERROR');
     }
+    // cc https://github.com/lidofinance/defi-wrapper-widget/blob/develop/src/features/stv-strategy-pool/shared/hooks/use-strategy-position.ts
+
+    // stethSharesOnBalance  = wstETH returned from strategy vault to proxy balance
+    // totalMintedStethShares = stETH shares minted as user liability
+    // strategyStethSharesBalance = wstETH actively delegated inside Mellow vault
+    // strategyProxyAddress  = per-user proxy that holds funds on behalf of strategy
+    const [
+      stethSharesOnBalance,
+      totalMintedStethShares,
+      strategyStethSharesBalance,
+      strategyProxyAddress,
+    ] = await Promise.all([
+      this.contractVault.wstethOf(address),
+      this.contractVault.mintedStethSharesOf(address),
+      this.contractVault.activeSharesOf(address),
+      this.contractVault.getStrategyCallForwarderAddress(address),
+    ]);
+
+    // async Mellow deposit / withdrawal queue offsets.
+    // These would be populated from pendingDepositRequests / getRedeemQueueRequests
+    // for positions with in-flight async Mellow interactions.
+    const strategyDepositStethSharesOffset = 0n;
+    const strategyWithdrawalStethSharesOffset = 0n;
+
+
+    // Total stETH shares the strategy claims to have (delegated + pending)
+    const totalStrategyBalanceInStethShares =
+      strategyDepositStethSharesOffset +
+      strategyStethSharesBalance +
+      strategyWithdrawalStethSharesOffset;
+
+    // Signed difference: positive = profit, negative = loss
+    const totalStethSharesDifference =
+      totalStrategyBalanceInStethShares +
+      stethSharesOnBalance -
+      totalMintedStethShares;
+
+    // Delegated shares = minted on behalf of user but not yet returned to proxy
+    const totalStethSharesDelegated = maxBN(
+      totalMintedStethShares - stethSharesOnBalance,
+      0n,
+    );
+
+    // Vault shares that can be withdrawn to repay the delegated liability
+    const totalStethSharesAvailableForReturn = minBN(
+      strategyStethSharesBalance,
+      totalStethSharesDelegated,
+    );
+
+    // Vault shares above delegated repayment (profit component)
+    const strategyStethSharesExcess =
+      strategyStethSharesBalance - totalStethSharesAvailableForReturn;
+
+    // Pending return: withdrawal offset + any excess still in vault
+    const stethSharesToRepayPendingFromStrategyVault = maxBN(
+      strategyWithdrawalStethSharesOffset + strategyStethSharesExcess,
+      0n,
+    );
+
+    // Shares that must be repaid from proxy-returned balance to unlock user ETH
+    const stethSharesLiabilityToCover = maxBN(
+      totalMintedStethShares - totalStrategyBalanceInStethShares,
+      0n,
+    );
+
+    // How much of that liability can be covered by the returned balance
+    const stethSharesToRepay = minBN(
+      stethSharesOnBalance,
+      stethSharesLiabilityToCover,
+    );
+
+    // ── Phase 2: Fetch share rate + wrapper reads in parallel ──────────────────
+    // Mirrors LidoSDKShares.convertBatchSharesToSteth: fetch totalSupply once,
+    // then do all shares↔eth conversions as local integer math.
+    const absDiff =
+      totalStethSharesDifference < 0n
+        ? -totalStethSharesDifference
+        : totalStethSharesDifference;
+
+    const [
+      proxyBalanceStvInEth,
+      proxyUnlockedBalanceStvInEth,
+      totalStethLiabilityInEth,
+      totalStethSharesAvailableForReturnInEth,
+      pendingUnlockFromStrategyVaultInEth,
+      totalShares,
+      totalEther,
+    ] = await Promise.all([
+      this.contractWrapper.assetsOf(strategyProxyAddress),
+      this.contractWrapper['unlockedAssetsOf(address,uint256)'](
+        strategyProxyAddress,
+        0n,
+      ),
+      this.contractWrapper.calcAssetsToLockForStethShares(
+        totalMintedStethShares,
+      ),
+      this.contractWrapper.calcAssetsToLockForStethShares(
+        totalStethSharesAvailableForReturn,
+      ),
+      this.contractWrapper.calcAssetsToLockForStethShares(
+        stethSharesToRepayPendingFromStrategyVault,
+      ),
+      this.contractLido.getTotalShares(),
+      this.contractLido.getTotalPooledEther(),
+    ]);
+
+    // Off-chain replicas of StETH.getPooledEthByShares / getSharesByPooledEth
+    const sharesToEth = (s: bigint) => (s * totalEther) / totalShares;
+    const ethToShares = (e: bigint) => (e * totalShares) / totalEther;
+
+    const strategyVaultStethExcess = sharesToEth(strategyStethSharesExcess);
+
+    // Restore sign for profit/loss
+    const totalStethDifference =
+      totalStethSharesDifference < 0n
+        ? -sharesToEth(absDiff)
+        : sharesToEth(absDiff);
+
+    // Mirrors: shares.convertToShares(await shares.convertToSteth(stethSharesToRepay))
+    // StvStETHPool.sol:StvStETHPool.burnWsteth
+    const stethSharesRepaidAfterWstethUnwrap = ethToShares(
+      sharesToEth(stethSharesToRepay),
+    );
+
+    // Shares that will be rebalanced from locked ETH (cannot be repaid)
+    const stethSharesToRebalance =
+      stethSharesLiabilityToCover - stethSharesRepaidAfterWstethUnwrap;
+
+    const [withdrawableEthAfterRepay] = await Promise.all([
+      this.contractWrapper['unlockedAssetsOf(address,uint256)'](
+        strategyProxyAddress,
+        stethSharesRepaidAfterWstethUnwrap,
+      ),
+    ]);
+
+    const stethToRebalance = sharesToEth(stethSharesToRebalance);
+
+    // ── Final calculations ───────────────────────────────────────────────────────
+
+    // ETH currently locked to cover liability (capped by available proxy balance)
+    const totalLockedEth = minBN(
+      totalStethLiabilityInEth,
+      proxyBalanceStvInEth - proxyUnlockedBalanceStvInEth,
+    );
+
+    // Total value = locked ETH + stETH profit/loss from delegation
+    const totalUserValueInEth = proxyBalanceStvInEth + totalStethDifference;
+
+    // Max ETH withdrawable from strategy vault (return delegated + excess profit)
+    const totalEthToWithdrawFromStrategyVault =
+      totalStethSharesAvailableForReturnInEth + strategyVaultStethExcess;
+
+    // ETH release from proxy after repayment (already-unlocked, net of rebalancing)
+    const totalEthToWithdrawFromProxy = maxBN(
+      withdrawableEthAfterRepay - stethToRebalance,
+      0n,
+    );
+
+    // Value still pending inside strategy vault (capped by locked ETH + excess)
+    const totalValuePendingFromStrategyVaultInEth =
+      minBN(pendingUnlockFromStrategyVaultInEth, totalLockedEth) +
+      strategyVaultStethExcess;
+
+    return {
+      totalUserValueInEth: formatEther(totalUserValueInEth),
+      processableEth: formatEther(totalEthToWithdrawFromProxy),
+      availableEth: formatEther(totalEthToWithdrawFromStrategyVault),
+      pendingEth: formatEther(totalValuePendingFromStrategyVaultInEth),
+    };
   }
 
   /**
@@ -234,7 +428,7 @@ export class StrategyVault extends Blockchain {
         merkleProof: merkleProof,
       };
 
-      const previewResult = await this.contractStrategy.previewSupply(
+      const previewResult = await this.contractVault.previewSupply(
         amountWei,
         address,
         supplyParamsTuple,
@@ -249,7 +443,7 @@ export class StrategyVault extends Blockchain {
       const expectedShares = previewResult.shares;
 
       const capacityShares =
-        await this.contractStrategy.remainingMintingCapacitySharesOf(
+        await this.contractVault.remainingMintingCapacitySharesOf(
           address,
           amountWei,
         );
@@ -257,12 +451,11 @@ export class StrategyVault extends Blockchain {
       const maxMintShares =
         expectedShares < capacityShares ? expectedShares : capacityShares;
 
-      const populatedTx =
-        await this.contractStrategy.supply.populateTransaction(
-          referral,
-          maxMintShares,
-          params,
-        );
+      const populatedTx = await this.contractVault.supply.populateTransaction(
+        referral,
+        maxMintShares,
+        params,
+      );
 
       const gasConsumption = await this.rpc.estimateGas({
         ...populatedTx,
@@ -272,7 +465,7 @@ export class StrategyVault extends Blockchain {
 
       return {
         from: address,
-        to: this.addressStrategy,
+        to: this.addressVault,
         value: amountWei,
         gasLimit: this.calculateGasLimit(gasConsumption),
         data: populatedTx.data,
@@ -304,7 +497,7 @@ export class StrategyVault extends Blockchain {
 
     try {
       const populatedTx =
-        await this.contractStrategy.requestWithdrawalFromPool.populateTransaction(
+        await this.contractVault.requestWithdrawalFromPool.populateTransaction(
           recipient,
           stvToWithdraw.toString(),
           stethSharesToRebalance.toString(),
@@ -317,7 +510,7 @@ export class StrategyVault extends Blockchain {
 
       return {
         from: address,
-        to: this.addressStrategy,
+        to: this.addressVault,
         value: 0n,
         gasLimit: this.calculateGasLimit(gasConsumption),
         data: populatedTx.data,
@@ -340,8 +533,7 @@ export class StrategyVault extends Blockchain {
       if (!this.isAddress(address)) {
         this.throwError('ADDRESS_FORMAT_ERROR');
       }
-      const result =
-        await this.contractStrategy.pendingDepositRequests(address);
+      const result = await this.contractVault.pendingDepositRequests(address);
 
       return {
         assets: result.assets.toString(),
@@ -354,7 +546,7 @@ export class StrategyVault extends Blockchain {
   }
 
   /**
-   * Claims shares from the strategy pool. 
+   * Claims shares from the strategy pool.
    *
    * @param sender - User address initiating the transaction
    *
@@ -366,7 +558,8 @@ export class StrategyVault extends Blockchain {
     }
 
     try {
-      const populatedTx = await this.contractStrategy.claimShares.populateTransaction();
+      const populatedTx =
+        await this.contractVault.claimShares.populateTransaction();
 
       const gasConsumption = await this.rpc.estimateGas({
         ...populatedTx,
@@ -375,7 +568,7 @@ export class StrategyVault extends Blockchain {
 
       return {
         from: sender,
-        to: this.addressStrategy,
+        to: this.addressVault,
         value: 0n,
         gasLimit: this.calculateGasLimit(gasConsumption),
         data: populatedTx.data,

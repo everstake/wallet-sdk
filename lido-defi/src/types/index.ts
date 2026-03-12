@@ -7,8 +7,9 @@ export type VaultType = 'mainnet' | 'hoodi';
 
 export interface VaultAddresses {
   // poolType = StvStrategyPool
-  addressStrategy: string;
+  addressVault: string;
   addressOracle: string; // lazyOracle
+  addressWrapper: string;
   addressPool: string;
   addressLido: string; // v3
   addressVaultHub: string;
@@ -27,15 +28,17 @@ export type EthTransaction = {
 
 export type BalanceData = {
   totalUserValueInEth: string;
-
-}
+  processableEth: string; // totalEthToWithdrawFromProxy
+  availableEth: string; // totalEthToWithdrawFromStrategyVault
+  pendingEth: string; // totalValuePendingFromStrategyVaultInEth
+};
 
 export type ReportData = {
   timestamp: bigint;
   refSlot: bigint;
   treeRoot: string;
   reportCid: string;
-}
+};
 
 export interface PendingDepositRequest {
   assets: string;
