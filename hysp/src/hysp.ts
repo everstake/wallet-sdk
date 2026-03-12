@@ -194,29 +194,37 @@ export class Hysp extends Blockchain {
         );
       }
 
-      const liquidityProviderAddress =
-        await this.contractRedemptionVault.liquidityProvider();
-
-      const mTbillRedemptionVaultAddress =
-        this.contractRedemptionVault.mTbillRedemptionVault();
-      const contractOutErc20 = Erc20__factory.connect(
-        outTokenAddress,
+      const tbillContract = Erc20__factory.connect(
+        this.addressTBill,
         this.provider,
       );
-      const redemptionVaultLiquidity = await contractOutErc20.balanceOf(
-        liquidityProviderAddress,
+      const usdcContract = Erc20__factory.connect(
+        this.addressUsdc,
+        this.provider,
       );
-      const mTbillRedemptionVaultLiquidity = await contractOutErc20.balanceOf(
-        mTbillRedemptionVaultAddress,
+      const tbillDecimals = 18;
+      const usdcDecimals = 6;
+
+      const [redemptionVaultLiquidity, lpAllowance, tbillRate] =
+        await Promise.all([
+          usdcContract.balanceOf(this.addressRedemptionVault),
+          tbillContract.allowance(this.addressLp, this.addressRedemptionVault),
+          this.contractTBillDataFeed.getDataInBase18(), // tbill:usdc
+        ]);
+
+      const tbillToUsdcRate = this.fromWeiToEther(tbillRate, tbillDecimals);
+      const rvLiquidityInUsdc = this.fromWeiToEther(
+        redemptionVaultLiquidity,
+        usdcDecimals,
       );
-      const liquidity =
-        redemptionVaultLiquidity > mTbillRedemptionVaultLiquidity
-          ? redemptionVaultLiquidity
-          : mTbillRedemptionVaultLiquidity;
+      const lpLiquidityInUsdc = this.fromWeiToEther(
+        lpAllowance,
+        tbillDecimals,
+      ).multipliedBy(tbillToUsdcRate);
 
-      const decimals = await this.getDecimals(outTokenAddress);
+      const liquidity = BigNumber.maximum(rvLiquidityInUsdc, lpLiquidityInUsdc);
 
-      return this.fromWeiToEther(liquidity, decimals.toString());
+      return liquidity;
     } catch (error) {
       throw this.handleError('VAULT_LIQUIDITY_ERROR', error);
     }
