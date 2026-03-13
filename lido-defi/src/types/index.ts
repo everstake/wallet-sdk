@@ -13,6 +13,9 @@ export interface VaultAddresses {
   addressPool: string;
   addressLido: string; // v3
   addressVaultHub: string;
+  addressDepositQueue: string;
+  addressRedeemQueue: string;
+  addressShareManager: string;
   rpcUrl: string;
 }
 
@@ -27,10 +30,12 @@ export type EthTransaction = {
 };
 
 export type BalanceData = {
-  totalUserValueInEth: string;
+  proxyUnlockedBalanceEth: string; // processable withdrawal requests to stVault
+  totalUserValueInEth: string; // user vault balance
   processableEth: string; // totalEthToWithdrawFromProxy
-  availableEth: string; // totalEthToWithdrawFromStrategyVault
-  pendingEth: string; // totalValuePendingFromStrategyVaultInEth
+  availableEth: string; // eth available for withdrawal
+  pendingEth: string; // sum of eth in pending withdrawal requests
+  assetShortfallInEth: string; // ETH missing from locked to cover total liability (0 if healthy)
 };
 
 export type ReportData = {

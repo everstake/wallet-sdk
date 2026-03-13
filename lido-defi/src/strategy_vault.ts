@@ -12,10 +12,16 @@ import {
   AbiCoder,
 } from 'ethers';
 import {
+  DepositQueue,
+  DepositQueue__factory,
   LazyOracle,
   LazyOracle__factory,
   Lido,
   Lido__factory,
+  RedeemQueue,
+  RedeemQueue__factory,
+  ShareManager,
+  ShareManager__factory,
   StvPool,
   StvPool__factory,
   VaultHub,
@@ -45,6 +51,9 @@ export class StrategyVault extends Blockchain {
   public contractOracle!: LazyOracle;
   public contractVaultHub!: VaultHub;
   public contractWrapper!: Wrapper;
+  public contractDepositQueue!: DepositQueue;
+  public contractRedeemQueue!: RedeemQueue;
+  public contractShareManager!: ShareManager;
 
   private rpc!: JsonRpcProvider;
 
@@ -90,6 +99,18 @@ export class StrategyVault extends Blockchain {
     );
     this.contractWrapper = Wrapper__factory.connect(
       networkAddresses.addressWrapper,
+      this.rpc,
+    );
+    this.contractDepositQueue = DepositQueue__factory.connect(
+      networkAddresses.addressDepositQueue,
+      this.rpc,
+    );
+    this.contractRedeemQueue = RedeemQueue__factory.connect(
+      networkAddresses.addressRedeemQueue,
+      this.rpc,
+    );
+    this.contractShareManager = ShareManager__factory.connect(
+      networkAddresses.addressShareManager,
       this.rpc,
     );
   }
@@ -212,7 +233,7 @@ export class StrategyVault extends Blockchain {
   }
 
   /**
-   * Fetches the user's Detailed balance data from the strategy pool.
+   * Fetches the user's detailed balance data from the strategy pool.
    *
    * @param address - The user's wallet address.
    * @returns A Promise that resolves to the BalanceData.
@@ -221,31 +242,78 @@ export class StrategyVault extends Blockchain {
     if (!this.isAddress(address)) {
       this.throwError('ADDRESS_FORMAT_ERROR');
     }
-    // cc https://github.com/lidofinance/defi-wrapper-widget/blob/develop/src/features/stv-strategy-pool/shared/hooks/use-strategy-position.ts
 
-    // stethSharesOnBalance  = wstETH returned from strategy vault to proxy balance
+    // ── Phase 1: Base state + Mellow contract addresses ───────────────────────
+    // stethSharesOnBalance   = wstETH returned from strategy vault to proxy
     // totalMintedStethShares = stETH shares minted as user liability
-    // strategyStethSharesBalance = wstETH actively delegated inside Mellow vault
-    // strategyProxyAddress  = per-user proxy that holds funds on behalf of strategy
+    // strategyProxyAddress   = per-user proxy that holds funds on behalf of strategy
+    // queue/manager addresses are stored in the vault contract itself
+    const [stethSharesOnBalance, totalMintedStethShares, strategyProxyAddress] =
+      await Promise.all([
+        this.contractVault.wstethOf(address),
+        this.contractVault.mintedStethSharesOf(address),
+        this.contractVault.getStrategyCallForwarderAddress(address),
+      ]);
+
+    const MAX_UINT128 = 2n ** 128n - 1n;
+
+    // ── Phase 2: Mellow earn-position data  ─────────────────────────────────
     const [
-      stethSharesOnBalance,
-      totalMintedStethShares,
-      strategyStethSharesBalance,
-      strategyProxyAddress,
+      depositRequest,
+      claimableDepositInEarnShares,
+      withdrawalRequests,
+      balanceInEarnShares,
     ] = await Promise.all([
-      this.contractVault.wstethOf(address),
-      this.contractVault.mintedStethSharesOf(address),
-      this.contractVault.activeSharesOf(address),
-      this.contractVault.getStrategyCallForwarderAddress(address),
+      this.contractDepositQueue.requestOf(strategyProxyAddress),
+      this.contractDepositQueue.claimableOf(strategyProxyAddress),
+      this.contractRedeemQueue.requestsOf(
+        strategyProxyAddress,
+        0n,
+        MAX_UINT128,
+      ),
+      this.contractShareManager.balanceOf(strategyProxyAddress),
     ]);
 
-    // async Mellow deposit / withdrawal queue offsets.
-    // These would be populated from pendingDepositRequests / getRedeemQueueRequests
-    // for positions with in-flight async Mellow interactions.
-    const strategyDepositStethSharesOffset = 0n;
-    const strategyWithdrawalStethSharesOffset = 0n;
+    // depositRequest[0] = timestamp, depositRequest[1] = depositsInWsteth
+    const depositsInWsteth = depositRequest[1];
+    // if there is already a claimable deposit, the pending request is no longer in-flight
+    const pendingDepositsInWsteth =
+      claimableDepositInEarnShares > 0n ? 0n : depositsInWsteth;
 
+    // preview Mellow LP shares → wstETH for vault balance and claimable deposit
+    const [[, balanceInWsteth], [, claimableDepositInWsteth]] =
+      await Promise.all([
+        balanceInEarnShares > 0n
+          ? this.contractVault.previewRedeem(balanceInEarnShares)
+          : Promise.resolve([false, 0n] as [boolean, bigint]),
+        claimableDepositInEarnShares > 0n
+          ? this.contractVault.previewRedeem(claimableDepositInEarnShares)
+          : Promise.resolve([false, 0n] as [boolean, bigint]),
+      ]);
 
+    // preview non-claimable withdrawal requests to get pending wstETH amount
+    const previewedAssets = await Promise.all(
+      withdrawalRequests.map(async (req) => {
+        if (req.isClaimable) return req.assets;
+
+        const [, preview] = await this.contractVault.previewRedeem(req.shares);
+
+        return preview;
+      }),
+    );
+
+    const pendingWithdrawalsInWsteth = previewedAssets.reduce(
+      (acc, a) => acc + a,
+      0n,
+    );
+
+    // these 3 values map to the params passed from use-earn-position → use-strategy-position
+    const strategyDepositStethSharesOffset = pendingDepositsInWsteth;
+    const strategyStethSharesBalance =
+      balanceInWsteth + claimableDepositInWsteth;
+    const strategyWithdrawalStethSharesOffset = pendingWithdrawalsInWsteth;
+
+    // ── Phase 3: Liability / delegated shares arithmetic ──────────────────────
     // Total stETH shares the strategy claims to have (delegated + pending)
     const totalStrategyBalanceInStethShares =
       strategyDepositStethSharesOffset +
@@ -292,7 +360,7 @@ export class StrategyVault extends Blockchain {
       stethSharesLiabilityToCover,
     );
 
-    // ── Phase 2: Fetch share rate + wrapper reads in parallel ──────────────────
+    // ── Phase 4: Fetch share rate + wrapper reads in parallel ──────────────────
     // Mirrors LidoSDKShares.convertBatchSharesToSteth: fetch totalSupply once,
     // then do all shares↔eth conversions as local integer math.
     const absDiff =
@@ -349,12 +417,9 @@ export class StrategyVault extends Blockchain {
     const stethSharesToRebalance =
       stethSharesLiabilityToCover - stethSharesRepaidAfterWstethUnwrap;
 
-    const [withdrawableEthAfterRepay] = await Promise.all([
-      this.contractWrapper['unlockedAssetsOf(address,uint256)'](
-        strategyProxyAddress,
-        stethSharesRepaidAfterWstethUnwrap,
-      ),
-    ]);
+    const withdrawableEthAfterRepay = await this.contractWrapper[
+      'unlockedAssetsOf(address,uint256)'
+    ](strategyProxyAddress, stethSharesRepaidAfterWstethUnwrap);
 
     const stethToRebalance = sharesToEth(stethSharesToRebalance);
 
@@ -384,11 +449,16 @@ export class StrategyVault extends Blockchain {
       minBN(pendingUnlockFromStrategyVaultInEth, totalLockedEth) +
       strategyVaultStethExcess;
 
+    // ETH missing from locked to cover total liability; 0 when position is healthy
+    const assetShortfallInEth = totalStethLiabilityInEth - totalLockedEth;
+
     return {
+      proxyUnlockedBalanceEth: formatEther(proxyUnlockedBalanceStvInEth),
       totalUserValueInEth: formatEther(totalUserValueInEth),
       processableEth: formatEther(totalEthToWithdrawFromProxy),
       availableEth: formatEther(totalEthToWithdrawFromStrategyVault),
       pendingEth: formatEther(totalValuePendingFromStrategyVaultInEth),
+      assetShortfallInEth: formatEther(assetShortfallInEth),
     };
   }
 

@@ -15,6 +15,10 @@ export const NETWORK_ADDRESSES: VaultAddressesMap = {
     addressVaultHub: '',
     addressWrapper: '',
     addressLido: '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84',
+    addressDepositQueue: '',
+    addressRedeemQueue: '',
+    addressShareManager: '',
+
     rpcUrl: 'https://mainnet.infura.io/v3/f583d4f04d384b9e8c59a7ff1c9f68f1',
   },
   hoodi: {
@@ -24,6 +28,10 @@ export const NETWORK_ADDRESSES: VaultAddressesMap = {
     addressLido: '0x3508A952176b3c15387C97BE809eaffB1982176a',
     addressVaultHub: '0x4C9fFC325392090F789255b9948Ab1659b797964',
     addressWrapper: '0xaaaab59c3aaa1e0ea2b414404d7d4ebf608031cc',
+    addressDepositQueue: '0x3854d45d95037913903710c8ab64e6650557Cb8E',
+    addressRedeemQueue: '0x6491B91aDfa0762E04E950A16b37627D57C00cc5',
+    addressShareManager: '0xD1aDFfD6809bd01Dc463881356Ac916F15154aD8',
+
     rpcUrl: 'https://ethereum-hoodi-rpc.publicnode.com',
   },
 };
