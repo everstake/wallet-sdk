@@ -374,6 +374,7 @@ export class StrategyVault extends Blockchain {
       totalStethLiabilityInEth,
       totalStethSharesAvailableForReturnInEth,
       pendingUnlockFromStrategyVaultInEth,
+      strategyDepositOffsetInLockedEth,
       totalShares,
       totalEther,
     ] = await Promise.all([
@@ -390,6 +391,9 @@ export class StrategyVault extends Blockchain {
       ),
       this.contractWrapper.calcAssetsToLockForStethShares(
         stethSharesToRepayPendingFromStrategyVault,
+      ),
+      this.contractWrapper.calcAssetsToLockForStethShares(
+        strategyDepositStethSharesOffset,
       ),
       this.contractLido.getTotalShares(),
       this.contractLido.getTotalPooledEther(),
@@ -458,6 +462,7 @@ export class StrategyVault extends Blockchain {
       processableEth: formatEther(totalEthToWithdrawFromProxy),
       availableEth: formatEther(totalEthToWithdrawFromStrategyVault),
       pendingEth: formatEther(totalValuePendingFromStrategyVaultInEth),
+      pendingDepositsEth: formatEther(strategyDepositOffsetInLockedEth),
       assetShortfallInEth: formatEther(assetShortfallInEth),
     };
   }

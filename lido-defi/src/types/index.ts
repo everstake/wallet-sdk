@@ -35,6 +35,7 @@ export type BalanceData = {
   processableEth: string; // totalEthToWithdrawFromProxy
   availableEth: string; // eth available for withdrawal
   pendingEth: string; // sum of eth in pending withdrawal requests
+  pendingDepositsEth: string; // ETH locked for pending async deposits into strategy vault
   assetShortfallInEth: string; // ETH missing from locked to cover total liability (0 if healthy)
 };
 
