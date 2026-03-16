@@ -47,7 +47,15 @@ export type ReportData = {
 };
 
 export interface PendingDepositRequest {
+  shares: string;
   assets: string;
   timestamp: string;
+  isClaimable: boolean;
+}
+
+export interface PendingExitRequest {
+  shares: string;
+  assets: string;
+  requestId: string;
   isClaimable: boolean;
 }

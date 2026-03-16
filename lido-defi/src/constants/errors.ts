@@ -12,6 +12,8 @@ export const ERROR_MESSAGES = {
   WRONG_TYPE_MESSAGE: 'Wrong input type',
   PENDING_DEPOSIT_REQUESTS_ERROR:
     'An error occurred while getting pending deposit requests',
+  FINALIZE_EXIT_ERROR: 'An error occurred while finalizing the exit request',
+  CLAIM_ERROR: 'An error occurred while claiming shares',
 };
 
 export const ORIGINAL_ERROR_MESSAGES = {

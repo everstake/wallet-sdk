@@ -10,6 +10,7 @@ import {
   parseEther,
   formatEther,
   AbiCoder,
+  BytesLike,
 } from 'ethers';
 import {
   DepositQueue,
@@ -40,6 +41,7 @@ import type {
   PendingDepositRequest,
   ReportData,
   BalanceData,
+  PendingExitRequest,
 } from './types';
 
 export class StrategyVault extends Blockchain {
@@ -592,22 +594,110 @@ export class StrategyVault extends Blockchain {
   }
 
   /**
-   * Fetches the user's pending deposit requests
+   * Finalizes the exit request after the withdrawal has been processed in the strategy vault.
+   *
+   * @param sender - User address initiating the transaction
+   * @param requestId - The ID of the exit request to finalize.
+   * @return unsigned ETH transaction object for finalizing the exit request.
+   */
+  public async finalizeRequestExit(
+    sender: string,
+    requestId: BytesLike,
+  ): Promise<EthTransaction> {
+    if (!this.isAddress(sender)) {
+      this.throwError('ADDRESS_FORMAT_ERROR');
+    }
+
+    try {
+      const tx =
+        await this.contractVault.finalizeRequestExit.populateTransaction(
+          requestId,
+        );
+
+      const gasConsumption = await this.rpc.estimateGas({
+        ...tx,
+        from: sender,
+      });
+
+      return {
+        from: sender,
+        to: this.addressVault,
+        value: 0n,
+        gasLimit: this.calculateGasLimit(gasConsumption),
+        data: tx.data,
+      };
+    } catch (error) {
+      throw this.handleError('FINALIZE_EXIT_ERROR', error);
+    }
+  }
+
+  /**
+   * Fetches the user's pending withdrawal requests from the strategy pool.
+   *
+   * @param address - User address
+   * @returns A Promise that resolves to an array of the user's PendingExitRequest
+   */
+  public async pendingWithdrawRequests(
+    address: string,
+  ): Promise<PendingExitRequest[]> {
+    if (!this.isAddress(address)) {
+      this.throwError('ADDRESS_FORMAT_ERROR');
+    }
+
+    const offset = 0n;
+    const limit = 15n;
+
+    try {
+      const requests = await this.contractVault.getRedeemQueueRequests(
+        address,
+        offset,
+        limit,
+      );
+
+      const assets = await Promise.all(
+        requests.map((req) =>
+          this.contractWrapper.calcAssetsToLockForStethShares(req.shares),
+        ),
+      );
+
+      return requests.map((req, index) => ({
+        shares: this.fromWeiToEther(req.shares).toString(),
+        assets: this.fromWeiToEther(
+          assets[index] ? assets[index] : 0n,
+        ).toString(),
+        // uint32 timestamp = uint32(uint256(requestId)); =>
+        // requestId = hex(uint256(timestamp))
+        requestId: '0x' + BigInt(req.timestamp).toString(16).padStart(64, '0'),
+        isClaimable: Boolean(req.isClaimable),
+      }));
+    } catch (error) {
+      throw this.handleError('PENDING_DEPOSIT_REQUESTS_ERROR', error);
+    }
+  }
+
+  /**
+   * Fetches the user's pending deposit request (only one at a time is possible).
    *
    * @param address - User address
    * @returns A Promise that resolves to the user's PendingDepositRequest
    */
-  public async pendingDepositRequests(
+  public async pendingDepositRequest(
     address: string,
   ): Promise<PendingDepositRequest> {
+    if (!this.isAddress(address)) {
+      this.throwError('ADDRESS_FORMAT_ERROR');
+    }
+
     try {
-      if (!this.isAddress(address)) {
-        this.throwError('ADDRESS_FORMAT_ERROR');
-      }
       const result = await this.contractVault.pendingDepositRequests(address);
 
+      const assets = await this.contractWrapper.calcAssetsToLockForStethShares(
+        result.assets,
+      );
+
       return {
-        assets: result.assets.toString(),
+        shares: this.fromWeiToEther(result.assets).toString(),
+        assets: this.fromWeiToEther(assets).toString(),
         timestamp: result.timestamp.toString(),
         isClaimable: Boolean(result.isClaimable),
       };
