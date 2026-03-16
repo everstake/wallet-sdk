@@ -555,40 +555,36 @@ export class StrategyVault extends Blockchain {
    *
    * @param address - User address initiating the transaction
    * @param recipient - Recipient address of the withdrawal
-   * @param stvToWithdraw - Amount of STV to withdraw
-   * @param stethSharesToRebalance - Shares to rebalance in case of large strategy exits
+   * @param amount - Withdrawal amount in ETH
    *
    * @returns unsigned ETH transaction object.
    */
   public async withdraw(
-    address: string,
-    recipient: string,
-    stvToWithdraw: BigNumberish,
-    stethSharesToRebalance: BigNumberish = '0',
+    sender: string,
+    assets: BigNumberish,
   ): Promise<EthTransaction> {
-    if (!this.isAddress(address) || !this.isAddress(recipient)) {
-      this.throwError('ADDRESS_FORMAT_ERROR');
-    }
-
     try {
-      const populatedTx =
-        await this.contractVault.requestWithdrawalFromPool.populateTransaction(
-          recipient,
-          stvToWithdraw.toString(),
-          stethSharesToRebalance.toString(),
+      const assetsEth = parseEther(assets.toString());
+      const stethShares =
+        await this.contractWrapper.calcStethSharesToMintForAssets(assetsEth);
+
+      const tx =
+        await this.contractVault.requestExitByWsteth.populateTransaction(
+          stethShares,
+          '0x',
         );
 
       const gasConsumption = await this.rpc.estimateGas({
-        ...populatedTx,
-        from: address,
+        ...tx,
+        from: sender,
       });
 
       return {
-        from: address,
+        from: sender,
         to: this.addressVault,
         value: 0n,
         gasLimit: this.calculateGasLimit(gasConsumption),
-        data: populatedTx.data,
+        data: tx.data,
       };
     } catch (error) {
       throw this.handleError('WITHDRAW_ERROR', error);

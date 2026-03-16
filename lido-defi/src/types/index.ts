@@ -30,7 +30,7 @@ export type EthTransaction = {
 };
 
 export type BalanceData = {
-  proxyUnlockedBalanceEth: string; // processable withdrawal requests to stVault
+  proxyUnlockedBalanceEth: string; // processable withdrawal requests to stVault / claimable amount
   totalUserValueInEth: string; // user vault balance
   processableEth: string; // totalEthToWithdrawFromProxy
   availableEth: string; // eth available for withdrawal
