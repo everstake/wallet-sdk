@@ -8,7 +8,12 @@ import { Blockchain } from '../../utils';
 
 import { ERROR_MESSAGES, ORIGINAL_ERROR_MESSAGES } from './constants/errors';
 import { APYRange, EthTransaction, NetworkType, VaultMeta } from './types';
-import { DAYS_IN_YEAR, NETWORKS, SECONDS_IN_DAY } from './constants';
+import {
+  DAYS_IN_YEAR,
+  NETWORKS,
+  SECONDS_IN_DAY,
+  ZeroReferrer,
+} from './constants';
 import BigNumber from 'bignumber.js';
 import { containsCaseInsensitive } from './utils';
 import { JsonRpcProvider } from 'ethers';
@@ -458,7 +463,7 @@ export class Hysp extends Blockchain {
   private processMemo(memo?: string): string {
     // Process memo text
     let processedMemo: string;
-    if (!memo || memo.trim() === '') {
+    if (!memo || memo.trim() === '' || memo === ZeroReferrer) {
       processedMemo = 'SDK';
     } else {
       const trimmedMemo = memo.trim();
