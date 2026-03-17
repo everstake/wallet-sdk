@@ -6,6 +6,7 @@
 import { Hysp } from '..';
 import { EthTransaction, NetworkType } from '../types';
 import { ethers } from 'ethers';
+import { ZeroReferrer } from '../constants';
 
 jest.mock('../hysp', () => {
   const actualHysp = jest.requireActual('../hysp');
@@ -26,6 +27,10 @@ describe('Hysp referrerId (memo) functionality', () => {
   const mockAmount = '100';
   const mockMinReceive = '95';
   let tokenIn: string;
+
+  const iface = new ethers.Interface([
+    'function depositInstant(address tokenIn, uint256 amount, uint256 minReceiveAmount, bytes32 referrerId)',
+  ]);
 
   beforeAll(async () => {
     hysp = new Hysp();
@@ -51,11 +56,6 @@ describe('Hysp referrerId (memo) functionality', () => {
       userReferrerId,
     );
 
-    // Decode the transaction data to verify referrerId parameter
-    const iface = new ethers.Interface([
-      'function depositInstant(address tokenIn, uint256 amount, uint256 minReceiveAmount, bytes32 referrerId)',
-    ]);
-
     const decoded = iface.parseTransaction({ data: depositTx.data });
     const actualReferrerIdBytes = decoded?.args[3];
     const actualReferrerId = ethers.decodeBytes32String(actualReferrerIdBytes);
@@ -79,7 +79,22 @@ describe('Hysp referrerId (memo) functionality', () => {
       throw e;
     }
 
-    // Decode the transaction data to verify referrerId parameter
+    const decoded = iface.parseTransaction({ data: depositTx.data });
+    const actualReferrerIdBytes = decoded?.args[3];
+    const actualReferrerId = ethers.decodeBytes32String(actualReferrerIdBytes);
+
+    expect(actualReferrerId).toBe('SDK');
+  });
+
+  it('should use SDK when referrer id is ZeroReferrer', async () => {
+    const depositTx = await hysp.depositInstant(
+      realSender,
+      tokenIn,
+      mockAmount,
+      mockMinReceive,
+      ZeroReferrer,
+    );
+
     const iface = new ethers.Interface([
       'function depositInstant(address tokenIn, uint256 amount, uint256 minReceiveAmount, bytes32 referrerId)',
     ]);
