@@ -175,6 +175,7 @@ export class Hysp extends Blockchain {
 
   /**
    * Retrieves the liquidity available for instant redemption in the redemption vault contract.
+   * Currently only supports USDC.
    *
    * @param outTokenAddress - Optional address of the output token to check liquidity for.
    * If not provided, defaults to the first supported redemption token.
@@ -203,6 +204,9 @@ export class Hysp extends Blockchain {
           'VAULT_LIQUIDITY_ERROR',
           'token address is undefined',
         );
+      }
+      if (outTokenAddress.toLowerCase() !== this.addressUsdc.toLowerCase()) {
+        return BigNumber(0);
       }
 
       const tbillContract = Erc20__factory.connect(
