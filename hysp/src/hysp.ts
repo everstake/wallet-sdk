@@ -7,7 +7,13 @@ import { ethers } from 'ethers';
 import { Blockchain } from '../../utils';
 
 import { ERROR_MESSAGES, ORIGINAL_ERROR_MESSAGES } from './constants/errors';
-import { APYRange, EthTransaction, NetworkType, VaultMeta } from './types';
+import {
+  APYRange,
+  EthTransaction,
+  NetworkType,
+  RedeemRequestInfo,
+  VaultMeta,
+} from './types';
 import {
   DAYS_IN_YEAR,
   NETWORKS,
@@ -169,6 +175,7 @@ export class Hysp extends Blockchain {
 
   /**
    * Retrieves the liquidity available for instant redemption in the redemption vault contract.
+   * Currently only supports USDC.
    *
    * @param outTokenAddress - Optional address of the output token to check liquidity for.
    * If not provided, defaults to the first supported redemption token.
@@ -197,6 +204,9 @@ export class Hysp extends Blockchain {
           'VAULT_LIQUIDITY_ERROR',
           'token address is undefined',
         );
+      }
+      if (outTokenAddress.toLowerCase() !== this.addressUsdc.toLowerCase()) {
+        return BigNumber(0);
       }
 
       const tbillContract = Erc20__factory.connect(
@@ -656,6 +666,55 @@ export class Hysp extends Blockchain {
     } catch (error) {
       throw this.handleError('GAS_ESTIMATE_FAILED', error);
     }
+  }
+
+  /**
+   * Retrieves redeem requests for a given address.
+   *
+   * @param address - The user address to fetch redeem requests for.
+   * @returns A promise that resolves to an array of RedeemRequestInfo objects.
+   * @throws Will throw an error if the contract call fails.
+   */
+  public async getRedeemRequests(
+    address: string,
+  ): Promise<RedeemRequestInfo[]> {
+    const STATUS_MAP: string[] = ['Pending', 'Processed', 'Canceled'];
+
+    const filter = this.contractRedemptionVault.filters.RedeemRequest(
+      undefined,
+      address,
+    );
+    const logs = await this.contractRedemptionVault.queryFilter(filter);
+
+    const [requestData, mTokenDecimals] = await Promise.all([
+      Promise.all(
+        logs.map((log) =>
+          this.contractRedemptionVault.redeemRequests(log.args.requestId),
+        ),
+      ),
+      this.getDecimals(this.addressToken),
+    ]);
+
+    return logs.map((log, i) => {
+      const data = requestData[i];
+      if (!data) {
+        return {
+          requestId: log.args.requestId,
+          status: 'Unknown',
+        } as RedeemRequestInfo;
+      }
+
+      return {
+        requestId: log.args.requestId,
+        sender: data.sender,
+        tokenOut: log.args.tokenOut,
+        amountMToken: this.fromWeiToEther(data.amountMToken, mTokenDecimals),
+        feeAmount: this.fromWeiToEther(log.args.feeAmount, mTokenDecimals),
+        status: STATUS_MAP[Number(data.status)] ?? 'Unknown',
+        mTokenRate: this.fromWeiToEther(data.mTokenRate, 18),
+        tokenOutRate: this.fromWeiToEther(data.tokenOutRate, 18),
+      };
+    });
   }
 
   /**
