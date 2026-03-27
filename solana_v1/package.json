@@ -1,6 +1,6 @@
 {
   "name": "@everstake/wallet-sdk-solana",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Solana - Everstake Wallet SDK",
   "publishConfig": {
     "access": "public"
