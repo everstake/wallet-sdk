@@ -732,18 +732,10 @@ export class Hysp extends Blockchain {
   }
 
   private async fetchRedeemRequestsData(
-    logs: Awaited<
-      ReturnType<typeof this.contractRedemptionVault.queryFilter>
-    >,
-  ): Promise<{
-    requestData: (
-      | { sender: string; amountMToken: bigint; status: bigint; mTokenRate: bigint; tokenOutRate: bigint }
-      | undefined
-    )[];
-    mTokenDecimals: number;
-  }> {
+    logs: Awaited<ReturnType<typeof this.contractRedemptionVault.queryFilter>>,
+  ) {
     const multicall3Abi = [
-      'function aggregate3(tuple(address target, bool allowFailure, bytes callData)[] calls) payable returns (tuple(bool success, bytes returnData)[] returnData)',
+      'function aggregate3(tuple(address target, bool allowFailure, bytes callData)[] calls) view returns (tuple(bool success, bytes returnData)[] returnData)',
     ];
     const multicall = new ethers.Contract(
       MULTICALL3_ADDRESS,
@@ -789,7 +781,7 @@ export class Hysp extends Blockchain {
     const requestData = mcResults.slice(0, logs.length).map((r) => {
       if (!r.success) return undefined;
 
-      return rvIface.decodeFunctionResult('redeemRequests', r.returnData)[0];
+      return rvIface.decodeFunctionResult('redeemRequests', r.returnData);
     });
 
     return { requestData, mTokenDecimals };
