@@ -16,6 +16,7 @@ import {
 } from './types';
 import {
   DAYS_IN_YEAR,
+  MULTICALL3_ADDRESS,
   NETWORKS,
   SECONDS_IN_DAY,
   ZeroReferrer,
@@ -672,30 +673,37 @@ export class Hysp extends Blockchain {
    * Retrieves redeem requests for a given address.
    *
    * @param address - The user address to fetch redeem requests for.
+   * @param filters - Optional filters to narrow results.
+   * @param filters.tokenOut - Filter by output token address (applied at event level).
+   * @param filters.fromId - Filter requests with requestId >= this value (applied pre-multicall).
+   * @param filters.status - Filter by request status: 'Pending', 'Processed', or 'Canceled'.
    * @returns A promise that resolves to an array of RedeemRequestInfo objects.
    * @throws Will throw an error if the contract call fails.
    */
   public async getRedeemRequests(
     address: string,
+    filters?: { tokenOut?: string; fromId?: bigint; status?: string },
   ): Promise<RedeemRequestInfo[]> {
     const STATUS_MAP: string[] = ['Pending', 'Processed', 'Canceled'];
 
     const filter = this.contractRedemptionVault.filters.RedeemRequest(
       undefined,
       address,
+      filters?.tokenOut,
     );
-    const logs = await this.contractRedemptionVault.queryFilter(filter);
+    let logs = await this.contractRedemptionVault.queryFilter(filter);
 
-    const [requestData, mTokenDecimals] = await Promise.all([
-      Promise.all(
-        logs.map((log) =>
-          this.contractRedemptionVault.redeemRequests(log.args.requestId),
-        ),
-      ),
-      this.getDecimals(this.addressToken),
-    ]);
+    if (filters?.fromId !== undefined) {
+      const { fromId } = filters;
+      logs = logs.filter((log) => log.args.requestId >= fromId);
+    }
 
-    return logs.map((log, i) => {
+    if (logs.length === 0) return [];
+
+    const { requestData, mTokenDecimals } =
+      await this.fetchRedeemRequestsData(logs);
+
+    const results = logs.map((log, i) => {
       const data = requestData[i];
       if (!data) {
         return {
@@ -715,6 +723,68 @@ export class Hysp extends Blockchain {
         tokenOutRate: this.fromWeiToEther(data.tokenOutRate, 18),
       };
     });
+
+    if (filters?.status) {
+      return results.filter((r) => r.status === filters.status);
+    }
+
+    return results;
+  }
+
+  private async fetchRedeemRequestsData(
+    logs: Awaited<ReturnType<typeof this.contractRedemptionVault.queryFilter>>,
+  ) {
+    const multicall3Abi = [
+      'function aggregate3(tuple(address target, bool allowFailure, bytes callData)[] calls) view returns (tuple(bool success, bytes returnData)[] returnData)',
+    ];
+    const multicall = new ethers.Contract(
+      MULTICALL3_ADDRESS,
+      multicall3Abi,
+      this.provider,
+    );
+    const rvIface = this.contractRedemptionVault.interface;
+    const erc20Iface = this.contractToken.interface;
+
+    const calls = [
+      ...logs.map((log) => ({
+        target: this.addressRedemptionVault,
+        allowFailure: true,
+        callData: rvIface.encodeFunctionData('redeemRequests', [
+          log.args.requestId,
+        ]),
+      })),
+      {
+        target: this.addressToken,
+        allowFailure: false,
+        callData: erc20Iface.encodeFunctionData('decimals'),
+      },
+    ];
+
+    const mcResults = await (
+      multicall as unknown as {
+        aggregate3: (
+          calls: { target: string; allowFailure: boolean; callData: string }[],
+        ) => Promise<{ success: boolean; returnData: string }[]>;
+      }
+    ).aggregate3(calls);
+
+    const decimalsResult = mcResults[logs.length];
+    const mTokenDecimals = Number(
+      erc20Iface.decodeFunctionResult(
+        'decimals',
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        decimalsResult!.returnData,
+      )[0],
+    );
+    this.tokenDecimalsStore[this.addressToken] = mTokenDecimals;
+
+    const requestData = mcResults.slice(0, logs.length).map((r) => {
+      if (!r.success) return undefined;
+
+      return rvIface.decodeFunctionResult('redeemRequests', r.returnData);
+    });
+
+    return { requestData, mTokenDecimals };
   }
 
   /**
