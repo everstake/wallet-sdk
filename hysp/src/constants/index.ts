@@ -37,3 +37,5 @@ export const ZeroReferrer =
 
 export const SECONDS_IN_DAY = 86400;
 export const DAYS_IN_YEAR = 365;
+
+export const MULTICALL3_ADDRESS = '0xcA11bde05977b3631167028862bE2a173976CA11';
