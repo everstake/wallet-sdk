@@ -677,12 +677,18 @@ export class Hysp extends Blockchain {
    * @param filters.tokenOut - Filter by output token address (applied at event level).
    * @param filters.fromId - Filter requests with requestId >= this value (applied pre-multicall).
    * @param filters.status - Filter by request status: 'Pending', 'Processed', or 'Canceled'.
+   * @param filters.limit - Maximum number of results to return (applied after all other filters).
    * @returns A promise that resolves to an array of RedeemRequestInfo objects.
    * @throws Will throw an error if the contract call fails.
    */
   public async getRedeemRequests(
     address: string,
-    filters?: { tokenOut?: string; fromId?: bigint; status?: string },
+    filters?: {
+      tokenOut?: string;
+      fromId?: bigint;
+      status?: string;
+      limit?: number;
+    },
   ): Promise<RedeemRequestInfo[]> {
     const STATUS_MAP: string[] = ['Pending', 'Processed', 'Canceled'];
 
@@ -696,6 +702,10 @@ export class Hysp extends Blockchain {
     if (filters?.fromId !== undefined) {
       const { fromId } = filters;
       logs = logs.filter((log) => log.args.requestId >= fromId);
+    }
+
+    if (filters?.limit !== undefined) {
+      logs = logs.slice(0, filters.limit);
     }
 
     if (logs.length === 0) return [];
@@ -724,11 +734,11 @@ export class Hysp extends Blockchain {
       };
     });
 
-    if (filters?.status) {
-      return results.filter((r) => r.status === filters.status);
-    }
+    const filtered = filters?.status
+      ? results.filter((r) => r.status === filters.status)
+      : results;
 
-    return results;
+    return filtered;
   }
 
   private async fetchRedeemRequestsData(
