@@ -351,33 +351,29 @@ export class HyspSolana extends Blockchain {
    * @returns Memo instruction
    */
   protected processMemo(memo?: string): Instruction {
-    // Process memo text
-    let processedMemo: string;
+    // Check if memo is empty
     if (!memo || memo.trim() === '') {
-      processedMemo = 'SDK';
+      throw this.throwError('MEMO_REQUIRED_ERROR');
+    }
+
+    const trimmedMemo = memo.trim();
+    let processedMemo: string;
+
+    // If memo doesn't start with 'SDK', prepend 'SDK:'
+    if (!trimmedMemo.startsWith('SDK')) {
+      processedMemo = `SDK:${trimmedMemo}`;
     } else {
-      const trimmedMemo = memo.trim();
-      if (trimmedMemo === 'SDK') {
-        processedMemo = trimmedMemo;
-      } else if (!trimmedMemo.startsWith('SDK:')) {
-        processedMemo = `SDK:${trimmedMemo}`;
-      } else {
-        processedMemo = trimmedMemo;
-      }
+      processedMemo = trimmedMemo;
     }
 
     // Validate memo
     if (processedMemo.length > 64) {
-      throw new Error(
-        `Invalid memo: "${processedMemo}". Must be max 64 characters`,
-      );
+      throw this.throwError('MEMO_TOO_LONG_ERROR', processedMemo);
     }
 
     const validPattern = /^[A-Za-z0-9:_-]*$/;
     if (!validPattern.test(processedMemo)) {
-      throw new Error(
-        `Invalid memo: "${processedMemo}". Must contain only [A-Za-z0-9:_-] characters`,
-      );
+      throw this.throwError('MEMO_INVALID_CHARACTERS_ERROR', processedMemo);
     }
 
     return getAddMemoInstruction({ memo: processedMemo });
