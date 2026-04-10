@@ -12,4 +12,9 @@ export const ERROR_MESSAGES = {
   VAULT_LOAD_ERROR: 'An error occurred while loading vault info',
   VAULT_NOT_FOUND_ERROR: 'Vault not found for token: {0}',
   TX_TOO_LARGE: 'Transaction exceeds the maximum size limit of 1232 bytes',
+  MEMO_REQUIRED_ERROR:
+    'Memo is required. Please contact us to get your referrer ID.',
+  MEMO_TOO_LONG_ERROR: 'Invalid memo: "{0}". Must be max 64 characters',
+  MEMO_INVALID_CHARACTERS_ERROR:
+    'Invalid memo: "{0}". Must contain only [A-Za-z0-9:_-] characters',
 };
