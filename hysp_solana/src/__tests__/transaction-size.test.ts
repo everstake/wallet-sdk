@@ -53,9 +53,11 @@ describe('HyspSolana Transaction Size Tests', () => {
 
       expect(userShares.result).toBeDefined();
       expect(userShares.result).toBeInstanceOf(Decimal);
-      
+
       if (userShares.result.lt(PLACEHOLDER_SHARES_AMOUNT)) {
-        console.warn('Note: User has insufficient shares for withdrawal tests.');
+        console.warn(
+          'Note: User has insufficient shares for withdrawal tests.',
+        );
       }
     }, 30000);
 
