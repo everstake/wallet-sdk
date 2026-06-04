@@ -1,0 +1,32 @@
+name: AI PR Review
+
+# Thin caller — delegates to infra-ai-platform reusable workflow. No `run:` blocks here.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  models: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  review:
+    if: ${{ github.event.pull_request.draft == false }}
+    permissions:
+      contents: read
+      models: read
+      pull-requests: write
+      issues: write
+    uses: everstake/infra-ai-platform/.github/workflows/ai-pr-review.yml@91da4339453678c229e51328811df27a188c02a9 # main
+    with:
+      pr_number: ${{ github.event.pull_request.number }}
+      variant: typescript
+      app_id: ${{ vars.CICD_RPC_APP_ID }}
+      # Pin infra_ai_ref to the same SHA as `uses:` so the checked-out tree
+      # contains actions/ai-review (v1 tag predates that composite action).
+      infra_ai_ref: 91da4339453678c229e51328811df27a188c02a9
+    secrets:
+      APP_PRIVATE_KEY: ${{ secrets.CICD_RPC_APP_PRIVATE_KEY }}
