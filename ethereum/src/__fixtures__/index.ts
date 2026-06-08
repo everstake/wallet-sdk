@@ -221,7 +221,7 @@ export const stakeErrorFixture = [
       amount: '0.0001', // Less than minAmount
       source: '0',
     },
-    error: 'Min Amount 100000000000000000 wei',
+    error: 'Min Amount 10000000000000000 wei',
   },
 ];
 
