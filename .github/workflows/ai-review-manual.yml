@@ -1,0 +1,33 @@
+name: AI PR Review (manual)
+
+# Manual re-run of the AI review against any PR. Thin caller — no `run:` blocks.
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: PR number to review
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  models: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  review:
+    permissions:
+      contents: read
+      models: read
+      pull-requests: write
+      issues: write
+    uses: everstake/infra-ai-platform/.github/workflows/ai-pr-review.yml@91da4339453678c229e51328811df27a188c02a9 # main
+    with:
+      pr_number: ${{ inputs.pr_number }}
+      variant: typescript
+      app_id: ${{ vars.CICD_RPC_APP_ID }}
+      infra_ai_ref: 91da4339453678c229e51328811df27a188c02a9
+    secrets:
+      APP_PRIVATE_KEY: ${{ secrets.CICD_RPC_APP_PRIVATE_KEY }}
