@@ -6,7 +6,7 @@
 import { address, Address } from '@solana/kit';
 
 export const CHAIN = 'solana';
-export const MIN_AMOUNT = 10000000; // 0.01 SOL
+export const MIN_AMOUNT = 1000000000; // 1 SOL
 export const MAINNET_VALIDATOR_ADDRESS = address(
   '9QU2QSxhb24FUX3Tu2FpczXjpK3VYrvRudywSZaM29mF',
 );

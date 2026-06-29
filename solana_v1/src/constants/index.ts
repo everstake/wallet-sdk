@@ -7,7 +7,7 @@ import { PublicKey } from '@solana/web3.js';
 import { enums } from 'superstruct';
 
 export const SOL_CHAIN = 'solana';
-export const SOL_MIN_AMOUNT = 10000000; // 0.01 SOL
+export const SOL_MIN_AMOUNT = 1000000000; // 1 SOL
 export const SOL_MAINNET_VALIDATOR_ADDRESS = new PublicKey(
   '9QU2QSxhb24FUX3Tu2FpczXjpK3VYrvRudywSZaM29mF',
 );
