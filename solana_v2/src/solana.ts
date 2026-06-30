@@ -52,6 +52,7 @@ import {
   FILTER_OFFSET,
   MAINNET_VALIDATOR_ADDRESS,
   MIN_AMOUNT,
+  MIN_SPLIT_REMAINDER,
   Network,
   StakeState,
   STAKE_ACCOUNT_V2_SIZE,
@@ -394,6 +395,9 @@ export class Solana extends Blockchain {
     // lockup: Lockup | null = Lockup.default,
     params?: Params,
   ): Promise<ApiResponse<StakeResponse>> {
+    if (lamports < MIN_AMOUNT) {
+      this.throwError('MIN_AMOUNT_ERROR', MIN_AMOUNT.toString());
+    }
     try {
       //     lockup = lockup || Lockup.default;
       // Get the minimum balance for rent exemption
@@ -648,7 +652,8 @@ export class Solana extends Blockchain {
 
         // If reminder amount less than min stake amount stake account automatically become disabled
         const isBelowThreshold =
-          stakeAmount <= lamports || stakeAmount - lamports < MIN_AMOUNT;
+          stakeAmount <= lamports ||
+          stakeAmount - lamports < MIN_SPLIT_REMAINDER;
         if (isBelowThreshold) {
           accountsToDeactivate.push(acc);
           lamports = lamports - stakeAmount;
