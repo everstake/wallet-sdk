@@ -18,7 +18,7 @@ export const ADDRESS_CONTRACT_BUY =
 
 export const MIN_AMOUNT = new BigNumber('1000000000000000000'); // 1 MATIC
 
-export const DELEGATE_BASE_GAS = 220000n;
+export const DELEGATE_BASE_GAS = 300000n;
 export const UNDELEGATE_BASE_GAS = 300000n;
 export const CLAIM_UNDELEGATE_BASE_GAS = 200000n;
 export const CLAIM_REWARDS_BASE_GAS = 180000n;
