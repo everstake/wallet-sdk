@@ -15,6 +15,7 @@ export const ERROR_MESSAGES = {
   INVALID_RPC_ERROR: 'Invalid RPC URL',
   UNSUPPORTED_NETWORK_ERROR: 'Unsupported Network',
   CLAIM_ERROR: 'An error occurred while claim SOL',
+  
   UNSTAKE_ERROR: 'An error occurred while unstaking the stake',
   NOTHING_TO_CLAIM_ERROR: 'Nothing to claim while claiming',
   NOT_ENOUGH_ACTIVE_STAKE_ERROR: 'Active stake less than requested',
