@@ -4,7 +4,6 @@ const Solana = require('./solana');
 const Aptos = require('./aptos');
 const Sui = require('./sui');
 const Ethereum = require('./ethereum');
-const Babylon = require('./babylon');
 const { CreateToken, GetAssets } = require('./utils/api');
 
 module.exports = {
@@ -16,6 +15,5 @@ module.exports = {
     Ethereum,
     CreateToken,
     GetAssets,
-    Babylon,
 };
 
