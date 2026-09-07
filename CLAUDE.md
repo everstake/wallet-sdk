@@ -15,7 +15,7 @@ pnpm run prettier          # auto-format
 pnpm run build             # type-check + lint + test, then tsup bundle
 ```
 
-The root `package.json` is the legacy `@everstake/wallet-sdk` package; its source lives in `src/` and runs the same scripts.
+The root `package.json` is the `@everstake/wallet-sdk` package; its source lives in `src/` and runs the same scripts. It is **deprecated for chain-specific functionality** — it previously bundled a duplicate Solana implementation, which was removed in favor of `solana_v1/` (`@everstake/wallet-sdk-solana`, the actively maintained package). `src/` now only re-exports the shared `utils/` API helpers (`CheckToken`, `SetStats`, `CreateToken`, `GetAssets`, `Blockchain`, `WalletSDKError`) and has no blockchain SDK dependency of its own. Do not add new chain logic here — add it to the relevant per-chain package instead.
 
 ## Architecture
 
@@ -25,7 +25,7 @@ This is a monorepo of independently published npm packages — one per blockchai
 
 | Directory     | Package name                              | Chain / product           |
 |---------------|-------------------------------------------|---------------------------|
-| `src/`        | `@everstake/wallet-sdk`                   | Legacy (Solana v1 only)   |
+| `src/`        | `@everstake/wallet-sdk`                   | Deprecated — API helpers only |
 | `ethereum/`   | `@everstake/wallet-sdk-ethereum`          | ETH liquid staking pool   |
 | `polygon/`    | `@everstake/wallet-sdk-polygon`           | Polygon                   |
 | `berrachain/` | `@everstake/wallet-sdk-berrachain`        | Berachain                 |
