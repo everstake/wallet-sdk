@@ -24,7 +24,7 @@ Monorepo of independently published npm packages — one per blockchain. Package
 
 | Directory     | npm package                               | Chain / product         |
 |---------------|-------------------------------------------|-------------------------|
-| `src/`        | `@everstake/wallet-sdk`                   | Legacy (Solana v1 only) |
+| `src/`        | `@everstake/wallet-sdk`                   | Deprecated — API helpers only |
 | `ethereum/`   | `@everstake/wallet-sdk-ethereum`          | ETH liquid staking pool |
 | `polygon/`    | `@everstake/wallet-sdk-polygon`           | Polygon                 |
 | `berrachain/` | `@everstake/wallet-sdk-berrachain`        | Berachain               |

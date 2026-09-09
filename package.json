@@ -1,6 +1,6 @@
 {
   "name": "@everstake/wallet-sdk",
-  "version": "1.0.20",
+  "version": "1.1.0",
   "description": "Everstake Wallet SDK for Javascript",
   "publishConfig": {
     "access": "public"
@@ -23,16 +23,7 @@
     "test": "jest",
     "prebuild": "pnpm run type-check && pnpm run lint && pnpm run test"
   },
-  "keywords": [
-    "ethereum",
-    "aptos",
-    "polygon",
-    "cosmos",
-    "solana",
-    "blockchain",
-    "everstake",
-    "wallet sdk"
-  ],
+  "keywords": ["blockchain", "everstake", "wallet sdk"],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/everstake/wallet-sdk.git"
@@ -43,13 +34,7 @@
     "url": "https://github.com/everstake/wallet-sdk/issues"
   },
   "homepage": "https://github.com/everstake/wallet-sdk#readme",
-  "dependencies": {
-    "@solana/web3.js": "1.98.2",
-    "bignumber.js": "^9.3.0",
-    "ethereum-multicall": "^2.26.0",
-    "superstruct": "2.0.2",
-    "web3": "4.16.0"
-  },
+  "dependencies": {},
   "overrides": {
     "ws": "^8.0.0",
     "elliptic": "6.6.1",

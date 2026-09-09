@@ -6,6 +6,7 @@ import {
   instance,
   nullable,
   number,
+  optional,
   string,
   type,
 } from 'superstruct';
@@ -49,7 +50,7 @@ export const StakeAccountInfo = type({
         stake: BigNumFromString,
         activationEpoch: BigNumFromString,
         deactivationEpoch: BigNumFromString,
-        warmupCooldownRate: number(),
+        warmupCooldownRate: optional(number()),
       }),
       creditsObserved: number(),
     }),
