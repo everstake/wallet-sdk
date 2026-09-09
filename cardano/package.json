@@ -1,6 +1,6 @@
 {
   "name": "@everstake/wallet-sdk-cardano",
-  "version": "1.1.6",
+  "version": "1.1.7",
   "description": "Cardano - Everstake Wallet SDK",
   "publishConfig": {
     "access": "public"
