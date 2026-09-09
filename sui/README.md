@@ -2,10 +2,10 @@
 You can use two different options to implement Sui operations with the Everstake wallet SDK.
 
 ## Option 1: REST API 
-You can use REST API to call methods which are described in [Swagger](https://wallet-sdk-api.everstake.one/swagger/#/Sui) with detailed examples 
+You can use REST API to call methods which are described in [Swagger](https://wallet-sdk-api.everstake.com/swagger/#/Sui) with detailed examples 
 
 ```
-https://wallet-sdk-api.everstake.one
+https://wallet-sdk-api.everstake.com
 ```
 
 ## Option 2: TypeScript library

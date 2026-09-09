@@ -6,10 +6,10 @@ You can use two different options to implement staking for Everstake validator.
 
 ## Option 1: REST API
 
-You can use REST API to call methods which are described in [Swagger](https://wallet-sdk-api.everstake.one/swagger/) with detailed examples
+You can use REST API to call methods which are described in [Swagger](https://wallet-sdk-api.everstake.com/swagger/) with detailed examples
 
 ```
-https://wallet-sdk-api.everstake.one
+https://wallet-sdk-api.everstake.com
 ```
 
 ## Option 2: TypeScript library
