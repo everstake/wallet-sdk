@@ -3,56 +3,32 @@
  * Licensed under the BSD-3-Clause License. See LICENSE file for details.
  */
 
-import { Connection, Keypair, VersionedTransaction } from '@solana/web3.js';
+import {
+  ComputeBudgetProgram,
+  StakeProgram,
+  VersionedTransaction,
+} from '@solana/web3.js';
 import { Solana } from '..';
-import { buildParsedStakeAccount, EPOCH_MAX } from './testData';
-
-type MockedConnection = Pick<
-  Connection,
-  | 'getParsedProgramAccounts'
-  | 'getEpochInfo'
-  | 'getMinimumBalanceForRentExemption'
-  | 'getLatestBlockhash'
->;
-
-/** Injects a stubbed `Connection` into a `Solana` instance, bypassing the real RPC. */
-function mockConnection(solana: Solana, overrides: Partial<MockedConnection>) {
-  (solana as unknown as { connection: MockedConnection }).connection =
-    overrides as MockedConnection;
-}
-
-const currentEpoch = 500;
-
-function baseConnectionMocks(
-  delegations: ReturnType<typeof buildParsedStakeAccount>[],
-) {
-  return {
-    getParsedProgramAccounts: jest.fn().mockResolvedValue(
-      delegations.map((account) => ({
-        pubkey: Keypair.generate().publicKey,
-        account,
-      })),
-    ),
-    getEpochInfo: jest.fn().mockResolvedValue({
-      epoch: currentEpoch,
-      slotIndex: 0,
-      slotsInEpoch: 1,
-      absoluteSlot: 0,
-    }),
-    getMinimumBalanceForRentExemption: jest.fn().mockResolvedValue(2282880),
-    getLatestBlockhash: jest.fn().mockResolvedValue({
-      blockhash: Keypair.generate().publicKey.toBase58(),
-      lastValidBlockHeight: 0,
-    }),
-  } as unknown as MockedConnection;
-}
+import {
+  ACTIVE_DELEGATION,
+  baseConnectionMocks,
+  buildParsedStakeAccount,
+  DEACTIVATED_DELEGATION,
+  EPOCH_MAX,
+  mockConnection,
+  randomPublicKey,
+  SENDER,
+  STAKE_ACCOUNT_ACTIVE,
+  STAKE_ACCOUNT_DEACTIVATED,
+} from './testData';
+import { compileExpected, expectTransactionsMatch, flatten } from './txHelpers';
 
 function instructionCount(tx: VersionedTransaction): number {
   return tx.message.compiledInstructions.length;
 }
 
 describe('unstake', () => {
-  const sender = Keypair.generate().publicKey.toBase58();
+  const sender = randomPublicKey().toBase58();
   const stakeLamports = '2000000000'; // fully unstaked below -> no split needed
 
   it('succeeds when the delegation is missing warmupCooldownRate', async () => {
@@ -63,7 +39,10 @@ describe('unstake', () => {
       deactivationEpoch: EPOCH_MAX,
       includeWarmupCooldownRate: false,
     });
-    mockConnection(solana, baseConnectionMocks([delegation]));
+    mockConnection(
+      solana,
+      baseConnectionMocks([{ pubkey: randomPublicKey(), account: delegation }]),
+    );
 
     const { result } = await solana.unstake(
       sender,
@@ -79,22 +58,28 @@ describe('unstake', () => {
     mockConnection(
       solanaWithout,
       baseConnectionMocks([
-        buildParsedStakeAccount({
-          stakeLamports,
-          deactivationEpoch: EPOCH_MAX,
-          includeWarmupCooldownRate: false,
-        }),
+        {
+          pubkey: randomPublicKey(),
+          account: buildParsedStakeAccount({
+            stakeLamports,
+            deactivationEpoch: EPOCH_MAX,
+            includeWarmupCooldownRate: false,
+          }),
+        },
       ]),
     );
     const solanaWith = new Solana();
     mockConnection(
       solanaWith,
       baseConnectionMocks([
-        buildParsedStakeAccount({
-          stakeLamports,
-          deactivationEpoch: EPOCH_MAX,
-          includeWarmupCooldownRate: true,
-        }),
+        {
+          pubkey: randomPublicKey(),
+          account: buildParsedStakeAccount({
+            stakeLamports,
+            deactivationEpoch: EPOCH_MAX,
+            includeWarmupCooldownRate: true,
+          }),
+        },
       ]),
     );
 
@@ -113,10 +98,46 @@ describe('unstake', () => {
       instructionCount(withRate.result),
     );
   });
+
+  it('deactivates a fully-covered active delegation (no split) behind a compute-budget instruction', async () => {
+    const solana = new Solana();
+    mockConnection(solana, baseConnectionMocks([ACTIVE_DELEGATION]));
+
+    const { result } = await solana.unstake(
+      SENDER.publicKey.toBase58(),
+      3_000_000_000, // == full active stake -> deactivate, no split
+      'unstake-source',
+    );
+
+    const expectedDeactivate = StakeProgram.deactivate({
+      stakePubkey: STAKE_ACCOUNT_ACTIVE.publicKey,
+      authorizedPubkey: SENDER.publicKey,
+    });
+    expectTransactionsMatch(
+      result,
+      compileExpected(SENDER.publicKey, [
+        ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50 }),
+        ...flatten(expectedDeactivate),
+      ]),
+    );
+
+    expect(
+      Buffer.from(result.serialize()).toString('base64'),
+    ).toMatchSnapshot();
+  });
+
+  it('throws when requested amount exceeds total active stake', async () => {
+    const solana = new Solana();
+    mockConnection(solana, baseConnectionMocks([ACTIVE_DELEGATION]));
+
+    await expect(
+      solana.unstake(SENDER.publicKey.toBase58(), 999_000_000_000, 'src'),
+    ).rejects.toThrow('Active stake less than requested');
+  });
 });
 
 describe('claim', () => {
-  const sender = Keypair.generate().publicKey.toBase58();
+  const sender = randomPublicKey().toBase58();
 
   it('succeeds when the delegation is missing warmupCooldownRate', async () => {
     const solana = new Solana();
@@ -126,7 +147,10 @@ describe('claim', () => {
       deactivationEpoch: '200', // < currentEpoch -> deactivated, claimable
       includeWarmupCooldownRate: false,
     });
-    mockConnection(solana, baseConnectionMocks([delegation]));
+    mockConnection(
+      solana,
+      baseConnectionMocks([{ pubkey: randomPublicKey(), account: delegation }]),
+    );
 
     const { result } = await solana.claim(sender);
 
@@ -139,20 +163,26 @@ describe('claim', () => {
     mockConnection(
       solanaWithout,
       baseConnectionMocks([
-        buildParsedStakeAccount({
-          deactivationEpoch: '200',
-          includeWarmupCooldownRate: false,
-        }),
+        {
+          pubkey: randomPublicKey(),
+          account: buildParsedStakeAccount({
+            deactivationEpoch: '200',
+            includeWarmupCooldownRate: false,
+          }),
+        },
       ]),
     );
     const solanaWith = new Solana();
     mockConnection(
       solanaWith,
       baseConnectionMocks([
-        buildParsedStakeAccount({
-          deactivationEpoch: '200',
-          includeWarmupCooldownRate: true,
-        }),
+        {
+          pubkey: randomPublicKey(),
+          account: buildParsedStakeAccount({
+            deactivationEpoch: '200',
+            includeWarmupCooldownRate: true,
+          }),
+        },
       ]),
     );
 
@@ -161,6 +191,36 @@ describe('claim', () => {
 
     expect(instructionCount(withoutRate.result)).toBe(
       instructionCount(withRate.result),
+    );
+  });
+
+  it('withdraws every deactivated delegation for its full lamport balance', async () => {
+    const solana = new Solana();
+    mockConnection(solana, baseConnectionMocks([DEACTIVATED_DELEGATION]));
+
+    const { result } = await solana.claim(SENDER.publicKey.toBase58());
+
+    const expectedWithdraw = StakeProgram.withdraw({
+      stakePubkey: STAKE_ACCOUNT_DEACTIVATED.publicKey,
+      authorizedPubkey: SENDER.publicKey,
+      toPubkey: SENDER.publicKey,
+      lamports: DEACTIVATED_DELEGATION.account.lamports,
+    });
+    expectTransactionsMatch(
+      result,
+      compileExpected(SENDER.publicKey, [
+        ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50 }),
+        ...flatten(expectedWithdraw),
+      ]),
+    );
+  });
+
+  it('throws when there is nothing deactivated to claim', async () => {
+    const solana = new Solana();
+    mockConnection(solana, baseConnectionMocks([ACTIVE_DELEGATION]));
+
+    await expect(solana.claim(SENDER.publicKey.toBase58())).rejects.toThrow(
+      'Nothing to claim while claiming',
     );
   });
 });
