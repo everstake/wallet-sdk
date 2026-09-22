@@ -12,9 +12,8 @@ Ground truth for this repo. Covers conventions, architecture decisions, naming, 
 | Tests        | Jest + ts-jest                            | ^29.x    |
 | Linter       | ESLint + typescript-eslint + prettier     | ^9.x     |
 | EVM (ETH/Polygon/Berachain) | web3 v4                    | 4.x      |
-| EVM (Hysp)   | ethers v6                                 | ^6.x     |
 | Solana v1    | @solana/web3.js                           | 1.98.x   |
-| Solana v2 / Hysp Solana | @solana/kit                    | ^3.x     |
+| Solana v2    | @solana/kit                               | ^3.x     |
 
 ## Architecture
 
@@ -33,8 +32,6 @@ Monorepo of independently published npm packages — one per blockchain. Package
 | `cardano/`    | `@everstake/wallet-sdk-cardano`           | Cardano                 |
 | `aptos/`      | `@everstake/wallet-sdk-aptos`             | Aptos                   |
 | `sui/`        | `@everstake/wallet-sdk-sui`               | Sui                     |
-| `hysp/`       | `@everstake/wallet-sdk-hysp`              | Hysp EVM vault (mToken) |
-| `hysp_solana/`| `@everstake/wallet-sdk-hysp-solana`       | Hysp Solana vault       |
 
 ### Shared utilities (`utils/`)
 
@@ -86,8 +83,6 @@ export class Ethereum extends Blockchain {
 }
 ```
 
-`Hysp` differs: constructor is synchronous, async setup goes in `async init(network, url?)`.
-
 ### Error handling
 
 Two distinct methods — use them correctly:
@@ -125,12 +120,6 @@ Methods that build on-chain actions return **unsigned** transaction objects. The
 - EVM amounts at the API boundary: human-readable ETH strings (`"0.1"`), not Wei. Conversion to Wei is done internally.
 - Solana amounts: `bigint` lamports.
 - `BigNumber` (bignumber.js) is used for all arithmetic to avoid floating-point issues.
-
-### Hysp-specific
-
-- Requires `await instance.init(network, url?)` before any other call. `init` fetches supported tokens and token metadata from contracts.
-- Uses `ethers` v6 (not `web3`). Contract types are typechain-generated and live in `src/typechain-types/`.
-- `getRedeemRequests()` uses Multicall3 for batched reads; `poolBalances()` / `userBalances()` in Ethereum use `ethereum-multicall`.
 
 ### Solana v2 vs v1
 

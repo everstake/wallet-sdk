@@ -27,8 +27,6 @@ the one(s) you need:
 | Cardano                      | `@everstake/wallet-sdk-cardano`         |
 | Aptos                        | `@everstake/wallet-sdk-aptos`           |
 | Sui                          | `@everstake/wallet-sdk-sui`             |
-| Hysp (EVM vault)             | `@everstake/wallet-sdk-hysp`            |
-| Hysp (Solana vault)          | `@everstake/wallet-sdk-hysp-solana`     |
 
 > **`@everstake/wallet-sdk` (this package) is deprecated for chain-specific
 > functionality.** It previously bundled a Solana implementation directly;

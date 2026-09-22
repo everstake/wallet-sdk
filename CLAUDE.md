@@ -34,8 +34,6 @@ This is a monorepo of independently published npm packages — one per blockchai
 | `cardano/`    | `@everstake/wallet-sdk-cardano`           | Cardano                   |
 | `aptos/`      | `@everstake/wallet-sdk-aptos`             | Aptos                     |
 | `sui/`        | `@everstake/wallet-sdk-sui`               | Sui                       |
-| `hysp/`       | `@everstake/wallet-sdk-hysp`              | Hysp EVM vault (mToken)   |
-| `hysp_solana/`| `@everstake/wallet-sdk-hysp-solana`       | Hysp Solana vault         |
 
 **Shared utilities (`utils/`):**
 
@@ -67,11 +65,6 @@ This is a monorepo of independently published npm packages — one per blockchai
 **Transaction return convention:** Methods like `stake`, `unstake`, `depositInstant` return unsigned transaction objects (EVM: `EthTransaction`; Solana: a compiled `TransactionMessage`). Callers sign and broadcast.
 
 **Amounts:** Human-readable units at the API boundary (ETH, not Wei; lamports passed as `bigint` for Solana). Conversion to/from wei happens inside the class.
-
-**Hysp differs from other modules:**
-- Constructor is synchronous; call `await hysp.init(network, url?)` before any other method.
-- Uses `ethers` (not `web3`) and typechain-generated contract types from `src/typechain-types/`.
-- Has `getRedeemRequests()` which uses Multicall3 for batched on-chain reads.
 
 **Solana v2 vs v1:** `solana_v2` uses `@solana/kit` (the new web3.js v2 API) with `pipe`, `createTransactionMessage`, `appendTransactionMessageInstruction`, etc. `solana_v1` uses the legacy `@solana/web3.js` with `Transaction` and `sendTransaction`.
 
