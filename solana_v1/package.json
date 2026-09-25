@@ -1,6 +1,6 @@
 {
   "name": "@everstake/wallet-sdk-solana",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Solana - Everstake Wallet SDK",
   "publishConfig": {
     "access": "public"
@@ -40,7 +40,7 @@
   },
   "homepage": "https://github.com/everstake/wallet-sdk#readme",
   "dependencies": {
-    "@solana/web3.js": "1.98.2",
+    "@solana/web3.js": "1.99.0",
     "bignumber.js": "9.1.2",
     "superstruct": "2.0.2"
   },
