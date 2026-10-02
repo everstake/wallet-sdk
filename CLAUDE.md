@@ -28,7 +28,6 @@ This is a monorepo of independently published npm packages — one per blockchai
 | `src/`        | `@everstake/wallet-sdk`                   | Deprecated — API helpers only |
 | `ethereum/`   | `@everstake/wallet-sdk-ethereum`          | ETH liquid staking pool   |
 | `polygon/`    | `@everstake/wallet-sdk-polygon`           | Polygon                   |
-| `berrachain/` | `@everstake/wallet-sdk-berrachain`        | Berachain                 |
 | `solana_v1/`  | `@everstake/wallet-sdk-solana`            | Solana (legacy web3.js)   |
 | `solana_v2/`  | `@everstake/wallet-sdk-solana-v2`         | Solana (`@solana/kit`)    |
 | `cardano/`    | `@everstake/wallet-sdk-cardano`           | Cardano                   |
