@@ -21,7 +21,6 @@ the one(s) you need:
 | ---------------------------- | --------------------------------------- |
 | Ethereum                     | `@everstake/wallet-sdk-ethereum`        |
 | Polygon                      | `@everstake/wallet-sdk-polygon`         |
-| Berachain                    | `@everstake/wallet-sdk-berrachain`      |
 | Solana (`@solana/web3.js`)   | `@everstake/wallet-sdk-solana`          |
 | Solana (`@solana/kit`)       | `@everstake/wallet-sdk-solana-v2`       |
 | Cardano                      | `@everstake/wallet-sdk-cardano`         |

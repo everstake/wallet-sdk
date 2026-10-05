@@ -11,7 +11,7 @@ Ground truth for this repo. Covers conventions, architecture decisions, naming, 
 | Build        | tsup (CJS + ESM + `.d.ts`)                | ^8.x     |
 | Tests        | Jest + ts-jest                            | ^29.x    |
 | Linter       | ESLint + typescript-eslint + prettier     | ^9.x     |
-| EVM (ETH/Polygon/Berachain) | web3 v4                    | 4.x      |
+| EVM (ETH/Polygon)           | web3 v4                    | 4.x      |
 | Solana v1    | @solana/web3.js                           | 1.98.x   |
 | Solana v2    | @solana/kit                               | ^3.x     |
 
@@ -26,7 +26,6 @@ Monorepo of independently published npm packages — one per blockchain. Package
 | `src/`        | `@everstake/wallet-sdk`                   | Deprecated — API helpers only |
 | `ethereum/`   | `@everstake/wallet-sdk-ethereum`          | ETH liquid staking pool |
 | `polygon/`    | `@everstake/wallet-sdk-polygon`           | Polygon                 |
-| `berrachain/` | `@everstake/wallet-sdk-berrachain`        | Berachain               |
 | `solana_v1/`  | `@everstake/wallet-sdk-solana`            | Solana (legacy)         |
 | `solana_v2/`  | `@everstake/wallet-sdk-solana-v2`         | Solana (@solana/kit)    |
 | `cardano/`    | `@everstake/wallet-sdk-cardano`           | Cardano                 |
